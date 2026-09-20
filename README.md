@@ -53,6 +53,12 @@
   - Ô nhập số tiền thực tế trên hóa đơn đi chợ.
   - Nhấn nút **"Chốt đi chợ & Ghi vào Sổ Thu Chi"** ➔ Tự động tạo 1 giao dịch Chi tiêu "Đi chợ" trong Tab 1, cập nhật lại số dư ví và dọn dẹp các nguyên liệu đã mua.
 
+### ⚙️ Phần C: Cài Đặt (Settings)
+* **Tùy chỉnh Giao diện (Theme)**: Cho phép chuyển đổi giữa chế độ Sáng (Light), Tối (Dark) và Tự động theo Hệ thống (System default).
+* **Quản lý Danh mục (Categories)**: Hỗ trợ Thêm, Sửa, Xóa danh mục Thu, Chi và Đi chợ. Các danh mục này tự động đồng bộ vào các menu thả xuống trong ứng dụng.
+* **Nhật ký hệ thống (Audit Logs)**: Tự động ghi lại các thao tác quan trọng (Thêm, Sửa, Xóa dữ liệu) để dễ dàng theo dõi biến động dữ liệu.
+* **Xuất dữ liệu (Export)**: Xuất Lịch sử giao dịch dưới định dạng file CSV chuẩn UTF-8, dễ dàng xem và quản lý trên Excel/Google Sheets.
+
 ---
 
 ## 🎨 4. Phong Cách Thiết Kế UI/UX
