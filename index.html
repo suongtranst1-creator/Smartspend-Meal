@@ -3,19 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SmartSpend & Meal - Quản Lý Thu Chi & Thực Đơn</title>
-    <script>
-      // Ngăn flash sáng khi ở chế độ Dark Mode
-      (function() {
-        try {
-          var theme = localStorage.getItem('theme');
-          var isDark = theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches);
-          if (isDark) {
-            document.documentElement.classList.add('dark');
-          }
-        } catch (e) {}
-      })();
-    </script>
+    <title>SmartSpend & Meal - Sổ Thu Chi & Thực Đơn Đi Chợ Tuần</title>
     <!-- Google Fonts: Plus Jakarta Sans / Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -77,7 +65,7 @@
       }
     </style>
   </head>
-  <body class="bg-gray-50 text-gray-800 antialiased selection:bg-emerald-100 selection:text-emerald-800 min-h-screen dark:bg-gray-900 dark:text-gray-100 dark:selection:bg-emerald-900 dark:selection:text-emerald-100 transition-colors duration-200">
+  <body class="bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-100 antialiased selection:bg-emerald-100 selection:text-emerald-800 dark:selection:bg-emerald-900 dark:selection:text-emerald-100 min-h-screen transition-colors duration-200">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

@@ -18,18 +18,89 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Hàm helper để thêm log
-const addLog = async (action, target_type, description) => {
+// Hàm ghi log hệ thống
+const logAction = async (action, entity_type, entity_name) => {
   try {
-    const id = Date.now().toString() + Math.floor(Math.random() * 1000);
     await pool.query(
-      `INSERT INTO system_logs (id, action, target_type, description) VALUES ($1, $2, $3, $4)`,
-      [id, action, target_type, description]
+      `INSERT INTO system_logs (action, entity_type, entity_name) VALUES ($1, $2, $3)`,
+      [action, entity_type, entity_name]
     );
-  } catch (e) {
-    console.error('Lỗi ghi log:', e.message);
+  } catch (err) {
+    console.error('Lỗi khi ghi log:', err.message);
   }
 };
+
+// ==========================================
+// 5. Categories API (Danh Mục)
+// ==========================================
+app.get('/api/categories', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM categories ORDER BY type ASC, created_at ASC;');
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/categories', async (req, res) => {
+  const { type, name } = req.body;
+  const id = `cat_${Date.now()}`;
+  try {
+    const result = await pool.query(
+      `INSERT INTO categories (id, type, name) VALUES ($1, $2, $3) RETURNING *;`,
+      [id, type, name]
+    );
+    await logAction('Thêm', 'Danh mục', name);
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/categories/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
+  try {
+    const result = await pool.query(
+      `UPDATE categories SET name = $1 WHERE id = $2 RETURNING *;`,
+      [name, id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Không tìm thấy danh mục' });
+    await logAction('Sửa', 'Danh mục', name);
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/categories/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(`DELETE FROM categories WHERE id = $1 RETURNING *;`, [id]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Không tìm thấy danh mục' });
+    await logAction('Xóa', 'Danh mục', result.rows[0].name);
+    res.json({ message: 'Xóa danh mục thành công', id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// 6. System Logs API (Nhật Ký)
+// ==========================================
+app.get('/api/logs', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT id, action, entity_type, entity_name, TO_CHAR(created_at, 'YYYY-MM-DD HH24:MI:SS') as time
+      FROM system_logs 
+      ORDER BY created_at DESC 
+      LIMIT 100;
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ==========================================
 // 1. Health & Connection Status
@@ -81,7 +152,10 @@ app.post('/api/transactions', async (req, res) => {
        RETURNING id, type, title, amount::numeric, category, TO_CHAR(transaction_date, 'YYYY-MM-DD') as date;`,
       [transId, type, title, amount, category, transDate]
     );
-    await addLog('Thêm', 'Giao dịch', `Đã thêm giao dịch: ${title} (${amount})`);
+    
+    // Ghi log
+    await logAction('Thêm', 'Giao dịch', `${title} (${amount})`);
+    
     res.status(201).json(result.rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -104,7 +178,10 @@ app.put('/api/transactions/:id', async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Không tìm thấy giao dịch' });
     }
-    await addLog('Sửa', 'Giao dịch', `Đã cập nhật giao dịch: ${title}`);
+    
+    // Ghi log
+    await logAction('Sửa', 'Giao dịch', `${title} (${amount})`);
+    
     res.json(result.rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -119,7 +196,10 @@ app.delete('/api/transactions/:id', async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Không tìm thấy giao dịch' });
     }
-    await addLog('Xóa', 'Giao dịch', `Đã xóa giao dịch ID: ${id}`);
+    
+    // Ghi log
+    await logAction('Xóa', 'Giao dịch', `ID: ${id}`);
+    
     res.json({ message: 'Đã xóa giao dịch thành công', id });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -185,7 +265,9 @@ app.put('/api/meals', async (req, res) => {
       [id, plan_date, meal_name, main || '', side || '', calories || '', JSON.stringify(ingredientsArray)]
     );
 
-    await addLog('Cập nhật', 'Thực đơn', `Đã cập nhật thực đơn: ${meal_name} ngày ${plan_date}`);
+    // Ghi log
+    await logAction('Cập nhật', 'Thực đơn', `${meal_name} - ${plan_date}`);
+
     res.json({ message: 'Lưu thực đơn thành công', plan_date, meal_name });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -207,7 +289,10 @@ app.delete('/api/meals', async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Không tìm thấy thực đơn' });
     }
-    await addLog('Xóa', 'Thực đơn', `Đã xóa thực đơn: ${meal_name} ngày ${plan_date}`);
+    
+    // Ghi log
+    await logAction('Xóa', 'Thực đơn', `${meal_name} - ${plan_date}`);
+    
     res.json({ message: 'Đã xóa thực đơn', plan_date, meal_name });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -250,6 +335,10 @@ app.post('/api/groceries', async (req, res) => {
        RETURNING id, item_name as name, quantity, category, is_bought as checked;`,
       [itemId, name, quantity || '1 phần', category || 'Rau củ', checked || false]
     );
+    
+    // Ghi log
+    await logAction('Thêm', 'Món đi chợ', name);
+    
     res.status(201).json(result.rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -279,6 +368,10 @@ app.post('/api/groceries/batch', async (req, res) => {
       inserted.push(resItem.rows[0]);
     }
     await client.query('COMMIT');
+    
+    // Ghi log
+    await logAction('Thêm', 'Món đi chợ', `Thêm ${items.length} món từ thực đơn`);
+    
     res.status(201).json(inserted);
   } catch (err) {
     await client.query('ROLLBACK');
@@ -304,6 +397,10 @@ app.put('/api/groceries/:id', async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Không tìm thấy món' });
     }
+    
+    // Ghi log
+    await logAction('Sửa', 'Món đi chợ', name);
+    
     res.json(result.rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -324,6 +421,10 @@ app.patch('/api/groceries/:id/toggle', async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Không tìm thấy món' });
     }
+    
+    // Ghi log (Tùy chọn ghi log khi toggle, nếu không cần có thể bỏ qua)
+    // await logAction('Sửa', 'Món đi chợ (Đánh dấu)', id);
+    
     res.json(result.rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -338,17 +439,25 @@ app.delete('/api/groceries/:id', async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Không tìm thấy món' });
     }
-    res.json({ message: 'Đã xóa món khỏi giỏ', id });
+    
+    // Ghi log
+    await logAction('Xóa', 'Món đi chợ', `ID: ${id}`);
+    
+    res.json({ message: 'Đã xóa món', id });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
 // Xóa các món đã mua (dọn dẹp giỏ hàng)
-app.delete('/api/groceries/action/clear-completed', async (req, res) => {
+app.delete('/api/groceries/bought', async (req, res) => {
   try {
     const result = await pool.query('DELETE FROM grocery_items WHERE is_bought = true RETURNING id;');
-    res.json({ message: `Đã dọn dẹp ${result.rowCount} món đã mua`, count: result.rowCount });
+    
+    // Ghi log
+    await logAction('Xóa', 'Món đi chợ', `Xóa ${result.rows.length} món đã mua`);
+    
+    res.json({ message: `Đã xóa ${result.rows.length} món đã mua`, count: result.rows.length });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -398,77 +507,7 @@ app.post('/api/groceries/finalize', async (req, res) => {
 });
 
 // ==========================================
-// 5. Categories & System Logs API (Settings)
-// ==========================================
-
-// Lấy danh sách Logs
-app.get('/api/logs', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM system_logs ORDER BY created_at DESC LIMIT 100');
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Lấy danh mục
-app.get('/api/categories', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM categories ORDER BY type ASC, name ASC');
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Thêm danh mục
-app.post('/api/categories', async (req, res) => {
-  const { type, name } = req.body;
-  const id = Date.now().toString() + Math.floor(Math.random() * 1000);
-  try {
-    const result = await pool.query(
-      'INSERT INTO categories (id, type, name) VALUES ($1, $2, $3) RETURNING *',
-      [id, type, name]
-    );
-    await addLog('Thêm', 'Danh mục', \`Đã thêm danh mục mới: \${name}\`);
-    res.status(201).json(result.rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Sửa danh mục
-app.put('/api/categories/:id', async (req, res) => {
-  const { id } = req.params;
-  const { name } = req.body;
-  try {
-    const result = await pool.query(
-      'UPDATE categories SET name = $1 WHERE id = $2 RETURNING *',
-      [name, id]
-    );
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Không tìm thấy' });
-    await addLog('Sửa', 'Danh mục', \`Đã đổi tên danh mục thành: \${name}\`);
-    res.json(result.rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Xóa danh mục
-app.delete('/api/categories/:id', async (req, res) => {
-  const { id } = req.params;
-  try {
-    const result = await pool.query('DELETE FROM categories WHERE id = $1 RETURNING *', [id]);
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Không tìm thấy' });
-    await addLog('Xóa', 'Danh mục', \`Đã xóa danh mục: \${result.rows[0].name}\`);
-    res.json(result.rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ==========================================
-// 6. Phục vụ Giao diện tĩnh (Production on Vibe Host)
+// 5. Phục vụ Giao diện tĩnh (Production on Vibe Host)
 // ==========================================
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
