@@ -95,11 +95,44 @@ export async function initializeDatabase() {
         is_bought BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     );
-    CREATE INDEX IF NOT EXISTS idx_grocery_is_bought ON grocery_items (is_bought);
+    -- 4. Bảng categories
+    CREATE TABLE IF NOT EXISTS categories (
+        id VARCHAR(50) PRIMARY KEY,
+        type VARCHAR(20) NOT NULL CHECK (type IN ('income', 'expense', 'grocery')),
+        name VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT uq_type_name UNIQUE (type, name)
+    );
+    CREATE INDEX IF NOT EXISTS idx_categories_type ON categories (type);
+
+    -- 5. Bảng system_logs
+    CREATE TABLE IF NOT EXISTS system_logs (
+        id VARCHAR(50) PRIMARY KEY,
+        action VARCHAR(50) NOT NULL,
+        target_type VARCHAR(50) NOT NULL,
+        description TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_system_logs_date ON system_logs (created_at DESC);
   `;
 
   try {
     await pool.query(initSql);
+    
+    // Seed default categories if empty
+    const checkCat = await pool.query('SELECT count(*) FROM categories');
+    if (parseInt(checkCat.rows[0].count) === 0) {
+      const defaultCategories = [
+        ['income', 'Lương'], ['income', 'Thưởng'], ['income', 'Khác'],
+        ['expense', 'Ăn uống'], ['expense', 'Đi chợ'], ['expense', 'Tiền nhà'], ['expense', 'Hóa đơn'], ['expense', 'Mua sắm'],
+        ['grocery', 'Rau củ'], ['grocery', 'Thịt cá'], ['grocery', 'Gia vị'], ['grocery', 'Trứng sữa'], ['grocery', 'Đồ khô']
+      ];
+      for (const [type, name] of defaultCategories) {
+        const id = Date.now().toString() + Math.floor(Math.random()*1000);
+        await pool.query('INSERT INTO categories (id, type, name) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING', [id, type, name]);
+      }
+    }
+    
     console.log('✅ Đã xác minh & khởi tạo cấu trúc các bảng PostgreSQL hoàn tất!');
   } catch (err) {
     console.error('❌ Lỗi khi khởi tạo bảng trong PostgreSQL:', err.message);

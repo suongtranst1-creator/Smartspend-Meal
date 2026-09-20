@@ -25,7 +25,12 @@ import {
   AlertCircle,
   X,
   Pencil,
-  Database
+  Database,
+  Settings,
+  Download,
+  Moon,
+  Sun,
+  Monitor
 } from 'lucide-react';
 
 // Currency Formatter
@@ -165,6 +170,55 @@ export default function App() {
   // Database Connection Status
   const [dbStatus, setDbStatus] = useState({ checked: false, connected: false, database: null, error: null });
 
+  // Settings State
+  const [themeMode, setThemeMode] = useState(localStorage.getItem('theme') || 'system');
+  const [categories, setCategories] = useState([]);
+  const [systemLogs, setSystemLogs] = useState([]);
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatType, setNewCatType] = useState('expense');
+
+  // Change Theme function
+  const handleThemeChange = (mode) => {
+    setThemeMode(mode);
+    if (mode === 'system') {
+      localStorage.removeItem('theme');
+      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    } else {
+      localStorage.setItem('theme', mode);
+      if (mode === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+  };
+
+  // Export CSV function
+  const exportTransactionsToCSV = () => {
+    if (transactions.length === 0) {
+      alert('Không có giao dịch nào để xuất!');
+      return;
+    }
+    const headers = ['ID,Loại,Tiêu đề,Số tiền,Danh mục,Ngày tạo'];
+    const rows = transactions.map(t => 
+      \`\${t.id},\${t.type === 'income' ? 'Thu' : 'Chi'},\${t.title},\${t.amount},\${t.category},\${t.date}\`
+    );
+    const csvContent = "\\uFEFF" + headers.concat(rows).join('\\n'); // BOM for UTF-8
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'lich_su_giao_dich.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+
   // Initial load from PostgreSQL Backend API
   useEffect(() => {
     async function loadData() {
@@ -210,6 +264,28 @@ export default function App() {
               if (grocRes.ok) {
                 const grocData = await grocRes.json();
                 if (Array.isArray(grocData)) setShoppingList(grocData);
+              }
+            } catch (e) {
+              console.error(e);
+            }
+
+            // Load Categories
+            try {
+              const catRes = await fetch('/api/categories');
+              if (catRes.ok) {
+                const catData = await catRes.json();
+                if (Array.isArray(catData)) setCategories(catData);
+              }
+            } catch (e) {
+              console.error(e);
+            }
+
+            // Load Logs
+            try {
+              const logRes = await fetch('/api/logs');
+              if (logRes.ok) {
+                const logData = await logRes.json();
+                if (Array.isArray(logData)) setSystemLogs(logData);
               }
             } catch (e) {
               console.error(e);
@@ -833,6 +909,17 @@ export default function App() {
                   {shoppingList.length}
                 </span>
               )}
+            </button>
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                activeTab === 'settings'
+                  ? 'bg-white text-emerald-700 shadow-xs'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/50'
+              }`}
+            >
+              <Settings className="w-4 h-4" />
+              <span>Cài Đặt</span>
             </button>
           </nav>
         </div>
@@ -1483,6 +1570,211 @@ export default function App() {
             </div>
           </div>
         )}
+        {/* ========================================================================= */}
+        {/* TAB 4: CÀI ĐẶT (SETTINGS)                                                 */}
+        {/* ========================================================================= */}
+        {activeTab === 'settings' && (
+          <div className="space-y-6 pb-24">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <Settings className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+              Cài Đặt Hệ Thống
+            </h2>
+
+            {/* Giao diện */}
+            <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs">
+              <h3 className="font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
+                <Monitor className="w-5 h-5 text-gray-500 dark:text-gray-400" /> Giao diện
+              </h3>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={() => handleThemeChange('light')}
+                  className={`px-4 py-2 rounded-xl text-sm font-semibold border flex items-center gap-2 transition-colors ${
+                    themeMode === 'light' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <Sun className="w-4 h-4" /> Sáng
+                </button>
+                <button
+                  onClick={() => handleThemeChange('dark')}
+                  className={`px-4 py-2 rounded-xl text-sm font-semibold border flex items-center gap-2 transition-colors ${
+                    themeMode === 'dark' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <Moon className="w-4 h-4" /> Tối
+                </button>
+                <button
+                  onClick={() => handleThemeChange('system')}
+                  className={`px-4 py-2 rounded-xl text-sm font-semibold border flex items-center gap-2 transition-colors ${
+                    themeMode === 'system' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <Monitor className="w-4 h-4" /> Tự động (Hệ thống)
+                </button>
+              </div>
+            </div>
+
+            {/* Xuất Dữ Liệu */}
+            <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs">
+              <h3 className="font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
+                <Download className="w-5 h-5 text-gray-500 dark:text-gray-400" /> Dữ liệu
+              </h3>
+              <button
+                onClick={exportTransactionsToCSV}
+                className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm flex items-center gap-2 transition-all"
+              >
+                <Download className="w-4 h-4" /> Xuất Lịch sử Giao dịch (CSV)
+              </button>
+            </div>
+
+            {/* Quản lý Danh mục */}
+            <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs">
+              <h3 className="font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
+                <Database className="w-5 h-5 text-gray-500 dark:text-gray-400" /> Quản lý Danh mục
+              </h3>
+              
+              <div className="flex gap-2 mb-4">
+                <select 
+                  value={newCatType}
+                  onChange={e => setNewCatType(e.target.value)}
+                  className="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                >
+                  <option value="expense">Chi tiêu</option>
+                  <option value="income">Thu nhập</option>
+                  <option value="grocery">Đi chợ</option>
+                </select>
+                <input 
+                  type="text"
+                  placeholder="Tên danh mục mới..."
+                  value={newCatName}
+                  onChange={e => setNewCatName(e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                />
+                <button 
+                  onClick={async () => {
+                    if (!newCatName.trim()) return;
+                    try {
+                      const res = await fetch('/api/categories', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ type: newCatType, name: newCatName.trim() })
+                      });
+                      if (res.ok) {
+                        const newCat = await res.json();
+                        setCategories([...categories, newCat]);
+                        setNewCatName('');
+                        showToast('Thêm danh mục thành công');
+                      }
+                    } catch (e) {
+                      console.error(e);
+                    }
+                  }}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg text-sm transition-all"
+                >
+                  Thêm
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {['expense', 'income', 'grocery'].map((typeLabel) => (
+                  <div key={typeLabel} className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
+                    <h4 className="text-xs font-bold uppercase text-gray-500 mb-3 flex items-center justify-between">
+                      {typeLabel === 'expense' ? 'Danh mục Chi' : typeLabel === 'income' ? 'Danh mục Thu' : 'Danh mục Đi chợ'}
+                      <span className="bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded-full text-[10px]">
+                        {categories.filter(c => c.type === typeLabel).length}
+                      </span>
+                    </h4>
+                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+                      {categories.filter(c => c.type === typeLabel).map(cat => (
+                        <div key={cat.id} className="flex items-center justify-between bg-white dark:bg-gray-800 px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-600 shadow-xs">
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate mr-2">{cat.name}</span>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button 
+                              onClick={async () => {
+                                const newName = prompt('Nhập tên danh mục mới:', cat.name);
+                                if (!newName || newName.trim() === cat.name) return;
+                                try {
+                                  const res = await fetch(`/api/categories/${cat.id}`, {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ name: newName.trim() })
+                                  });
+                                  if (res.ok) {
+                                    const updated = await res.json();
+                                    setCategories(categories.map(c => c.id === cat.id ? updated : c));
+                                    showToast('Sửa danh mục thành công');
+                                  }
+                                } catch (e) { console.error(e); }
+                              }}
+                              className="text-gray-400 hover:text-emerald-600 p-1 rounded transition-colors"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button 
+                              onClick={async () => {
+                                if (!confirm(`Bạn có chắc muốn xóa danh mục "${cat.name}"?`)) return;
+                                try {
+                                  const res = await fetch(`/api/categories/${cat.id}`, { method: 'DELETE' });
+                                  if (res.ok) {
+                                    setCategories(categories.filter(c => c.id !== cat.id));
+                                    showToast('Xóa danh mục thành công');
+                                  }
+                                } catch (e) { console.error(e); }
+                              }}
+                              className="text-gray-400 hover:text-red-500 p-1 rounded transition-colors"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Quản lý Log hệ thống */}
+            <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs">
+              <h3 className="font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
+                <Database className="w-5 h-5 text-gray-500 dark:text-gray-400" /> Nhật ký hoạt động (System Logs)
+              </h3>
+              <div className="overflow-x-auto rounded-xl border border-gray-100 dark:border-gray-700">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider">
+                      <th className="p-3 font-semibold">Thời gian</th>
+                      <th className="p-3 font-semibold">Thao tác</th>
+                      <th className="p-3 font-semibold">Loại</th>
+                      <th className="p-3 font-semibold">Chi tiết</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-700 text-sm">
+                    {systemLogs.length === 0 ? (
+                      <tr>
+                        <td colSpan="4" className="p-4 text-center text-gray-500 dark:text-gray-400">Chưa có nhật ký nào.</td>
+                      </tr>
+                    ) : (
+                      systemLogs.map((log) => (
+                        <tr key={log.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-colors text-gray-700 dark:text-gray-300">
+                          <td className="p-3 whitespace-nowrap">
+                            {new Date(log.created_at).toLocaleString('vi-VN')}
+                          </td>
+                          <td className="p-3">
+                            <span className="bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded-md text-xs font-semibold">
+                              {log.action}
+                            </span>
+                          </td>
+                          <td className="p-3 font-medium">{log.target_type}</td>
+                          <td className="p-3 text-gray-600 dark:text-gray-400 max-w-[200px] sm:max-w-none truncate">{log.description}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
 
       {/* ========================================================================= */}
@@ -1847,6 +2139,8 @@ export default function App() {
         </div>
       )}
 
+
+
       {/* ========================================================================= */}
       {/* MOBILE BOTTOM NAVIGATION BAR                                              */}
       {/* ========================================================================= */}
@@ -1884,6 +2178,15 @@ export default function App() {
             )}
           </div>
           <span>Đi Chợ</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('settings')}
+          className={\`flex flex-col items-center py-1 gap-1 text-xs font-semibold transition-colors \${
+            activeTab === 'settings' ? 'text-emerald-600' : 'text-gray-400 hover:text-gray-600'
+          }\`}
+        >
+          <Settings className="w-5 h-5" />
+          <span>Cài Đặt</span>
         </button>
       </nav>
     </div>
