@@ -43,8 +43,8 @@
   - Bổ sung các Visual Indicator (chấm xanh) để dễ dàng nhận biết ngày nào đã có kế hoạch thực đơn.
   - **Khóa dữ liệu quá khứ**: Dữ liệu thực đơn của các ngày đã qua được bảo vệ an toàn (chỉ xem, không cho chỉnh sửa hoặc xóa).
   - Giao diện thêm bữa ăn hoàn toàn tự do (không giới hạn cố định Sáng/Trưa/Tối), cho phép tự đặt tên bữa ăn (VD: Bữa Sáng, Bữa Xế, Bữa Khuya...).
-  - **Theo dõi nguyên liệu đã mua**: Quản lý trực tiếp trạng thái "Đã mua" (Tick chọn) trên từng nguyên liệu của thực đơn.
-  - Nút **"Thêm món chưa mua vào giỏ"**: Tối ưu hóa việc đi chợ, hệ thống tự động lọc các nguyên liệu chưa mua và chuyển vào checklist, bỏ qua các nguyên liệu đã mua hoặc các ngày đã qua hạn.
+  - **Theo dõi nguyên liệu đã mua**: Quản lý trực tiếp trạng thái "Đã mua" (Tick chọn) trên từng nguyên liệu của thực đơn. Đồng bộ 2 chiều: Đánh dấu ở giỏ hàng sẽ tự động đánh dấu ở thực đơn.
+  - Nút **"Thêm món chưa mua vào giỏ"**: Tối ưu hóa việc đi chợ với cơ chế Deduplication. Hệ thống tự động lọc và chỉ thêm các nguyên liệu còn thiếu vào giỏ đi chợ, báo số lượng thêm thành công và bỏ qua những món đã có sẵn trong giỏ hoặc đã được mua.
 * **Checklist Đi Chợ Thông Minh**:
   - Ô nhập nhanh nguyên liệu, số lượng (VD: 500g, 2 bó...) và phân loại nhóm hàng (Rau củ, Thịt cá, Gia vị, Trứng sữa, Đồ khô).
   - Checkbox tương tác mượt mà: Tick chọn đổi màu xanh ngọc và tự động gạch ngang chữ (`line-through`).

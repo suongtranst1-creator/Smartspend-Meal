@@ -647,10 +647,23 @@ export default function App() {
   const handleAddMealIngredientsToCart = async (mealTitle, ingredients) => {
     if (!ingredients || ingredients.length === 0) return;
     
-    // Tự động bỏ qua nguyên liệu đã mua
-    const pendingIngredients = ingredients.filter(i => !i.isBought);
+    // Lấy danh sách tên món đã có trong giỏ (không phân biệt hoa thường)
+    const existingInCartNames = shoppingList.map(i => i.name.toLowerCase().trim());
+    
+    // Lọc ra các món: chưa mua VÀ chưa có trong giỏ
+    const pendingIngredients = ingredients.filter(ing => {
+      if (ing.isBought) return false;
+      if (existingInCartNames.includes(ing.name.toLowerCase().trim())) return false;
+      return true;
+    });
+
     if (pendingIngredients.length === 0) {
-      showToast(`Tất cả nguyên liệu của [${mealTitle}] đã được mua!`);
+      const allBought = ingredients.every(i => i.isBought);
+      if (allBought) {
+        showToast(`Tất cả nguyên liệu của [${mealTitle}] đã được mua!`);
+      } else {
+        showToast("Tất cả món ăn đã có trong giỏ đi chợ");
+      }
       return;
     }
 
@@ -663,7 +676,7 @@ export default function App() {
     }));
     
     setShoppingList((prev) => [...prev, ...newItems]);
-    showToast(`Đã đưa nguyên liệu [${mealTitle}] vào mục Đi Chợ!`);
+    showToast(`Đã thêm ${newItems.length} món mới vào giỏ đi chợ!`);
 
     try {
       await fetch('/api/groceries/batch', {
