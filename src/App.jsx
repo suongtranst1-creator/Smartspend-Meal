@@ -505,9 +505,14 @@ export default function App() {
   // Shopping Item Handlers
   // ==========================================
   const handleToggleCheck = async (id) => {
+    const itemToToggle = shoppingList.find((i) => i.id === id);
+    if (!itemToToggle) return;
+    
+    const newCheckedStatus = !itemToToggle.checked;
+
     setShoppingList(
       shoppingList.map((item) =>
-        item.id === id ? { ...item, checked: !item.checked } : item
+        item.id === id ? { ...item, checked: newCheckedStatus } : item
       )
     );
 
@@ -515,6 +520,47 @@ export default function App() {
       await fetch(`/api/groceries/${id}/toggle`, { method: 'PATCH' });
     } catch (err) {
       console.warn('API sync:', err);
+    }
+
+    // --- Sync with Meal Planner ---
+    let mealDataUpdated = false;
+    const newMealData = { ...mealData };
+    
+    Object.keys(newMealData).forEach(plan_date => {
+      let dayMealsUpdated = false;
+      const updatedDayMeals = newMealData[plan_date].map(meal => {
+        let mealUpdated = false;
+        const newIngredients = meal.ingredients?.map(ing => {
+          if (ing.name === itemToToggle.name && !!ing.isBought !== newCheckedStatus) {
+            mealUpdated = true;
+            return { ...ing, isBought: newCheckedStatus };
+          }
+          return ing;
+        });
+
+        if (mealUpdated) {
+          dayMealsUpdated = true;
+          const updatedMeal = { ...meal, ingredients: newIngredients };
+          // Background sync to DB
+          fetch('/api/meals', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ plan_date, ...updatedMeal }),
+          }).catch(e => console.warn('Sync meal error:', e));
+          
+          return updatedMeal;
+        }
+        return meal;
+      });
+
+      if (dayMealsUpdated) {
+        mealDataUpdated = true;
+        newMealData[plan_date] = updatedDayMeals;
+      }
+    });
+
+    if (mealDataUpdated) {
+      setMealData(newMealData);
     }
   };
 
