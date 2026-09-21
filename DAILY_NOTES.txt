@@ -2,48 +2,94 @@
 🌿 SMARTSPEND & MEAL - NHẬT KÝ CÔNG VIỆC HÀNG NGÀY (DAILY NOTES)
 ================================================================================
 
-Mục đích: Ghi chép lại các công việc, tính năng đã làm, lỗi đã sửa và kế hoạch tiếp theo mỗi ngày.
+Mục đích: Theo dõi tiến độ, ghi chép lại các tính năng đã phát triển, lỗi kỹ thuật đã giải quyết và kế hoạch tiếp theo theo từng ngày.
 
---------------------------------------------------------------------------------
-📅 NGÀY: 21/09/2026 (Thứ Hai)
---------------------------------------------------------------------------------
+================================================================================
+📅 NGÀY: 18/09/2026 (Thứ Sáu) - KHỞI TẠO DỰ ÁN & THIẾT KẾ NỀN TẢNG
+================================================================================
+[x] 1. Khởi tạo dự án Web App:
+    - Thiết lập cấu trúc dự án với React 19, Tailwind CSS và Vite.
+    - Cài đặt bộ biểu tượng Lucide React và typography Plus Jakarta Sans.
+[x] 2. Thiết kế giao diện cốt lõi (UI/UX):
+    - Tone màu chủ đạo: Emerald (Xanh ngọc) kết hợp nền xám dịu (`bg-gray-50`).
+    - Xây dựng 3 phân hệ màn hình ban đầu:
+      + Tab 1: Sổ Thu Chi (3 thẻ thống kê tài chính: Tổng Thu, Tổng Chi, Số Dư).
+      + Tab 2: Thực Đơn Tuần (Khung lịch 7 ngày từ Thứ Hai đến Chủ Nhật).
+      + Tab 3: Danh Sách Đi Chợ (Checklist thực phẩm và ô nhập hóa đơn).
+[x] 3. Thiết kế CSDL ban đầu:
+    - Soạn thảo tệp `schema.sql` với các bảng: `transactions`, `meal_plans`, `grocery_items`.
+
+================================================================================
+📅 NGÀY: 19/09/2026 (Thứ Bảy) - TÍCH HỢP BACKEND POSTGRESQL & CLOUD DEPLOY
+================================================================================
+[x] 1. Xây dựng máy chủ Backend RESTful API:
+    - Khởi tạo Express Server tại thư mục `server/`.
+    - Kết nối cơ sở dữ liệu PostgreSQL sử dụng thư viện `pg` (Pool).
+    - Tạo các API CRUD cho Giao dịch, Thực đơn và Danh sách đi chợ.
+[x] 2. Cơ chế tự động khởi tạo CSDL (Auto-migration):
+    - Viết hàm `initializeDatabase()` trong `server/db.js` tự động xác minh kết nối và tạo bảng khi server khởi chạy.
+    - Bổ sung thanh chỉ báo trạng thái kết nối CSDL (DB Health Indicator) trên Header.
+[x] 3. Xử lý lỗi môi trường & Tối ưu build:
+    - Khắc phục lỗi build container Linux Docker (hạ cấp Vite về v6 ổn định).
+    - Bảo mật thông tin nhạy cảm: Chuyển toàn bộ mật khẩu kết nối CSDL sang file `.env`, bổ sung `.env.example` và đưa `.env` vào `.gitignore`.
+[x] 4. Hỗ trợ triển khai Vibe Host:
+    - Cấu hình server Express tự phục vụ các tệp tĩnh từ thư mục `dist/` khi chạy trên production.
+
+================================================================================
+📅 NGÀY: 20/09/2026 (Chủ Nhật) - NÂNG CẤP THỰC ĐƠN, ĐỒNG BỘ 1-CLICK & CÀI ĐẶT
+================================================================================
+[x] 1. Nâng cấp bộ lập lịch Thực Đơn Tuần:
+    - Bổ sung tính năng chuyển tuần (Tuần trước, Tuần này, Tuần sau) và nút "Nay".
+    - Thêm chấm xanh chỉ báo ngày đã có món ăn.
+    - Khóa an toàn cho các ngày đã qua (chế độ chỉ xem, ngăn sửa nhầm thực đơn cũ).
+    - Cho phép tự do đặt tên bữa ăn (Bữa Sáng, Bữa Trưa, Bữa Tối, Bữa Xế...), lưu lượng calo, món chính, món phụ và mảng nguyên liệu.
+[x] 2. Đồng bộ 2 chiều Thực Đơn & Đi Chợ:
+    - Quản lý trạng thái "Đã mua" trực tiếp trên thẻ thực đơn, liên thông với giỏ đi chợ.
+    - Bổ sung cơ chế chống trùng lặp (Deduplication): Nút "Thêm món chưa mua vào giỏ" chỉ thêm các nguyên liệu còn thiếu.
+[x] 3. Xây dựng Tab Cài Đặt (Settings):
+    - Tùy biến Giao diện: Chuyển đổi linh hoạt chế độ Sáng (Light), Tối (Dark) và Tự động (System).
+    - Quản lý Danh mục (Categories): Cho phép Thêm, Xóa danh mục thu chi.
+    - Xuất dữ liệu CSV: Xuất toàn bộ lịch sử giao dịch ra file CSV chuẩn UTF-8 (hỗ trợ tiếng Việt cho Excel).
+    - Nhật ký hệ thống (Audit Logs): Ghi lại các thao tác Thêm, Sửa, Xóa dữ liệu quan trọng.
+
+================================================================================
+📅 NGÀY: 21/09/2026 (Thứ Hai) - TỰ ĐỘNG BỎ QUA MÓN QUÁ HẠN & HOÀN THIỆN HỆ THỐNG
+================================================================================
 [x] 1. Tự động bỏ qua món đi chợ quá hạn chưa mua:
-    - Bổ sung logic: Nếu ngày thực đơn đã qua mà nguyên liệu chưa mua (is_bought = false) thì tự động loại bỏ khỏi danh sách đi chợ.
-    - Thêm cột `plan_date` vào bảng `grocery_items` trong CSDL PostgreSQL.
-    - Hiển thị nhãn "Đã bỏ qua" màu vàng cam trên thẻ thực đơn của ngày đã qua.
-    - Giữ lại các món đã mua trong giỏ để đối chiếu và chốt hóa đơn.
-
+    - Xử lý vấn đề thực phẩm cũ tồn đọng: Nếu ngày thực đơn đã qua mà nguyên liệu chưa mua (`is_bought = false`), hệ thống tự động loại bỏ khỏi danh sách đi chợ.
+    - Bổ sung cột `plan_date` vào bảng `grocery_items` trong CSDL PostgreSQL.
+    - Trên thẻ thực đơn quá khứ, các nguyên liệu chưa mua được gắn nhãn "Đã bỏ qua" màu vàng cam trực quan.
+    - Giữ lại các món đã mua trong giỏ hàng để người dùng đối chiếu và chốt hóa đơn.
 [x] 2. Tinh gọn danh sách đi chợ:
-    - Lược bỏ trường phân loại/hạng mục (Rau củ, Thịt cá, Gia vị...) ở form thêm nhanh nguyên liệu và modal chỉnh sửa.
-    - Chỉ giữ lại: Tên món + Số lượng + Nhãn ngày thực đơn để thao tác nhanh hơn.
-    - Cập nhật mục Cài đặt chỉ quản lý danh mục Thu & Chi.
-
+    - Bỏ trường phân loại/hạng mục (Rau củ, Thịt cá, Gia vị...) ở form thêm nhanh, modal chỉnh sửa và danh sách, thao tác thêm món nhanh và tinh giản hơn.
+    - Mục Cài đặt danh mục được đồng bộ chỉ quản lý danh mục cho Khoản Thu và Khoản Chi.
 [x] 3. Sửa lỗi nhật ký hệ thống (system_logs):
-    - Tái cấu trúc bảng `system_logs` với các cột chuẩn: id (SERIAL), action, entity_type, entity_name, created_at.
-    - Khắc phục triệt để lỗi: column "entity_type" of relation "system_logs" does not exist.
-
+    - Tái cấu trúc bảng `system_logs` với các cột chuẩn: `id SERIAL PRIMARY KEY`, `action`, `entity_type`, `entity_name`, `created_at`.
+    - Khắc phục triệt để lỗi: `column "entity_type" of relation "system_logs" does not exist`.
 [x] 4. Cải tiến giao diện Header chống nhảy dòng:
-    - Bổ sung `whitespace-nowrap` và `shrink-0` cho Logo, thanh trạng thái CSDL và các nút điều hướng.
+    - Bổ sung `whitespace-nowrap` và `shrink-0` cho Logo, thanh chỉ báo CSDL và toàn bộ các nút điều hướng.
     - Nâng container lên `max-w-6xl` giúp giao diện thông thoáng, không còn bị ngắt dòng chữ trên mọi kích thước màn hình.
-
 [x] 5. Tài liệu & Đồng bộ mã nguồn:
     - Cập nhật toàn bộ các tính năng mới vào README.md.
-    - Commit và push toàn bộ mã nguồn lên nhánh main của GitHub.
+    - Khởi tạo và ghi nhận nhật ký phát triển đầy đủ từ ngày 18/09 đến 21/09 vào DAILY_NOTES.txt.
+    - Đồng bộ tất cả các commit lên nhánh main của repository GitHub.
 
 * Kế hoạch tiếp theo (To-do):
     - [ ] Kiểm thử toàn diện các luồng nghiệp vụ trên môi trường thật.
     - [ ] Chuẩn bị bài thuyết trình / tài liệu nộp đề tài bảng Văn phòng.
 
---------------------------------------------------------------------------------
+================================================================================
 📅 MẪU GHI CHÉP CHO CÁC NGÀY TIẾP THEO (Copy & Paste):
---------------------------------------------------------------------------------
+================================================================================
 /*
+================================================================================
 📅 NGÀY: DD/MM/YYYY (Thứ ...)
---------------------------------------------------------------------------------
-[ ] Công việc 1: ...
-[ ] Công việc 2: ...
-[ ] Lỗi phát sinh & cách sửa: ...
-* Ghi chú / Kế hoạch ngày mai:
-    - ...
+================================================================================
+[x] 1. Tính năng / Công việc: ...
+    - Chi tiết: ...
+[x] 2. Sửa lỗi kỹ thuật (Fix bug): ...
+    - Chi tiết: ...
+* Kế hoạch tiếp theo (To-do):
+    - [ ] ...
 */
 ================================================================================
