@@ -217,16 +217,26 @@ export default function App() {
   // Handle Theme Change
   useEffect(() => {
     const root = window.document.documentElement;
-    root.classList.remove('dark', 'light');
+
+    const applyTheme = () => {
+      root.classList.remove('dark', 'light');
+      if (theme === 'system') {
+        const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        root.classList.add(isDark ? 'dark' : 'light');
+      } else {
+        root.classList.add(theme);
+      }
+    };
+
+    applyTheme();
+    localStorage.setItem('theme', theme);
 
     if (theme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-      root.classList.add(systemTheme);
-    } else {
-      root.classList.add(theme);
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const listener = () => applyTheme();
+      mediaQuery.addEventListener('change', listener);
+      return () => mediaQuery.removeEventListener('change', listener);
     }
-    
-    localStorage.setItem('theme', theme);
   }, [theme]);
 
   // Initial load from PostgreSQL Backend API
@@ -939,39 +949,39 @@ export default function App() {
   }, [activeShoppingList]);
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-800 pb-20 md:pb-10">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 pb-20 md:pb-10 transition-colors duration-200">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-emerald-700 text-white px-5 py-3 rounded-full shadow-lg flex items-center gap-2 text-sm font-medium animate-bounce">
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-emerald-700 dark:bg-emerald-600 text-white px-5 py-3 rounded-full shadow-lg flex items-center gap-2 text-sm font-medium animate-bounce">
           <Sparkles className="w-4 h-4 text-emerald-200" />
           <span>{toastMessage}</span>
         </div>
       )}
 
       {/* Navigation Header */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-xs">
+      <header className="sticky top-0 z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 shadow-xs transition-colors duration-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3 sm:gap-4">
           <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
             <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-600/20 shrink-0">
               <Sparkles className="w-5 h-5" />
             </div>
             <div className="shrink-0">
-              <h1 className="font-bold text-base sm:text-lg leading-none text-gray-900 tracking-tight flex items-center gap-1.5 whitespace-nowrap">
-                SmartSpend <span className="text-emerald-600">&</span> Meal
+              <h1 className="font-bold text-base sm:text-lg leading-none text-gray-900 dark:text-white tracking-tight flex items-center gap-1.5 whitespace-nowrap">
+                SmartSpend <span className="text-emerald-600 dark:text-emerald-400">&</span> Meal
               </h1>
-              <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5 font-normal whitespace-nowrap">
+              <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-normal whitespace-nowrap">
                 Sổ Thu Chi & Thực Đơn Đi Chợ Tuần
               </p>
             </div>
           </div>
 
-          {/* Database Connection Indicator & Navigation */}
+          {/* Database Connection Indicator, Quick Dark Mode Toggle & Navigation */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <div
               className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-semibold border transition-all whitespace-nowrap ${
                 dbStatus.connected
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                  : 'bg-amber-50 text-amber-800 border-amber-200'
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                  : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800'
               }`}
               title={
                 dbStatus.connected
@@ -990,14 +1000,27 @@ export default function App() {
               </span>
             </div>
 
+            {/* Quick Dark Mode Toggle Button */}
+            <button
+              onClick={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
+              className="p-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shadow-2xs shrink-0 cursor-pointer"
+              title={theme === 'dark' ? "Chuyển sang chế độ Sáng" : "Chuyển sang chế độ Tối"}
+            >
+              {theme === 'dark' ? (
+                <Sun className="w-4 h-4 text-amber-400" />
+              ) : (
+                <Moon className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+              )}
+            </button>
+
             {/* Desktop Navigation Tabs */}
-            <nav className="hidden md:flex items-center gap-0.5 lg:gap-1 bg-gray-100/90 p-1 rounded-xl border border-gray-200/60 shrink-0">
+            <nav className="hidden md:flex items-center gap-0.5 lg:gap-1 bg-gray-100/90 dark:bg-gray-800/90 p-1 rounded-xl border border-gray-200/60 dark:border-gray-700/60 shrink-0">
               <button
                 onClick={() => setActiveTab('spend')}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 lg:px-3.5 lg:py-2 rounded-lg text-xs lg:text-sm font-semibold whitespace-nowrap transition-all ${
                   activeTab === 'spend'
-                    ? 'bg-white text-emerald-700 shadow-xs'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/50'
+                    ? 'bg-white dark:bg-gray-700 text-emerald-700 dark:text-emerald-300 shadow-xs'
+                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
                 }`}
               >
                 <Wallet className="w-4 h-4 shrink-0" />
@@ -1007,8 +1030,8 @@ export default function App() {
                 onClick={() => setActiveTab('meal')}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 lg:px-3.5 lg:py-2 rounded-lg text-xs lg:text-sm font-semibold whitespace-nowrap transition-all ${
                   activeTab === 'meal'
-                    ? 'bg-white text-emerald-700 shadow-xs'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/50'
+                    ? 'bg-white dark:bg-gray-700 text-emerald-700 dark:text-emerald-300 shadow-xs'
+                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
                 }`}
               >
                 <Utensils className="w-4 h-4 shrink-0" />
@@ -1018,8 +1041,8 @@ export default function App() {
                 onClick={() => setActiveTab('shop')}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 lg:px-3.5 lg:py-2 rounded-lg text-xs lg:text-sm font-semibold whitespace-nowrap transition-all relative ${
                   activeTab === 'shop'
-                    ? 'bg-white text-emerald-700 shadow-xs'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/50'
+                    ? 'bg-white dark:bg-gray-700 text-emerald-700 dark:text-emerald-300 shadow-xs'
+                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
                 }`}
               >
                 <ShoppingCart className="w-4 h-4 shrink-0" />
@@ -1034,8 +1057,8 @@ export default function App() {
                 onClick={() => setActiveTab('settings')}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 lg:px-3.5 lg:py-2 rounded-lg text-xs lg:text-sm font-semibold whitespace-nowrap transition-all ${
                   activeTab === 'settings'
-                    ? 'bg-white text-emerald-700 shadow-xs'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/50'
+                    ? 'bg-white dark:bg-gray-700 text-emerald-700 dark:text-emerald-300 shadow-xs'
+                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
                 }`}
               >
                 <Settings className="w-4 h-4 shrink-0" />
@@ -1056,45 +1079,45 @@ export default function App() {
             {/* 3 Summary Statistics Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
               {/* Card 1: Tổng Thu */}
-              <div className="bg-white p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-gray-100 shadow-xs hover:shadow-md transition-shadow relative overflow-hidden">
+              <div className="bg-white dark:bg-gray-800 p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs hover:shadow-md transition-shadow relative overflow-hidden">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <span className="text-[10px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Tổng Thu
                   </span>
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
                     <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
                 </div>
-                <div className="mt-2 sm:mt-3 text-lg sm:text-2xl font-bold text-gray-900 tracking-tight">
+                <div className="mt-2 sm:mt-3 text-lg sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
                   {formatVND(totalIncome)}
                 </div>
-                <p className="text-[10px] sm:text-xs text-emerald-600 font-medium mt-1 truncate">
+                <p className="text-[10px] sm:text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1 truncate">
                   Đã cộng dồn thu nhập
                 </p>
-                <div className="absolute -right-4 -bottom-4 w-16 h-16 sm:w-20 sm:h-20 bg-emerald-50/50 rounded-full pointer-events-none" />
+                <div className="absolute -right-4 -bottom-4 w-16 h-16 sm:w-20 sm:h-20 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-full pointer-events-none" />
               </div>
 
               {/* Card 2: Tổng Chi Tiêu */}
-              <div className="bg-white p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-gray-100 shadow-xs hover:shadow-md transition-shadow relative overflow-hidden">
+              <div className="bg-white dark:bg-gray-800 p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs hover:shadow-md transition-shadow relative overflow-hidden">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <span className="text-[10px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Tổng Chi
                   </span>
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-500 dark:text-rose-400 flex items-center justify-center">
                     <TrendingDown className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
                 </div>
-                <div className="mt-2 sm:mt-3 text-lg sm:text-2xl font-bold text-gray-900 tracking-tight">
+                <div className="mt-2 sm:mt-3 text-lg sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
                   {formatVND(totalExpense)}
                 </div>
-                <p className="text-[10px] sm:text-xs text-rose-500 font-medium mt-1 truncate">
+                <p className="text-[10px] sm:text-xs text-rose-500 dark:text-rose-400 font-medium mt-1 truncate">
                   Sinh hoạt & đi chợ
                 </p>
-                <div className="absolute -right-4 -bottom-4 w-16 h-16 sm:w-20 sm:h-20 bg-rose-50/40 rounded-full pointer-events-none" />
+                <div className="absolute -right-4 -bottom-4 w-16 h-16 sm:w-20 sm:h-20 bg-rose-50/40 dark:bg-rose-900/10 rounded-full pointer-events-none" />
               </div>
 
               {/* Card 3: Số Dư Hiện Tại */}
-              <div className="col-span-2 sm:col-span-1 bg-emerald-800 text-white p-4 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+              <div className="col-span-2 sm:col-span-1 bg-emerald-800 dark:bg-emerald-900 text-white p-4 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden border border-emerald-700 dark:border-emerald-800">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] sm:text-xs font-semibold text-emerald-200 uppercase tracking-wider">
                     Số Dư Hiện Tại
@@ -1120,8 +1143,8 @@ export default function App() {
                   onClick={() => setFilterType('all')}
                   className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
                     filterType === 'all'
-                      ? 'bg-emerald-700 text-white shadow-xs'
-                      : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                      ? 'bg-emerald-700 dark:bg-emerald-600 text-white shadow-xs'
+                      : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
                 >
                   Tất cả ({filteredTransactions.length})
@@ -1131,7 +1154,7 @@ export default function App() {
                   className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
                     filterType === 'expense'
                       ? 'bg-rose-600 text-white shadow-xs'
-                      : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                      : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
                 >
                   Khoản Chi
@@ -1141,7 +1164,7 @@ export default function App() {
                   className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
                     filterType === 'income'
                       ? 'bg-emerald-600 text-white shadow-xs'
-                      : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                      : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
                 >
                   Khoản Thu
@@ -1149,7 +1172,7 @@ export default function App() {
                 <div className="flex items-center gap-1.5 sm:ml-1">
                   <input
                     type="date"
-                    className="text-xs px-2.5 py-1.5 border border-gray-200 rounded-lg text-gray-600 outline-none focus:border-emerald-500"
+                    className="text-xs px-2.5 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-600 dark:text-gray-200 bg-white dark:bg-gray-800 outline-none focus:border-emerald-500"
                     value={dateRange.start}
                     onChange={(e) => setDateRange((prev) => ({ ...prev, start: e.target.value }))}
                     title="Từ ngày"
@@ -1157,7 +1180,7 @@ export default function App() {
                   <span className="text-gray-400 text-xs">-</span>
                   <input
                     type="date"
-                    className="text-xs px-2.5 py-1.5 border border-gray-200 rounded-lg text-gray-600 outline-none focus:border-emerald-500"
+                    className="text-xs px-2.5 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-600 dark:text-gray-200 bg-white dark:bg-gray-800 outline-none focus:border-emerald-500"
                     value={dateRange.end}
                     onChange={(e) => setDateRange((prev) => ({ ...prev, end: e.target.value }))}
                     title="Đến ngày"
@@ -1165,18 +1188,18 @@ export default function App() {
                 </div>
 
                 {/* Sắp xếp danh sách */}
-                <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-600 shadow-xs">
+                <div className="flex items-center gap-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-gray-600 dark:text-gray-300 shadow-xs">
                   <ArrowUpDown className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
-                    className="text-xs text-gray-700 bg-transparent outline-none cursor-pointer font-medium pr-1"
+                    className="text-xs text-gray-700 dark:text-gray-200 bg-transparent dark:bg-gray-800 outline-none cursor-pointer font-medium pr-1"
                     title="Sắp xếp danh sách giao dịch"
                   >
-                    <option value="date-desc">Mới nhất (Mặc định)</option>
-                    <option value="date-asc">Cũ nhất</option>
-                    <option value="amount-desc">Số tiền: Cao ➔ Thấp</option>
-                    <option value="amount-asc">Số tiền: Thấp ➔ Cao</option>
+                    <option value="date-desc" className="dark:bg-gray-800">Mới nhất (Mặc định)</option>
+                    <option value="date-asc" className="dark:bg-gray-800">Cũ nhất</option>
+                    <option value="amount-desc" className="dark:bg-gray-800">Số tiền: Cao ➔ Thấp</option>
+                    <option value="amount-asc" className="dark:bg-gray-800">Số tiền: Thấp ➔ Cao</option>
                   </select>
                 </div>
 
@@ -1186,11 +1209,11 @@ export default function App() {
                   title="Đặt lại bộ lọc và sắp xếp về bình thường"
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all group ${
                     isFilterOrSortActive
-                      ? 'bg-amber-50 text-amber-700 border border-amber-300 hover:bg-amber-100 shadow-xs cursor-pointer'
-                      : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50 hover:text-gray-700'
+                      ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/40 shadow-xs cursor-pointer'
+                      : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200'
                   }`}
                 >
-                  <RotateCcw className={`w-3.5 h-3.5 transition-transform duration-300 ${isFilterOrSortActive ? 'group-hover:-rotate-90 text-amber-600' : 'group-hover:-rotate-90'}`} />
+                  <RotateCcw className={`w-3.5 h-3.5 transition-transform duration-300 ${isFilterOrSortActive ? 'group-hover:-rotate-90 text-amber-600 dark:text-amber-400' : 'group-hover:-rotate-90'}`} />
                   <span>{isFilterOrSortActive ? 'Đặt lại bộ lọc' : 'Mặc định'}</span>
                 </button>
               </div>
@@ -1205,25 +1228,25 @@ export default function App() {
             </div>
 
             {/* Transaction History List with Edit and Delete */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-xs overflow-hidden">
-              <div className="p-4 sm:p-5 border-b border-gray-100 flex items-center justify-between flex-wrap gap-2">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs overflow-hidden">
+              <div className="p-4 sm:p-5 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-2">
-                  <Receipt className="w-4 h-4 text-emerald-600" />
-                  <h3 className="font-bold text-gray-900 text-base">
+                  <Receipt className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <h3 className="font-bold text-gray-900 dark:text-white text-base">
                     Lịch sử giao dịch gần đây
                   </h3>
                   {isFilterOrSortActive && (
-                    <span className="text-[10px] bg-amber-100 text-amber-800 font-semibold px-2 py-0.5 rounded-full">
+                    <span className="text-[10px] bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 font-semibold px-2 py-0.5 rounded-full">
                       Đang tùy chỉnh
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-2 text-xs text-gray-500">
+                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                   <span>{filteredTransactions.length} giao dịch</span>
                   {isFilterOrSortActive && (
                     <button
                       onClick={handleResetFilters}
-                      className="text-emerald-600 hover:text-emerald-700 hover:underline flex items-center gap-1 font-medium cursor-pointer"
+                      className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:underline flex items-center gap-1 font-medium cursor-pointer"
                       title="Đặt lại về bình thường"
                     >
                       <RotateCcw className="w-3 h-3" />
@@ -1233,23 +1256,23 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-gray-100 dark:divide-gray-700/60">
                 {filteredTransactions.length === 0 ? (
-                  <div className="p-10 text-center text-gray-400 text-sm">
+                  <div className="p-10 text-center text-gray-400 dark:text-gray-500 text-sm">
                     Chưa có giao dịch nào trong danh mục này.
                   </div>
                 ) : (
                   filteredTransactions.slice(0, displayLimit).map((item) => (
                     <div
                       key={item.id}
-                      className="p-4 sm:px-5 flex items-center justify-between hover:bg-gray-50/80 transition-colors group"
+                      className="p-4 sm:px-5 flex items-center justify-between hover:bg-gray-50/80 dark:hover:bg-gray-700/40 transition-colors group"
                     >
                       <div className="flex items-center gap-3.5">
                         <div
                           className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                             item.type === 'income'
-                              ? 'bg-emerald-50 text-emerald-600'
-                              : 'bg-rose-50 text-rose-500'
+                              ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400'
+                              : 'bg-rose-50 dark:bg-rose-950/40 text-rose-500 dark:text-rose-400'
                           }`}
                         >
                           {item.type === 'income' ? (
@@ -1259,14 +1282,14 @@ export default function App() {
                           )}
                         </div>
                         <div>
-                          <div className="font-semibold text-gray-900 text-sm">
+                          <div className="font-semibold text-gray-900 dark:text-white text-sm">
                             {item.title}
                           </div>
                           <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[11px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md font-medium">
+                            <span className="text-[11px] bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-md font-medium">
                               {item.category}
                             </span>
-                            <span className="text-[11px] text-gray-400 flex items-center gap-1">
+                            <span className="text-[11px] text-gray-400 dark:text-gray-500 flex items-center gap-1">
                               <Clock className="w-3 h-3" />
                               {formatDate(item.date)}
                             </span>
@@ -1278,8 +1301,8 @@ export default function App() {
                         <span
                           className={`font-bold text-sm sm:text-base ${
                             item.type === 'income'
-                              ? 'text-emerald-600'
-                              : 'text-rose-600'
+                              ? 'text-emerald-600 dark:text-emerald-400'
+                              : 'text-rose-600 dark:text-rose-400'
                           }`}
                         >
                           {item.type === 'income' ? '+' : '-'} {formatVND(item.amount)}
@@ -1289,14 +1312,14 @@ export default function App() {
                         <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={() => handleOpenEditTransaction(item)}
-                            className="text-gray-400 hover:text-emerald-600 p-1.5 rounded-lg hover:bg-emerald-50 transition-colors"
+                            className="text-gray-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors"
                             title="Chỉnh sửa giao dịch"
                           >
                             <Pencil className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteTransaction(item.id)}
-                            className="text-gray-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition-colors"
+                            className="text-gray-400 dark:text-gray-500 hover:text-rose-500 dark:hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
                             title="Xóa giao dịch"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -1309,10 +1332,10 @@ export default function App() {
               </div>
               
               {filteredTransactions.length > displayLimit && (
-                <div className="p-3 border-t border-gray-100 flex justify-center bg-gray-50/30">
+                <div className="p-3 border-t border-gray-100 dark:border-gray-700 flex justify-center bg-gray-50/30 dark:bg-gray-800/40">
                   <button 
                     onClick={() => setDisplayLimit((prev) => prev + 10)}
-                    className="flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-5 py-2.5 rounded-xl transition-colors active:scale-95"
+                    className="flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 px-5 py-2.5 rounded-xl transition-colors active:scale-95"
                   >
                     Xem thêm giao dịch
                   </button>
@@ -1328,20 +1351,20 @@ export default function App() {
         {activeTab === 'meal' && (
           <div className="space-y-6">
             {/* Weekday Selector Bar */}
-            <div className="bg-white p-3 sm:p-4 rounded-2xl border border-gray-100 shadow-xs">
+            <div className="bg-white dark:bg-gray-800 p-3 sm:p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs">
               <div className="flex flex-col sm:flex-row items-center justify-between mb-3 px-1 gap-3">
-                <span className="text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                   Kế hoạch tuần từ Thứ Hai đến Chủ Nhật
                 </span>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => setWeekOffset(prev => prev - 1)} className="px-3 py-1.5 text-xs font-semibold text-gray-600 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors">
+                  <button onClick={() => setWeekOffset(prev => prev - 1)} className="px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
                     &lt; Tuần trước
                   </button>
-                  <button onClick={() => setWeekOffset(0)} className="px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg hover:bg-emerald-100 transition-colors">
+                  <button onClick={() => setWeekOffset(0)} className="px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-800 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors">
                     Tuần này
                   </button>
-                  <button onClick={() => setWeekOffset(prev => prev + 1)} className="px-3 py-1.5 text-xs font-semibold text-gray-600 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors">
+                  <button onClick={() => setWeekOffset(prev => prev + 1)} className="px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
                     Tuần sau &gt;
                   </button>
                 </div>
@@ -1361,11 +1384,11 @@ export default function App() {
                       className={`relative flex flex-col items-center py-2.5 sm:py-3 rounded-xl transition-all ${
                         isSelected
                           ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-600/20 scale-102'
-                          : 'bg-gray-50 hover:bg-emerald-50 text-gray-700 hover:text-emerald-700'
+                          : 'bg-gray-50 dark:bg-gray-700/60 hover:bg-emerald-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 hover:text-emerald-700 dark:hover:text-emerald-300'
                       }`}
                     >
                       {hasMeals && !isSelected && (
-                        <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-emerald-500 rounded-full border-2 border-white shadow-xs"></span>
+                        <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-emerald-500 rounded-full border-2 border-white dark:border-gray-800 shadow-xs"></span>
                       )}
                       {day.isToday && (
                         <span
@@ -1381,7 +1404,7 @@ export default function App() {
                       <span className="text-xs sm:text-sm">{day.label}</span>
                       <span
                         className={`text-[10px] mt-0.5 ${
-                          isSelected ? 'text-emerald-100' : 'text-gray-400'
+                          isSelected ? 'text-emerald-100' : 'text-gray-400 dark:text-gray-400'
                         }`}
                       >
                         {day.dateStr}
@@ -1401,25 +1424,25 @@ export default function App() {
               return (
                 <div className="space-y-4">
                   {currentMeals.length === 0 ? (
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-xs p-10 text-center flex flex-col items-center justify-center text-gray-400 text-sm">
-                      <Utensils className="w-8 h-8 text-gray-200 mb-2" />
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs p-10 text-center flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 text-sm">
+                      <Utensils className="w-8 h-8 text-gray-200 dark:text-gray-600 mb-2" />
                       Chưa có thực đơn nào cho ngày này.
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                       {currentMeals.map((meal, idx) => (
-                        <div key={idx} className="bg-white rounded-2xl border border-gray-100 shadow-xs overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow">
+                        <div key={idx} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow">
                           <div className="p-5">
-                            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                            <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-700">
                               <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
                                   <Utensils className="w-4 h-4" />
                                 </div>
-                                <h4 className="font-bold text-gray-900 text-sm">{meal.meal_name}</h4>
+                                <h4 className="font-bold text-gray-900 dark:text-white text-sm">{meal.meal_name}</h4>
                               </div>
                               <div className="flex items-center gap-1.5">
                                 {meal.calories && (
-                                  <span className="text-[11px] font-semibold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">
+                                  <span className="text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full">
                                     {meal.calories}
                                   </span>
                                 )}
@@ -1427,14 +1450,14 @@ export default function App() {
                                   <>
                                     <button
                                       onClick={() => handleOpenEditMeal(selectedDay, meal)}
-                                      className="text-gray-400 hover:text-emerald-600 p-1 rounded-lg hover:bg-emerald-50 transition-colors"
+                                      className="text-gray-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 p-1 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors"
                                       title="Chỉnh sửa thực đơn"
                                     >
                                       <Pencil className="w-3.5 h-3.5" />
                                     </button>
                                     <button
                                       onClick={() => handleDeleteMeal(selectedDay, meal.meal_name)}
-                                      className="text-gray-400 hover:text-rose-500 p-1 rounded-lg hover:bg-rose-50 transition-colors"
+                                      className="text-gray-400 dark:text-gray-500 hover:text-rose-500 dark:hover:text-rose-400 p-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
                                       title="Xóa thực đơn"
                                     >
                                       <Trash2 className="w-3.5 h-3.5" />
@@ -1445,45 +1468,45 @@ export default function App() {
                             </div>
 
                             <div className="mt-4">
-                              <h5 className={`font-bold text-base ${meal.main ? 'text-gray-900' : 'text-gray-400 italic font-normal'}`}>
+                              <h5 className={`font-bold text-base ${meal.main ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500 italic font-normal'}`}>
                                 {meal.main || 'Chưa lên thực đơn'}
                               </h5>
-                              <p className="text-xs text-gray-500 mt-0.5">
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                                 {meal.side ? `Kèm: ${meal.side}` : 'Chưa có món phụ'}
                               </p>
                             </div>
 
-                            <div className="mt-4 pt-3 border-t border-gray-50">
-                              <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                            <div className="mt-4 pt-3 border-t border-gray-50 dark:border-gray-700">
+                              <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
                                 Nguyên liệu chuẩn bị:
                               </span>
                               <ul className="mt-2 space-y-2">
                                 {meal.ingredients && meal.ingredients.length > 0 ? (
                                   meal.ingredients.map((ing, iIdx) => (
-                                    <li key={iIdx} className="text-xs text-gray-600 flex items-start gap-2.5">
+                                    <li key={iIdx} className="text-xs text-gray-600 dark:text-gray-300 flex items-start gap-2.5">
                                       <button 
                                         onClick={() => !isPast && handleToggleIngredientBought(selectedDay, meal.meal_name, ing.name)}
                                         disabled={isPast}
                                         className={`mt-0.5 w-4 h-4 shrink-0 rounded flex items-center justify-center border transition-colors ${
-                                          ing.isBought ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-300 bg-white hover:border-emerald-400'
+                                          ing.isBought ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:border-emerald-400'
                                         } disabled:opacity-50 disabled:cursor-not-allowed`}
                                         title={isPast ? "Đã qua ngày" : (ing.isBought ? "Đánh dấu chưa mua" : "Đánh dấu đã mua")}
                                       >
                                         {ing.isBought && <Check className="w-3 h-3" />}
                                       </button>
-                                      <span className={ing.isBought ? 'line-through text-gray-400' : ''}>
+                                      <span className={ing.isBought ? 'line-through text-gray-400 dark:text-gray-500' : ''}>
                                         {ing.name}
                                       </span>
                                       {isPast && !ing.isBought && (
-                                        <span className="text-[10px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded ml-auto font-medium">
+                                        <span className="text-[10px] text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded ml-auto font-medium">
                                           Đã bỏ qua
                                         </span>
                                       )}
                                     </li>
                                   ))
                                 ) : (
-                                  <li className="text-xs text-gray-400 italic flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-gray-300 shrink-0" />
+                                  <li className="text-xs text-gray-400 dark:text-gray-500 italic flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600 shrink-0" />
                                     Chưa có nguyên liệu
                                   </li>
                                 )}
@@ -1491,11 +1514,11 @@ export default function App() {
                             </div>
                           </div>
 
-                          <div className="p-4 bg-gray-50/50 border-t border-gray-100">
+                          <div className="p-4 bg-gray-50/50 dark:bg-gray-800/80 border-t border-gray-100 dark:border-gray-700">
                             <button
                               disabled={!meal.ingredients || meal.ingredients.length === 0 || isPast || meal.ingredients.every(i => i.isBought)}
                               onClick={() => handleAddMealIngredientsToCart(selectedDay, `${meal.meal_name} - ${meal.main || 'Món ăn'}`, meal.ingredients || [])}
-                              className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-emerald-700 hover:text-emerald-800 bg-white hover:bg-emerald-50 border border-emerald-200 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white"
+                              className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:text-emerald-800 bg-white dark:bg-gray-700 hover:bg-emerald-50 dark:hover:bg-gray-600 border border-emerald-200 dark:border-emerald-700 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-gray-700"
                             >
                               <Plus className="w-3.5 h-3.5" />
                               <span>{isPast ? 'Đã qua hạn đi chợ' : (meal.ingredients?.every(i => i.isBought) ? 'Đã mua đủ' : 'Thêm món chưa mua vào giỏ')}</span>
@@ -1510,7 +1533,7 @@ export default function App() {
                     <div className="flex justify-center mt-6">
                       <button 
                         onClick={() => handleOpenEditMeal(selectedDay)}
-                        className="flex items-center justify-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 px-6 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-sm active:scale-98"
+                        className="flex items-center justify-center gap-2 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 px-6 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-sm active:scale-98"
                       >
                         <Plus className="w-4 h-4" /> Thêm bữa ăn
                       </button>
@@ -1521,8 +1544,8 @@ export default function App() {
             })()}
 
             {/* Smart Meal Insight Tip */}
-            <div className="bg-emerald-50/70 border border-emerald-100 p-4 rounded-2xl flex items-center gap-3 text-emerald-900 text-xs sm:text-sm">
-              <Sparkles className="w-5 h-5 text-emerald-600 shrink-0" />
+            <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-800 p-4 rounded-2xl flex items-center gap-3 text-emerald-900 dark:text-emerald-200 text-xs sm:text-sm">
+              <Sparkles className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
               <p>
                 <strong>Mẹo:</strong> Bạn có thể đánh dấu nguyên liệu <strong>Đã mua</strong> bằng ô check vuông ngay trên thực đơn. Khi bấm "Thêm vào giỏ", hệ thống sẽ chỉ nhặt những món <strong>Chưa mua</strong> để bạn không bị trùng lặp.
               </p>
@@ -1538,9 +1561,9 @@ export default function App() {
             {/* Left Col: Quick Add Form + Checklist */}
             <div className="lg:col-span-2 space-y-5">
               {/* Quick Add Form */}
-              <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-xs">
-                <h3 className="font-bold text-gray-900 text-sm mb-3 flex items-center gap-2">
-                  <PlusCircle className="w-4 h-4 text-emerald-600" />
+              <div className="bg-white dark:bg-gray-800 p-4 sm:p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs">
+                <h3 className="font-bold text-gray-900 dark:text-white text-sm mb-3 flex items-center gap-2">
+                  <PlusCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   Thêm nhanh nguyên liệu cần mua
                 </h3>
 
@@ -1550,18 +1573,18 @@ export default function App() {
                     placeholder="Tên nguyên liệu (VD: Thịt bò, Cải ngọt...)"
                     value={newIngredient}
                     onChange={(e) => setNewIngredient(e.target.value)}
-                    className="flex-1 px-3.5 py-2 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                    className="flex-1 px-3.5 py-2 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                   />
                   <input
                     type="text"
                     placeholder="Số lượng (VD: 500g, 2 bó)"
                     value={newQuantity}
                     onChange={(e) => setNewQuantity(e.target.value)}
-                    className="w-full sm:w-44 px-3.5 py-2 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                    className="w-full sm:w-44 px-3.5 py-2 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                   />
                   <button
                     type="submit"
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl font-semibold text-sm flex items-center justify-center gap-1.5 shrink-0 transition-colors"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl font-semibold text-sm flex items-center justify-center gap-1.5 shrink-0 transition-colors cursor-pointer"
                   >
                     <Plus className="w-4 h-4" />
                     <span>Thêm</span>
@@ -1570,14 +1593,14 @@ export default function App() {
               </div>
 
               {/* Shopping Checklist with Edit and Delete */}
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-xs overflow-hidden">
-                <div className="p-4 sm:p-5 border-b border-gray-100 flex items-center justify-between">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs overflow-hidden">
+                <div className="p-4 sm:p-5 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <ShoppingCart className="w-4 h-4 text-emerald-600" />
-                    <h3 className="font-bold text-gray-900 text-sm sm:text-base">
+                    <ShoppingCart className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <h3 className="font-bold text-gray-900 dark:text-white text-sm sm:text-base">
                       Danh sách thực phẩm
                     </h3>
-                    <span className="text-xs bg-gray-100 text-gray-600 font-medium px-2 py-0.5 rounded-full">
+                    <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium px-2 py-0.5 rounded-full">
                       {checkedShoppingCount} / {activeShoppingList.length} đã mua
                     </span>
                   </div>
@@ -1585,16 +1608,16 @@ export default function App() {
                   {checkedShoppingCount > 0 && (
                     <button
                       onClick={handleClearCompletedGroceries}
-                      className="text-xs text-rose-500 hover:text-rose-700 font-medium"
+                      className="text-xs text-rose-500 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 font-medium cursor-pointer"
                     >
                       Xóa món đã mua
                     </button>
                   )}
                 </div>
 
-                <div className="divide-y divide-gray-100">
+                <div className="divide-y divide-gray-100 dark:divide-gray-700/60">
                   {activeShoppingList.length === 0 ? (
-                    <div className="p-10 text-center text-gray-400 text-sm">
+                    <div className="p-10 text-center text-gray-400 dark:text-gray-500 text-sm">
                       Giỏ đi chợ đang trống. Hãy thêm nguyên liệu từ Thực đơn hoặc nhập ở trên!
                     </div>
                   ) : (
@@ -1603,7 +1626,7 @@ export default function App() {
                         key={item.id}
                         onClick={() => handleToggleCheck(item.id)}
                         className={`p-3.5 sm:px-5 flex items-center justify-between cursor-pointer select-none transition-colors ${
-                          item.checked ? 'bg-gray-50/50' : 'hover:bg-gray-50/80'
+                          item.checked ? 'bg-gray-50/50 dark:bg-gray-800/40' : 'hover:bg-gray-50/80 dark:hover:bg-gray-700/40'
                         }`}
                       >
                         <div className="flex items-center gap-3">
@@ -1611,8 +1634,8 @@ export default function App() {
                             type="button"
                             className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
                               item.checked
-                                ? 'text-emerald-600'
-                                : 'text-gray-300 hover:text-gray-400'
+                                ? 'text-emerald-600 dark:text-emerald-400'
+                                : 'text-gray-300 dark:text-gray-600 hover:text-gray-400'
                             }`}
                           >
                             {item.checked ? (
@@ -1625,19 +1648,19 @@ export default function App() {
                           <span
                             className={`text-sm font-medium transition-all ${
                               item.checked
-                                ? 'line-through text-gray-400'
-                                : 'text-gray-800'
+                                ? 'line-through text-gray-400 dark:text-gray-500'
+                                : 'text-gray-800 dark:text-gray-200'
                             }`}
                           >
                             {item.name}
                           </span>
 
-                          <span className="text-[11px] font-semibold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">
+                          <span className="text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full">
                             {item.quantity}
                           </span>
 
                           {item.plan_date && (
-                            <span className="hidden sm:inline-flex items-center text-[10px] bg-sky-50 text-sky-700 px-2 py-0.5 rounded-md font-medium">
+                            <span className="hidden sm:inline-flex items-center text-[10px] bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 px-2 py-0.5 rounded-md font-medium">
                               Thực đơn {formatDate(item.plan_date)}
                             </span>
                           )}
@@ -1650,7 +1673,7 @@ export default function App() {
                               e.stopPropagation();
                               handleOpenEditShoppingItem(item);
                             }}
-                            className="text-gray-300 hover:text-emerald-600 p-1 rounded-lg transition-colors"
+                            className="text-gray-300 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 p-1 rounded-lg transition-colors"
                             title="Chỉnh sửa món này"
                           >
                             <Pencil className="w-4 h-4" />
@@ -1660,7 +1683,7 @@ export default function App() {
                               e.stopPropagation();
                               handleDeleteShoppingItem(item.id);
                             }}
-                            className="text-gray-300 hover:text-rose-500 p-1 rounded-lg transition-colors"
+                            className="text-gray-300 dark:text-gray-500 hover:text-rose-500 dark:hover:text-rose-400 p-1 rounded-lg transition-colors"
                             title="Xóa món"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -1675,19 +1698,19 @@ export default function App() {
 
             {/* Right Col: Bill Confirmation & Sync into Tab 1 */}
             <div className="space-y-4">
-              <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs space-y-4">
-                <div className="flex items-center gap-2 text-emerald-700 font-bold text-base">
+              <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs space-y-4">
+                <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-bold text-base">
                   <Receipt className="w-5 h-5" />
                   <h4>Chốt Sổ Hóa Đơn</h4>
                 </div>
 
-                <p className="text-xs text-gray-500 leading-relaxed">
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
                   Sau khi hoàn thành chuyến đi chợ, nhập tổng số tiền trên hóa đơn để tự động đồng bộ vào mục <strong>Chi Tiêu</strong>.
                 </p>
 
                 {/* Total Bill Input */}
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
                     Tổng tiền hóa đơn thực tế (VNĐ)
                   </label>
                   <div className="relative">
@@ -1696,38 +1719,38 @@ export default function App() {
                       value={actualTotalBill}
                       onChange={(e) => setActualTotalBill(e.target.value)}
                       placeholder="VD: 350000"
-                      className="w-full pl-3.5 pr-14 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-gray-900 font-bold text-base focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                      className="w-full pl-3.5 pr-14 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white font-bold text-base focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                     />
-                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">
+                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 dark:text-gray-500">
                       VNĐ
                     </span>
                   </div>
                 </div>
 
                 {/* Summary Info */}
-                <div className="p-3 bg-gray-50 rounded-xl space-y-1.5 text-xs text-gray-600">
+                <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl space-y-1.5 text-xs text-gray-600 dark:text-gray-300">
                   <div className="flex justify-between">
                     <span>Đã hoàn thành:</span>
-                    <strong className="text-emerald-700">{checkedShoppingCount} món</strong>
+                    <strong className="text-emerald-700 dark:text-emerald-400">{checkedShoppingCount} món</strong>
                   </div>
                   <div className="flex justify-between">
                     <span>Danh mục ghi sổ:</span>
-                    <strong className="text-gray-800">Chi Tiêu ➔ Đi chợ</strong>
+                    <strong className="text-gray-800 dark:text-white">Chi Tiêu ➔ Đi chợ</strong>
                   </div>
                 </div>
 
                 {/* Big Action Button */}
                 <button
                   onClick={handleFinalizeShopping}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl shadow-md shadow-emerald-600/20 active:scale-98 transition-all flex items-center justify-center gap-2 text-sm"
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl shadow-md shadow-emerald-600/20 active:scale-98 transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
                 >
                   <CheckCircle2 className="w-5 h-5" />
                   <span>Chốt đi chợ & Ghi vào Sổ Thu Chi</span>
                 </button>
               </div>
 
-              <div className="bg-white/60 p-4 rounded-2xl border border-gray-100 flex items-start gap-2.5 text-xs text-gray-500">
-                <AlertCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+              <div className="bg-white/60 dark:bg-gray-800/60 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 flex items-start gap-2.5 text-xs text-gray-500 dark:text-gray-400">
+                <AlertCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                 <p>
                   Khi bấm chốt, các món đã đánh dấu "đã mua" sẽ tự động được dọn dẹp để bạn chuẩn bị cho lần mua tiếp theo.
                 </p>
@@ -1741,18 +1764,18 @@ export default function App() {
       {/* MODAL 1: THÊM / CHỈNH SỬA GIAO DỊCH THU CHI                               */}
       {/* ========================================================================= */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-fade-in">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-            <div className="p-5 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="font-bold text-gray-900 text-base flex items-center gap-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fade-in">
+          <div className="bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+            <div className="p-5 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+              <h3 className="font-bold text-gray-900 dark:text-white text-base flex items-center gap-2">
                 {editingTransaction ? (
                   <>
-                    <Pencil className="w-4 h-4 text-emerald-600" />
+                    <Pencil className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     Chỉnh Sửa Giao Dịch
                   </>
                 ) : (
                   <>
-                    <Plus className="w-4 h-4 text-emerald-600" />
+                    <Plus className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     Thêm Giao Dịch Mới
                   </>
                 )}
@@ -1762,7 +1785,7 @@ export default function App() {
                   setIsModalOpen(false);
                   setEditingTransaction(null);
                 }}
-                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg"
+                className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-lg cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1770,14 +1793,14 @@ export default function App() {
 
             <form onSubmit={handleSaveTransaction} className="p-5 space-y-4">
               {/* Type Switcher */}
-              <div className="grid grid-cols-2 p-1 bg-gray-100 rounded-xl gap-1">
+              <div className="grid grid-cols-2 p-1 bg-gray-100 dark:bg-gray-700 rounded-xl gap-1">
                 <button
                   type="button"
                   onClick={() => setNewTrans({ ...newTrans, type: 'expense' })}
-                  className={`py-2 rounded-lg text-xs font-bold transition-all ${
+                  className={`py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     newTrans.type === 'expense'
-                      ? 'bg-white text-rose-600 shadow-xs'
-                      : 'text-gray-500 hover:text-gray-800'
+                      ? 'bg-white dark:bg-gray-800 text-rose-600 dark:text-rose-400 shadow-xs'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white'
                   }`}
                 >
                   Khoản Chi
@@ -1785,10 +1808,10 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setNewTrans({ ...newTrans, type: 'income' })}
-                  className={`py-2 rounded-lg text-xs font-bold transition-all ${
+                  className={`py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     newTrans.type === 'income'
-                      ? 'bg-white text-emerald-700 shadow-xs'
-                      : 'text-gray-500 hover:text-gray-800'
+                      ? 'bg-white dark:bg-gray-800 text-emerald-700 dark:text-emerald-400 shadow-xs'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white'
                   }`}
                 >
                   Khoản Thu
@@ -1797,7 +1820,7 @@ export default function App() {
 
               {/* Title Input */}
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
                   Nội dung giao dịch
                 </label>
                 <input
@@ -1806,13 +1829,13 @@ export default function App() {
                   placeholder="VD: Cà phê, Tiền điện, Lương..."
                   value={newTrans.title}
                   onChange={(e) => setNewTrans({ ...newTrans, title: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                 />
               </div>
 
               {/* Amount Input */}
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
                   Số tiền (VNĐ)
                 </label>
                 <input
@@ -1821,39 +1844,39 @@ export default function App() {
                   placeholder="VD: 50000"
                   value={newTrans.amount}
                   onChange={(e) => setNewTrans({ ...newTrans, amount: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white font-semibold placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                 />
               </div>
 
               {/* Category & Date */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
                     Danh mục
                   </label>
                   <select
                     value={newTrans.category}
                     onChange={(e) => setNewTrans({ ...newTrans, category: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                    className="w-full px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-800 dark:text-white focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                   >
                     {categories.filter(c => c.type === newTrans.type).map(c => (
-                      <option key={c.id} value={c.name}>{c.name}</option>
+                      <option key={c.id} value={c.name} className="dark:bg-gray-800">{c.name}</option>
                     ))}
                     {categories.filter(c => c.type === newTrans.type).length === 0 && (
-                      <option value="Khác">Khác</option>
+                      <option value="Khác" className="dark:bg-gray-800">Khác</option>
                     )}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
                     Ngày ghi
                   </label>
                   <input
                     type="date"
                     value={newTrans.date}
                     onChange={(e) => setNewTrans({ ...newTrans, date: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                    className="w-full px-3 py-2 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-800 dark:text-white focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                   />
                 </div>
               </div>
@@ -1866,13 +1889,13 @@ export default function App() {
                     setIsModalOpen(false);
                     setEditingTransaction(null);
                   }}
-                  className="px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-100 transition-colors"
+                  className="px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm active:scale-98 transition-all"
+                  className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm active:scale-98 transition-all cursor-pointer"
                 >
                   {editingTransaction ? 'Cập nhật giao dịch' : 'Lưu giao dịch'}
                 </button>
@@ -1886,12 +1909,12 @@ export default function App() {
       {/* MODAL 2: CHỈNH SỬA THỰC ĐƠN BỮA ĂN (MEAL EDIT MODAL)                      */}
       {/* ========================================================================= */}
       {isMealModalOpen && editingMealTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-fade-in">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-            <div className="p-5 border-b border-gray-100 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fade-in">
+          <div className="bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+            <div className="p-5 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
               <div>
-                <h3 className="font-bold text-gray-900 text-base flex items-center gap-2">
-                  <Pencil className="w-4 h-4 text-emerald-600" />
+                <h3 className="font-bold text-gray-900 dark:text-white text-base flex items-center gap-2">
+                  <Pencil className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   {editingMealTarget.original_meal_name ? 'Chỉnh Sửa Thực Đơn' : 'Thêm Bữa Ăn Mới'}
                 </h3>
               </div>
@@ -1900,7 +1923,7 @@ export default function App() {
                   setIsMealModalOpen(false);
                   setEditingMealTarget(null);
                 }}
-                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg"
+                className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-lg cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1909,7 +1932,7 @@ export default function App() {
             <form onSubmit={handleSaveMeal} className="p-5 space-y-4">
               {/* Tên bữa ăn */}
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
                   Tên bữa ăn
                 </label>
                 <input
@@ -1918,13 +1941,13 @@ export default function App() {
                   placeholder="VD: Bữa Sáng, Bữa Xế..."
                   value={mealForm.mealName}
                   onChange={(e) => setMealForm({ ...mealForm, mealName: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                 />
               </div>
 
               {/* Main Dish */}
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
                   Món chính
                 </label>
                 <input
@@ -1933,14 +1956,14 @@ export default function App() {
                   placeholder="VD: Cơm sườn nướng, Phở bò..."
                   value={mealForm.main}
                   onChange={(e) => setMealForm({ ...mealForm, main: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                 />
               </div>
 
               {/* Side Dish & Calories */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
                     Món phụ / Canh kèm
                   </label>
                   <input
@@ -1948,11 +1971,11 @@ export default function App() {
                     placeholder="VD: Canh rau ngót..."
                     value={mealForm.side}
                     onChange={(e) => setMealForm({ ...mealForm, side: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
                     Calo ước tính
                   </label>
                   <input
@@ -1960,14 +1983,14 @@ export default function App() {
                     placeholder="VD: 550 kcal"
                     value={mealForm.calories}
                     onChange={(e) => setMealForm({ ...mealForm, calories: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                   />
                 </div>
               </div>
 
               {/* Ingredients Textarea */}
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
                   Nguyên liệu chuẩn bị (mỗi dòng 1 nguyên liệu)
                 </label>
                 <textarea
@@ -1975,7 +1998,7 @@ export default function App() {
                   placeholder="Thịt heo 300g&#10;Hành hoa&#10;Gia vị nấu"
                   value={mealForm.ingredientsStr}
                   onChange={(e) => setMealForm({ ...mealForm, ingredientsStr: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                 />
               </div>
 
@@ -1987,13 +2010,13 @@ export default function App() {
                     setIsMealModalOpen(false);
                     setEditingMealTarget(null);
                   }}
-                  className="px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-100 transition-colors"
+                  className="px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm active:scale-98 transition-all"
+                  className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm active:scale-98 transition-all cursor-pointer"
                 >
                   Lưu thực đơn
                 </button>
@@ -2007,11 +2030,11 @@ export default function App() {
       {/* MODAL 3: CHỈNH SỬA MÓN ĐI CHỢ (SHOPPING ITEM EDIT MODAL)                   */}
       {/* ========================================================================= */}
       {isShoppingModalOpen && editingShoppingItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-fade-in">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-            <div className="p-5 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="font-bold text-gray-900 text-base flex items-center gap-2">
-                <Pencil className="w-4 h-4 text-emerald-600" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fade-in">
+          <div className="bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+            <div className="p-5 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+              <h3 className="font-bold text-gray-900 dark:text-white text-base flex items-center gap-2">
+                <Pencil className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 Chỉnh Sửa Nguyên Liệu Đi Chợ
               </h3>
               <button
@@ -2019,7 +2042,7 @@ export default function App() {
                   setIsShoppingModalOpen(false);
                   setEditingShoppingItem(null);
                 }}
-                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg"
+                className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-lg cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -2028,7 +2051,7 @@ export default function App() {
             <form onSubmit={handleSaveShoppingItem} className="p-5 space-y-4">
               {/* Item Name */}
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
                   Tên nguyên liệu
                 </label>
                 <input
@@ -2037,13 +2060,13 @@ export default function App() {
                   placeholder="VD: Thịt ba chỉ, Rau muống..."
                   value={shoppingEditForm.name}
                   onChange={(e) => setShoppingEditForm({ ...shoppingEditForm, name: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                 />
               </div>
 
               {/* Quantity */}
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
                   Số lượng
                 </label>
                 <input
@@ -2052,7 +2075,7 @@ export default function App() {
                   placeholder="VD: 500g, 2 bó..."
                   value={shoppingEditForm.quantity}
                   onChange={(e) => setShoppingEditForm({ ...shoppingEditForm, quantity: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                 />
               </div>
 
@@ -2064,13 +2087,13 @@ export default function App() {
                     setIsShoppingModalOpen(false);
                     setEditingShoppingItem(null);
                   }}
-                  className="px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-100 transition-colors"
+                  className="px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm active:scale-98 transition-all"
+                  className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm active:scale-98 transition-all cursor-pointer"
                 >
                   Cập nhật món
                 </button>
@@ -2091,14 +2114,35 @@ export default function App() {
                 <Sun className="w-5 h-5 text-amber-500" /> Tùy chỉnh Giao diện
               </h2>
               <div className="flex flex-wrap gap-4">
-                <button onClick={() => setTheme('light')} className={`flex items-center gap-2 px-4 py-2 border rounded-xl font-medium transition-all ${theme === 'light' ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/30 dark:border-emerald-800 dark:text-emerald-400' : 'bg-gray-50 border-gray-200 text-gray-600 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300'}`}>
-                  <Sun className="w-4 h-4" /> Sáng
+                <button
+                  onClick={() => setTheme('light')}
+                  className={`flex items-center gap-2 px-4 py-2 border rounded-xl font-medium transition-all cursor-pointer ${
+                    theme === 'light'
+                      ? 'bg-amber-50 border-amber-300 text-amber-800 dark:bg-amber-950/40 dark:border-amber-700 dark:text-amber-300 shadow-xs'
+                      : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  <Sun className="w-4 h-4 text-amber-500" /> Sáng
                 </button>
-                <button onClick={() => setTheme('dark')} className={`flex items-center gap-2 px-4 py-2 border rounded-xl font-medium transition-all ${theme === 'dark' ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/30 dark:border-emerald-800 dark:text-emerald-400' : 'bg-gray-50 border-gray-200 text-gray-600 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300'}`}>
-                  <Moon className="w-4 h-4" /> Tối
+                <button
+                  onClick={() => setTheme('dark')}
+                  className={`flex items-center gap-2 px-4 py-2 border rounded-xl font-medium transition-all cursor-pointer ${
+                    theme === 'dark'
+                      ? 'bg-indigo-50 border-indigo-300 text-indigo-800 dark:bg-indigo-950/40 dark:border-indigo-700 dark:text-indigo-300 shadow-xs'
+                      : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  <Moon className="w-4 h-4 text-indigo-500 dark:text-indigo-400" /> Tối
                 </button>
-                <button onClick={() => setTheme('system')} className={`flex items-center gap-2 px-4 py-2 border rounded-xl font-medium transition-all ${theme === 'system' ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/30 dark:border-emerald-800 dark:text-emerald-400' : 'bg-gray-50 border-gray-200 text-gray-600 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300'}`}>
-                  <Settings className="w-4 h-4" /> Hệ thống
+                <button
+                  onClick={() => setTheme('system')}
+                  className={`flex items-center gap-2 px-4 py-2 border rounded-xl font-medium transition-all cursor-pointer ${
+                    theme === 'system'
+                      ? 'bg-emerald-50 border-emerald-300 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-700 dark:text-emerald-300 shadow-xs'
+                      : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  <Settings className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Hệ thống
                 </button>
               </div>
             </div>
@@ -2111,7 +2155,7 @@ export default function App() {
                   <Database className="w-5 h-5 text-blue-500" /> Xuất dữ liệu
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Tải về toàn bộ lịch sử giao dịch dưới dạng file CSV để dễ dàng xem và chỉnh sửa trên Excel/Google Sheets.</p>
-                <button onClick={handleExportCSV} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all shadow-sm">
+                <button onClick={handleExportCSV} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all shadow-sm cursor-pointer">
                   Xuất Lịch Sử Giao Dịch (CSV)
                 </button>
               </div>
@@ -2130,12 +2174,12 @@ export default function App() {
                   }}
                   className="flex gap-2 mb-4"
                 >
-                  <select name="type" className="p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm dark:text-white" required>
-                    <option value="expense">Khoản Chi</option>
-                    <option value="income">Khoản Thu</option>
+                  <select name="type" className="p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-800 dark:text-white" required>
+                    <option value="expense" className="dark:bg-gray-800">Khoản Chi</option>
+                    <option value="income" className="dark:bg-gray-800">Khoản Thu</option>
                   </select>
-                  <input name="name" placeholder="Tên danh mục mới" className="flex-1 p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm dark:text-white" required />
-                  <button type="submit" className="px-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
+                  <input name="name" placeholder="Tên danh mục mới" className="flex-1 p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500" required />
+                  <button type="submit" className="px-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 cursor-pointer">
                     <Plus className="w-4 h-4" />
                   </button>
                 </form>
@@ -2146,7 +2190,7 @@ export default function App() {
                         <span className="text-sm font-medium dark:text-gray-200">{c.name}</span>
                         <span className="text-[10px] text-gray-400 uppercase tracking-wider">{c.type}</span>
                       </div>
-                      <button onClick={() => handleDeleteCategory(c.id, c.name)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg">
+                      <button onClick={() => handleDeleteCategory(c.id, c.name)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg cursor-pointer">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -2158,7 +2202,7 @@ export default function App() {
             {/* System Logs */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 md:p-6 shadow-sm border border-gray-100 dark:border-gray-700">
               <h2 className="text-lg font-bold flex items-center gap-2 mb-4 dark:text-gray-100">
-                <Clock className="w-5 h-5 text-gray-500" /> Nhật ký hệ thống (Logs)
+                <Clock className="w-5 h-5 text-gray-500 dark:text-gray-400" /> Nhật ký hệ thống (Logs)
               </h2>
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
@@ -2193,11 +2237,11 @@ export default function App() {
       {/* ========================================================================= */}
       {/* MOBILE BOTTOM NAVIGATION BAR                                              */}
       {/* ========================================================================= */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200/80 px-6 py-2 flex items-center justify-around shadow-lg">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-200/80 dark:border-gray-800 px-6 py-2 flex items-center justify-around shadow-lg transition-colors">
         <button
           onClick={() => setActiveTab('spend')}
           className={`flex flex-col items-center py-1 gap-1 text-xs font-semibold transition-colors ${
-            activeTab === 'spend' ? 'text-emerald-600' : 'text-gray-400 hover:text-gray-600'
+            activeTab === 'spend' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
           }`}
         >
           <Wallet className="w-5 h-5" />
@@ -2206,7 +2250,7 @@ export default function App() {
         <button
           onClick={() => setActiveTab('meal')}
           className={`flex flex-col items-center py-1 gap-1 text-xs font-semibold transition-colors ${
-            activeTab === 'meal' ? 'text-emerald-600' : 'text-gray-400 hover:text-gray-600'
+            activeTab === 'meal' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
           }`}
         >
           <Utensils className="w-5 h-5" />
@@ -2215,7 +2259,7 @@ export default function App() {
         <button
           onClick={() => setActiveTab('shop')}
           className={`flex flex-col items-center py-1 gap-1 text-xs font-semibold transition-colors relative ${
-            activeTab === 'shop' ? 'text-emerald-600' : 'text-gray-400 hover:text-gray-600'
+            activeTab === 'shop' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
           }`}
         >
           <div className="relative">
@@ -2231,7 +2275,7 @@ export default function App() {
         <button
           onClick={() => setActiveTab('settings')}
           className={`flex flex-col items-center py-1 gap-1 text-xs font-semibold transition-colors ${
-            activeTab === 'settings' ? 'text-emerald-600' : 'text-gray-400 hover:text-gray-600'
+            activeTab === 'settings' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
           }`}
         >
           <Settings className="w-5 h-5" />

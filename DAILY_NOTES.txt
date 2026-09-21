@@ -77,6 +77,11 @@ Mục đích: Theo dõi tiến độ, ghi chép lại các tính năng đã phá
     - Bổ sung menu sắp xếp lịch sử giao dịch: Mới nhất (Mặc định), Cũ nhất, Số tiền: Cao ➔ Thấp, Số tiền: Thấp ➔ Cao.
     - Thêm nút Đặt lại (Reset) với biểu tượng mũi tên xoay tròn (RotateCcw) cho phép đưa danh sách giao dịch, bộ lọc loại (Thu/Chi), ngày tháng và thứ tự hiển thị về trạng thái mặc định ban đầu chỉ với 1 cú nhấp chuột.
     - Hiển thị chỉ báo "Đang tùy chỉnh" và nút quay về mặc định ngay trên tiêu đề danh sách giao dịch.
+[x] 7. Sửa lỗi Dark/Light Mode toàn diện (Toàn bộ Tab, Header, Modals & Nút chuyển nhanh):
+    - Khắc phục lỗi khi bật chế độ Tối chỉ tối 1 vùng ở tab Cài Đặt còn các tab khác và Header vẫn giữ màu trắng sáng.
+    - Bổ sung cấu hình `dark:...` đồng bộ toàn diện cho Header, Thẻ thống kê tài chính, Lịch 7 ngày thực đơn, Giỏ đi chợ, Lịch sử giao dịch, 3 cửa sổ Modal popup và thanh điều hướng di động.
+    - Thêm script inline trong thẻ `<head>` của `index.html` ngăn chặn hiện tượng nhấp nháy nền sáng (FOUC) khi tải lại trang ở chế độ Tối.
+    - Thêm nút chuyển nhanh Dark/Light Mode (icon Mặt Trời / Mặt Trăng) ngay trên thanh Header giúp chuyển đổi tức thì từ mọi màn hình mà không cần vào Cài Đặt.
 
 * Kế hoạch tiếp theo (To-do):
     - [ ] Kiểm thử toàn diện các luồng nghiệp vụ trên môi trường thật.
