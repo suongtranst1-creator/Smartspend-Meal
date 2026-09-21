@@ -40,6 +40,21 @@ const formatVND = (amount) => {
   }).format(amount || 0);
 };
 
+// Format number input with thousand dots separator: e.g. "50000" -> "50.000", "1000000" -> "1.000.000"
+const formatNumberInput = (val) => {
+  if (val === null || val === undefined) return '';
+  const clean = String(val).replace(/\D/g, '');
+  if (!clean) return '';
+  return clean.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+};
+
+// Parse formatted number input back to integer: e.g. "50.000" -> 50000
+const parseNumberInput = (val) => {
+  if (val === null || val === undefined) return 0;
+  const clean = String(val).replace(/\D/g, '');
+  return clean ? parseInt(clean, 10) : 0;
+};
+
 // Date Formatter (YYYY-MM-DD -> DD/MM/YYYY)
 const formatDate = (dateString) => {
   if (!dateString) return '';
@@ -437,7 +452,7 @@ export default function App() {
     setNewTrans({
       type: trans.type,
       title: trans.title,
-      amount: trans.amount.toString(),
+      amount: formatNumberInput(trans.amount),
       category: trans.category,
       date: trans.date,
     });
@@ -447,7 +462,11 @@ export default function App() {
   // Save Transaction (Add or Update)
   const handleSaveTransaction = async (e) => {
     e.preventDefault();
-    if (!newTrans.title.trim() || !newTrans.amount) return;
+    const parsedAmount = parseNumberInput(newTrans.amount);
+    if (!newTrans.title.trim() || parsedAmount <= 0) {
+      alert('Vui lòng nhập số tiền hợp lệ lớn hơn 0!');
+      return;
+    }
 
     if (editingTransaction) {
       // Update existing
@@ -455,7 +474,7 @@ export default function App() {
         ...editingTransaction,
         type: newTrans.type,
         title: newTrans.title.trim(),
-        amount: Number(newTrans.amount),
+        amount: parsedAmount,
         category: newTrans.category,
         date: newTrans.date,
       };
@@ -480,7 +499,7 @@ export default function App() {
         id: Date.now().toString(),
         type: newTrans.type,
         title: newTrans.title.trim(),
-        amount: Number(newTrans.amount),
+        amount: parsedAmount,
         category: newTrans.category,
         date: newTrans.date,
       };
@@ -873,7 +892,7 @@ export default function App() {
 
   // Finalize Grocery Shopping -> Sync into Tab 1 (Thu Chi)
   const handleFinalizeShopping = async () => {
-    const billAmount = Number(actualTotalBill) || 0;
+    const billAmount = parseNumberInput(actualTotalBill);
     if (billAmount <= 0) {
       alert('Vui lòng nhập số tiền hóa đơn hợp lệ!');
       return;
@@ -1759,10 +1778,11 @@ export default function App() {
                   </label>
                   <div className="relative">
                     <input
-                      type="number"
-                      value={actualTotalBill}
-                      onChange={(e) => setActualTotalBill(e.target.value)}
-                      placeholder="VD: 350000"
+                      type="text"
+                      inputMode="numeric"
+                      value={formatNumberInput(actualTotalBill)}
+                      onChange={(e) => setActualTotalBill(formatNumberInput(e.target.value))}
+                      placeholder="VD: 350.000"
                       className="w-full pl-3.5 pr-14 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white font-bold text-base focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                     />
                     <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 dark:text-gray-500">
@@ -1882,14 +1902,23 @@ export default function App() {
                 <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
                   Số tiền (VNĐ)
                 </label>
-                <input
-                  type="number"
-                  required
-                  placeholder="VD: 50000"
-                  value={newTrans.amount}
-                  onChange={(e) => setNewTrans({ ...newTrans, amount: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white font-semibold placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    required
+                    placeholder="VD: 50.000"
+                    value={formatNumberInput(newTrans.amount)}
+                    onChange={(e) => {
+                      const formatted = formatNumberInput(e.target.value);
+                      setNewTrans({ ...newTrans, amount: formatted });
+                    }}
+                    className="w-full pl-3.5 pr-14 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white font-bold placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                  />
+                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 dark:text-gray-500 pointer-events-none">
+                    VNĐ
+                  </span>
+                </div>
               </div>
 
               {/* Category & Date */}

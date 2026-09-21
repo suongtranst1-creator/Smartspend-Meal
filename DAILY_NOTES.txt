@@ -87,6 +87,11 @@ Mục đích: Theo dõi tiến độ, ghi chép lại các tính năng đã phá
     - Thay thế tự động bằng bữa ăn được thêm vào kèm ngày tháng (ví dụ: "Bữa Trưa 24/09", "Bữa Tối 21/09").
     - Di chuyển và cập nhật các nguyên liệu cũ trong CSDL PostgreSQL sang định dạng mới.
     - Tự động tránh hiển thị badge ngày trùng lặp nếu nhãn món đã chứa ngày tháng.
+[x] 9. Tự động định dạng ngắt dấu hàng nghìn khi nhập số tiền (Thousand Separator):
+    - Khi nhập số tiền ở ô "SỐ TIỀN (VNĐ)" (Thêm/Sửa giao dịch) và ô "Tổng tiền hóa đơn thực tế" (Chốt sổ đi chợ), hệ thống tự động ngắt dấu chấm `.` cứ mỗi 3 chữ số (ví dụ: gõ `50000` tự hiển thị thành `50.000`, `1000000` thành `1.000.000`).
+    - Chuyển đổi input sang chế độ số học mượt mà (`inputMode="numeric"`), loại bỏ nút tăng/giảm mũi tên gây vướng víu trên trình duyệt.
+    - Tự động làm sạch dấu phân cách khi lưu xuống CSDL PostgreSQL để đảm bảo số liệu tài chính luôn chính xác tuyệt đối.
+    - Bổ sung huy hiệu "VNĐ" tinh tế ngay bên trong ô nhập liệu.
 
 * Kế hoạch tiếp theo (To-do):
     - [ ] Kiểm thử toàn diện các luồng nghiệp vụ trên môi trường thật.
