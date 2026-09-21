@@ -673,7 +673,7 @@ export default function App() {
       id: Date.now().toString(),
       name: newIngredient.trim(),
       quantity: newQuantity.trim() || '1 phần',
-      category: newCategory,
+      category: '',
       checked: false,
     };
     setShoppingList([...shoppingList, newItem]);
@@ -712,7 +712,7 @@ export default function App() {
       ...editingShoppingItem,
       name: shoppingEditForm.name.trim(),
       quantity: shoppingEditForm.quantity.trim() || '1 phần',
-      category: shoppingEditForm.category,
+      category: '',
     };
 
     setShoppingList(
@@ -764,7 +764,7 @@ export default function App() {
       id: `${Date.now()}-${idx}`,
       name: ing.name,
       quantity: 'Theo khẩu phần',
-      category: 'Rau củ',
+      category: '',
       checked: false,
       plan_date: planDate || null,
     }));
@@ -1473,23 +1473,11 @@ export default function App() {
                     placeholder="Số lượng (VD: 500g, 2 bó)"
                     value={newQuantity}
                     onChange={(e) => setNewQuantity(e.target.value)}
-                    className="w-full sm:w-36 px-3.5 py-2 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                    className="w-full sm:w-44 px-3.5 py-2 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                   />
-                  <select
-                    value={newCategory}
-                    onChange={(e) => setNewCategory(e.target.value)}
-                    className="px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
-                  >
-                    {categories.filter(c => c.type === 'grocery').map(c => (
-                      <option key={c.id} value={c.name}>{c.name}</option>
-                    ))}
-                    {categories.filter(c => c.type === 'grocery').length === 0 && (
-                      <option value="Rau củ">Rau củ</option>
-                    )}
-                  </select>
                   <button
                     type="submit"
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-semibold text-sm flex items-center justify-center gap-1.5 shrink-0 transition-colors"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl font-semibold text-sm flex items-center justify-center gap-1.5 shrink-0 transition-colors"
                   >
                     <Plus className="w-4 h-4" />
                     <span>Thêm</span>
@@ -1562,10 +1550,6 @@ export default function App() {
 
                           <span className="text-[11px] font-semibold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">
                             {item.quantity}
-                          </span>
-
-                          <span className="hidden sm:inline-block text-[11px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md">
-                            {item.category}
                           </span>
 
                           {item.plan_date && (
@@ -1973,38 +1957,19 @@ export default function App() {
                 />
               </div>
 
-              {/* Quantity and Category */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">
-                    Số lượng
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="VD: 500g, 2 bó..."
-                    value={shoppingEditForm.quantity}
-                    onChange={(e) => setShoppingEditForm({ ...shoppingEditForm, quantity: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">
-                    Phân loại
-                  </label>
-                  <select
-                    value={shoppingEditForm.category}
-                    onChange={(e) => setShoppingEditForm({ ...shoppingEditForm, category: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
-                  >
-                    {categories.filter(c => c.type === 'grocery').map(c => (
-                      <option key={c.id} value={c.name}>{c.name}</option>
-                    ))}
-                    {categories.filter(c => c.type === 'grocery').length === 0 && (
-                      <option value="Rau củ">Rau củ</option>
-                    )}
-                  </select>
-                </div>
+              {/* Quantity */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">
+                  Số lượng
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="VD: 500g, 2 bó..."
+                  value={shoppingEditForm.quantity}
+                  onChange={(e) => setShoppingEditForm({ ...shoppingEditForm, quantity: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                />
               </div>
 
               {/* Action Buttons */}
@@ -2084,7 +2049,6 @@ export default function App() {
                   <select name="type" className="p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm dark:text-white" required>
                     <option value="expense">Khoản Chi</option>
                     <option value="income">Khoản Thu</option>
-                    <option value="grocery">Đi Chợ</option>
                   </select>
                   <input name="name" placeholder="Tên danh mục mới" className="flex-1 p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm dark:text-white" required />
                   <button type="submit" className="px-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
@@ -2092,7 +2056,7 @@ export default function App() {
                   </button>
                 </form>
                 <div className="max-h-48 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
-                  {categories.map(c => (
+                  {categories.filter(c => c.type === 'expense' || c.type === 'income').map(c => (
                     <div key={c.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
                       <div className="flex flex-col">
                         <span className="text-sm font-medium dark:text-gray-200">{c.name}</span>
