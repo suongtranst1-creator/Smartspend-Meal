@@ -92,6 +92,9 @@ Mục đích: Theo dõi tiến độ, ghi chép lại các tính năng đã phá
     - Chuyển đổi input sang chế độ số học mượt mà (`inputMode="numeric"`), loại bỏ nút tăng/giảm mũi tên gây vướng víu trên trình duyệt.
     - Tự động làm sạch dấu phân cách khi lưu xuống CSDL PostgreSQL để đảm bảo số liệu tài chính luôn chính xác tuyệt đối.
     - Bổ sung huy hiệu "VNĐ" tinh tế ngay bên trong ô nhập liệu.
+[x] 10. Hoàn thiện và đồng bộ toàn diện tài liệu README.md:
+    - Bổ sung đầy đủ tất cả các tính năng mới được phát triển trong ngày vào tài liệu dự án: Bộ lọc sắp xếp & nút Reset giao dịch, Chế độ Dark/Light Mode toàn diện & Nút chuyển nhanh trên Header, Gán nhãn món đi chợ cụ thể theo Bữa ăn + Ngày, Tự động định dạng ngắt dấu hàng nghìn khi nhập tiền tệ.
+    - Cập nhật sơ đồ cấu trúc cây thư mục mã nguồn và tài liệu lưu trữ.
 
 * Kế hoạch tiếp theo (To-do):
     - [ ] Kiểm thử toàn diện các luồng nghiệp vụ trên môi trường thật.

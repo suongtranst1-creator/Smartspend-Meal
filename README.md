@@ -34,13 +34,17 @@
   - `Tổng Thu`: Tự động cộng dồn các khoản lương, thưởng, thu nhập phụ kèm tỷ lệ & biểu tượng trực quan.
   - `Tổng Chi Tiêu`: Tổng hợp toàn bộ các khoản chi sinh hoạt, ăn uống, hóa đơn và đi chợ.
   - `Số Dư Hiện Tại`: Thể hiện tình trạng tài chính an toàn trong thẻ nền xanh ngọc sang trọng.
-* **Ghi Chép & Quản Lý Giao Dịch**:
+* **Ghi Chép & Quản Lý Giao Dịch Nhanh Chóng**:
   - Thêm mới, chỉnh sửa và xóa khoản thu/chi linh hoạt với đầy đủ thông tin: Số tiền (VNĐ), Danh mục (Ăn uống, Tiền nhà, Hóa đơn, Lương...), Ngày ghi, Tiêu đề giao dịch.
+* **Tự Động Định Dạng Ngắt Dấu Hàng Nghìn (Thousand Separator)**:
+  - Khi gõ số tiền vào ô `SỐ TIỀN (VNĐ)`, hệ thống **tự động ngắt dấu chấm `.` cứ mỗi 3 chữ số** (ví dụ: gõ `50000` ➔ tự động hiển thị `50.000`, `1000000` ➔ `1.000.000`).
+  - Giao diện hiện đại: Tích hợp huy hiệu `VNĐ` trực quan, loại bỏ các nút mũi tên spinner mặc định gây vướng mắt của trình duyệt, hỗ trợ bàn phím số thông minh (`inputMode="numeric"`) trên điện thoại di động.
+  - Cơ chế xử lý 2 chiều: Tự động chuẩn hóa thành số nguyên an toàn khi lưu trữ vào CSDL PostgreSQL, đảm bảo các phép tính thu, chi, số dư luôn chính xác tuyệt đối.
 * **Bộ Lọc Đa Chiều & Sắp Xếp Nâng Cao (Filter & Sort)**:
   - Lọc danh sách giao dịch theo: *Tất cả*, *Khoản Chi*, *Khoản Thu*.
   - Lọc theo **Khoảng thời gian (Từ ngày ➔ Đến ngày)**.
   - **Sắp xếp linh hoạt (Sort)**: Hỗ trợ 4 chế độ: *Mới nhất (Mặc định)*, *Cũ nhất*, *Số tiền: Cao ➔ Thấp*, *Số tiền: Thấp ➔ Cao*.
-  - **Nút Đặt lại / Reset (Icon mũi tên xoay tròn `RotateCcw`)**: Khôi phục nhanh chóng toàn bộ bộ lọc và chế độ sắp xếp về trạng thái bình thường (mặc định) với 1 cú click.
+  - **Nút Đặt lại / Reset (Icon mũi tên xoay tròn `RotateCcw`)**: Khôi phục nhanh chóng toàn bộ bộ lọc và chế độ sắp xếp về trạng thái mặc định ban đầu chỉ với 1 cú click, đi kèm chỉ báo nhãn *"Đang tùy chỉnh"*.
   - Tích hợp tính năng **Phân trang (Xem thêm)** tối ưu tốc độ tải và hiệu năng hiển thị.
 * **Xuất Báo Cáo CSV (Export Data)**:
   - Xuất toàn bộ lịch sử giao dịch ra tệp CSV định dạng chuẩn UTF-8 (hỗ trợ BOM), mở trực tiếp trên Microsoft Excel hoặc Google Sheets không bị lỗi font tiếng Việt.
@@ -55,26 +59,32 @@
   - **Tự do đặt tên bữa ăn**: Không giới hạn cố định, người dùng có thể thêm bất kỳ bữa ăn nào (Bữa Sáng, Bữa Trưa, Bữa Tối, Bữa Xế, Ăn Vặt...) kèm lượng calo, món chính, món phụ và danh sách nguyên liệu.
 * **Đồng Bộ Nguyên Liệu Giữa Thực Đơn & Giỏ Đi Chợ**:
   - **Theo dõi nguyên liệu đã mua 2 chiều**: Có thể đánh dấu đã mua trực tiếp ngay trên thẻ thực đơn hoặc từ danh sách đi chợ, hệ thống tự động đồng bộ trạng thái giữa 2 tab theo đúng ngày.
-  - **Nút "Thêm món chưa mua vào giỏ"**: Tự động lọc các nguyên liệu còn thiếu và chuyển vào giỏ đi chợ kèm nhãn ngày (`plan_date`), tích hợp cơ chế Deduplication (bỏ qua những món đã có trong giỏ hoặc đã mua).
+  - **Nút "Thêm món chưa mua vào giỏ"**: Tự động lọc các nguyên liệu còn thiếu và chuyển vào giỏ đi chợ, tích hợp cơ chế Deduplication (bỏ qua những món đã có trong giỏ hoặc đã mua).
+* **Cải Tiến Nhãn Món Đi Chợ (Gán Tên Bữa Ăn & Ngày Cụ Thể)**:
+  - Loại bỏ hoàn toàn chữ *"Theo khẩu phần"* chung chung.
+  - Thay thế bằng **tên bữa ăn cụ thể kèm ngày tháng** (ví dụ: `Bữa Trưa 24/09`, `Bữa Tối 21/09`), giúp người dùng nhận biết tức thì nguyên liệu này được mua cho bữa ăn nào.
+  - Tự động ẩn huy hiệu trùng lặp ngày khi nhãn số lượng đã hiển thị ngày tháng, giữ giao diện luôn gọn gàng và dễ nhìn.
 * **Tự Động Bỏ Qua Món Thực Đơn Quá Hạn Chưa Mua (Auto-Skip Expired Items)**:
-  - Khi một ngày thực đơn đã trôi qua (`plan_date < hôm nay`), bất kỳ nguyên liệu nào thuộc thực đơn ngày đó mà **chưa mua** (`is_bought = false`) sẽ **tự động được bỏ qua / loại bỏ hoàn toàn khỏi Danh sách đi chợ**, giữ cho giỏ hàng luôn gọn gàng và không tồn đọng nguyên liệu của các ngày đã qua.
+  - Khi một ngày thực đơn đã trôi qua (`plan_date < hôm nay`), bất kỳ nguyên liệu nào thuộc thực đơn ngày đó mà **chưa mua** (`is_bought = false`) sẽ **tự động được bỏ qua / loại bỏ hoàn toàn khỏi Danh sách đi chợ**, giữ cho giỏ hàng luôn sạch sẽ, không bị tồn đọng nguyên liệu của các ngày cũ.
   - Trên thẻ thực đơn của ngày quá khứ, các nguyên liệu chưa mua được gắn nhãn `Đã bỏ qua` màu vàng cam rõ ràng, trực quan.
-  - Các món **đã mua** (`is_bought = true`) vẫn được giữ lại đầy đủ để bạn đối chiếu và thanh toán.
+  - Các món **đã mua** (`is_bought = true`) vẫn được giữ lại đầy đủ để bạn đối chiếu và thanh toán hóa đơn.
 * **Checklist Đi Chợ Tinh Gọn (Streamlined Grocery Checklist)**:
   - **Form thêm nhanh tối giản**: Chỉ gồm ô nhập *Tên nguyên liệu* và *Số lượng* (VD: 500g, 2 bó), loại bỏ các bước chọn phân loại rườm rà giúp việc ghi chép đi chợ nhanh hơn bao giờ hết.
-  - **Gắn nhãn ngày thực đơn**: Món nào được gom từ thực đơn sẽ hiển thị nhãn `Thực đơn DD/MM/YYYY` để dễ dàng tra cứu nguồn gốc.
   - **Tương tác mượt mà**: Checkbox tick chọn chuyển màu xanh ngọc kèm hiệu ứng gạch ngang (`line-through`).
   - **Thống kê tiến độ mua sắm**: Thanh trạng thái hiển thị `X / Y đã mua` kèm huy hiệu số lượng trên menu điều hướng.
   - **Dọn dẹp nhanh**: Hỗ trợ nút *"Xóa món đã mua"* để dọn sạch các món đã hoàn thành.
 * **Chốt Sổ Hóa Đơn 1-Click (Finalize & Sync to Wallet)**:
-  - Nhập tổng số tiền thực tế trên hóa đơn đi chợ.
+  - Nhập tổng số tiền thực tế trên hóa đơn đi chợ với tính năng **tự động ngắt dấu chấm hàng nghìn** (VD: `350.000`).
   - Nhấn nút **"Chốt đi chợ & Ghi vào Sổ Thu Chi"** ➔ Tự động sinh ra 1 khoản chi tiêu `Đi chợ` bên Tab 1, cập nhật lại số dư ví và dọn dẹp các món đã mua trong giỏ hàng.
 
 ---
 
 ### ⚙️ Phần C: Cài Đặt & Quản Trị Hệ Thống (Settings & System)
-* **Tùy Chỉnh Giao Diện (Theme Mode)**:
+* **Đồng Bộ Giao Diện Dark / Light Mode Toàn Diện**:
   - Chuyển đổi linh hoạt giữa 3 chế độ: **Sáng (Light)**, **Tối (Dark)** và **Tự động theo hệ điều hành (System default)**. Cài đặt được lưu trữ bền vững tại `localStorage`.
+  - **Đồng bộ 100% diện tích ứng dụng**: Bao phủ hoàn chỉnh Header, thanh điều hướng, 4 tab chức năng, 3 popup modal và thanh điều hướng di động.
+  - **Nút chuyển nhanh Dark/Light Mode ngay trên Header**: Icon Mặt Trời / Mặt Trăng đặt ngay trên thanh điều hướng chính, cho phép chuyển đổi chế độ giao diện tức thì từ bất kỳ màn hình nào chỉ với 1 cú click.
+  - **Chống nhấp nháy sáng (FOUC Prevention)**: Nhận diện theme bằng script inline trong `<head>` trước khi nạp DOM, đảm bảo trải nghiệm êm dịu mắt khi tải lại trang.
 * **Quản Lý Danh Mục Tùy Biến (Categories)**:
   - Hỗ trợ thêm và xóa các danh mục thu, chi theo thói quen cá nhân. Danh mục cập nhật tức thì vào các menu thả xuống trong toàn bộ ứng dụng.
 * **Nhật Ký Hoạt Động Hệ Thống (Audit Logs)**:
@@ -82,7 +92,7 @@
 * **Chỉ Báo Trạng Thái Kết Nối CSDL (DB Health Indicator)**:
   - Hiển thị trực quan trạng thái kết nối PostgreSQL (`PostgreSQL: Đã kết nối` / `Sẵn sàng`) ngay trên thanh Header.
 * **Tự Động Khởi Tạo & Di Trú Cấu Trúc (Auto-migration)**:
-  - Máy chủ tự động kiểm tra, khởi tạo bảng và nâng cấp các cột CSDL mới (`plan_date`, khóa chính `id SERIAL` cho nhật ký...) mà không cần can thiệp thủ công.
+  - Máy chủ tự động kiểm tra, khởi tạo bảng và nâng cấp các cột CSDL mới (`plan_date`, cấu trúc `system_logs` chuẩn hóa...) mà không cần can thiệp thủ công.
 
 ---
 
@@ -172,10 +182,11 @@ psql -U <username> -d <database_name> -f schema.sql
 
 ```text
 SmartSpend & Meal/
-├── index.html              # Tệp HTML chính tích hợp Plus Jakarta Sans
+├── index.html              # Tệp HTML chính tích hợp Plus Jakarta Sans & theme loader
 ├── package.json            # Khai báo phụ thuộc (React 19, Express, pg, Lucide React, Vite)
 ├── vite.config.js          # Cấu hình Vite dev server & proxy API (/api -> localhost:5000)
 ├── schema.sql              # Cấu trúc CSDL PostgreSQL chuẩn hóa & các chỉ mục (Indexes)
+├── DAILY_NOTES.txt         # Nhật ký theo dõi tiến độ và lịch sử công việc theo từng ngày
 ├── .env.example            # Tệp biến môi trường mẫu
 ├── server/
 │   ├── db.js               # Kết nối PostgreSQL Pool, kiểm tra trạng thái & Auto-migration
