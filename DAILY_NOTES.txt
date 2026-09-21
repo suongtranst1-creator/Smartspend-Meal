@@ -82,6 +82,11 @@ Mục đích: Theo dõi tiến độ, ghi chép lại các tính năng đã phá
     - Bổ sung cấu hình `dark:...` đồng bộ toàn diện cho Header, Thẻ thống kê tài chính, Lịch 7 ngày thực đơn, Giỏ đi chợ, Lịch sử giao dịch, 3 cửa sổ Modal popup và thanh điều hướng di động.
     - Thêm script inline trong thẻ `<head>` của `index.html` ngăn chặn hiện tượng nhấp nháy nền sáng (FOUC) khi tải lại trang ở chế độ Tối.
     - Thêm nút chuyển nhanh Dark/Light Mode (icon Mặt Trời / Mặt Trăng) ngay trên thanh Header giúp chuyển đổi tức thì từ mọi màn hình mà không cần vào Cài Đặt.
+[x] 8. Cải tiến nhãn món đi chợ (Thay thế "Theo khẩu phần" bằng Bữa ăn + Ngày):
+    - Bỏ hoàn toàn chữ "Theo khẩu phần" chung chung trong danh sách đi chợ.
+    - Thay thế tự động bằng bữa ăn được thêm vào kèm ngày tháng (ví dụ: "Bữa Trưa 24/09", "Bữa Tối 21/09").
+    - Di chuyển và cập nhật các nguyên liệu cũ trong CSDL PostgreSQL sang định dạng mới.
+    - Tự động tránh hiển thị badge ngày trùng lặp nếu nhãn món đã chứa ngày tháng.
 
 * Kế hoạch tiếp theo (To-do):
     - [ ] Kiểm thử toàn diện các luồng nghiệp vụ trên môi trường thật.

@@ -382,7 +382,7 @@ app.post('/api/groceries/batch', async (req, res) => {
         `INSERT INTO grocery_items (id, item_name, quantity, category, is_bought, plan_date)
          VALUES ($1, $2, $3, $4, false, $5)
          RETURNING id, item_name as name, quantity, category, is_bought as checked, TO_CHAR(plan_date, 'YYYY-MM-DD') as plan_date;`,
-        [id, item.name, item.quantity || 'Theo khẩu phần', item.category || 'Rau củ', itemPlanDate]
+        [id, item.name, item.quantity || (itemPlanDate ? 'Thực đơn' : '1 phần'), item.category || 'Rau củ', itemPlanDate]
       );
       inserted.push(resItem.rows[0]);
     }

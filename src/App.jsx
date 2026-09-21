@@ -50,6 +50,29 @@ const formatDate = (dateString) => {
   return dateString;
 };
 
+// Meal tag formatter for groceries: e.g., "Bữa Trưa 24/09"
+const formatMealTag = (dateString, mealName) => {
+  let datePart = '';
+  if (dateString) {
+    const cleanDate = dateString.includes('T') ? dateString.split('T')[0] : dateString;
+    const parts = cleanDate.split('-');
+    if (parts.length === 3) {
+      datePart = `${parts[2]}/${parts[1]}`;
+    }
+  }
+
+  const rawName = (mealName || '').trim();
+  const baseName = rawName || 'Bữa Ăn';
+  // Capitalize first letter of each word (e.g. "bữa trưa" -> "Bữa Trưa")
+  const titleCaseName = baseName
+    .split(' ')
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+
+  return datePart ? `${titleCaseName} ${datePart}` : titleCaseName;
+};
+
 // Initial Transactions (Empty, ready for user inputs or PostgreSQL sync)
 const INITIAL_TRANSACTIONS = [];
 
@@ -737,12 +760,30 @@ export default function App() {
     }
   };
 
+  // Helper to safely format or migrate quantity if it was previously 'Theo khẩu phần'
+  const getDisplayQuantity = (item) => {
+    if (item.quantity && item.quantity !== 'Theo khẩu phần') {
+      return item.quantity;
+    }
+    if (item.plan_date) {
+      const dayMeals = mealData[item.plan_date] || [];
+      const foundMeal = dayMeals.find((m) =>
+        m.ingredients?.some((i) => i.name.toLowerCase() === item.name.toLowerCase())
+      );
+      if (foundMeal) {
+        return formatMealTag(item.plan_date, foundMeal.meal_name);
+      }
+      return formatMealTag(item.plan_date, 'Thực Đơn');
+    }
+    return '1 phần';
+  };
+
   // Open Edit Shopping Item Modal
   const handleOpenEditShoppingItem = (item) => {
     setEditingShoppingItem(item);
     setShoppingEditForm({
       name: item.name,
-      quantity: item.quantity,
+      quantity: getDisplayQuantity(item),
       category: item.category,
     });
     setIsShoppingModalOpen(true);
@@ -782,9 +823,11 @@ export default function App() {
   };
 
   // Batch add ingredients from meal
-  const handleAddMealIngredientsToCart = async (planDate, mealTitle, ingredients) => {
+  const handleAddMealIngredientsToCart = async (planDate, mealName, ingredients) => {
     if (!ingredients || ingredients.length === 0) return;
     
+    const mealTag = formatMealTag(planDate, mealName);
+
     // Lấy danh sách tên món đã có trong giỏ (không phân biệt hoa thường)
     const existingInCartNames = shoppingList.map(i => i.name.toLowerCase().trim());
     
@@ -798,7 +841,7 @@ export default function App() {
     if (pendingIngredients.length === 0) {
       const allBought = ingredients.every(i => i.isBought);
       if (allBought) {
-        showToast(`Tất cả nguyên liệu của [${mealTitle}] đã được mua!`);
+        showToast(`Tất cả nguyên liệu của [${mealTag}] đã được mua!`);
       } else {
         showToast("Tất cả món ăn đã có trong giỏ đi chợ");
       }
@@ -808,14 +851,14 @@ export default function App() {
     const newItems = pendingIngredients.map((ing, idx) => ({
       id: `${Date.now()}-${idx}`,
       name: ing.name,
-      quantity: 'Theo khẩu phần',
+      quantity: mealTag,
       category: '',
       checked: false,
       plan_date: planDate || null,
     }));
     
     setShoppingList((prev) => [...prev, ...newItems]);
-    showToast(`Đã thêm ${newItems.length} món mới vào giỏ đi chợ!`);
+    showToast(`Đã thêm ${newItems.length} món của ${mealTag} vào giỏ đi chợ!`);
 
     try {
       await fetch('/api/groceries/batch', {
@@ -938,6 +981,7 @@ export default function App() {
     trua: { main: '', side: '', calories: '', ingredients: [] },
     toi: { main: '', side: '', calories: '', ingredients: [] },
   };
+
 
   // Danh sách đi chợ hợp lệ (tự động bỏ qua các món chưa mua của ngày đã qua)
   const activeShoppingList = useMemo(() => {
@@ -1517,7 +1561,7 @@ export default function App() {
                           <div className="p-4 bg-gray-50/50 dark:bg-gray-800/80 border-t border-gray-100 dark:border-gray-700">
                             <button
                               disabled={!meal.ingredients || meal.ingredients.length === 0 || isPast || meal.ingredients.every(i => i.isBought)}
-                              onClick={() => handleAddMealIngredientsToCart(selectedDay, `${meal.meal_name} - ${meal.main || 'Món ăn'}`, meal.ingredients || [])}
+                              onClick={() => handleAddMealIngredientsToCart(selectedDay, meal.meal_name, meal.ingredients || [])}
                               className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:text-emerald-800 bg-white dark:bg-gray-700 hover:bg-emerald-50 dark:hover:bg-gray-600 border border-emerald-200 dark:border-emerald-700 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-gray-700"
                             >
                               <Plus className="w-3.5 h-3.5" />
@@ -1655,11 +1699,11 @@ export default function App() {
                             {item.name}
                           </span>
 
-                          <span className="text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full">
-                            {item.quantity}
+                          <span className="text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 px-2.5 py-0.5 rounded-full">
+                            {getDisplayQuantity(item)}
                           </span>
 
-                          {item.plan_date && (
+                          {item.plan_date && !getDisplayQuantity(item)?.includes('/') && (
                             <span className="hidden sm:inline-flex items-center text-[10px] bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 px-2 py-0.5 rounded-md font-medium">
                               Thực đơn {formatDate(item.plan_date)}
                             </span>
