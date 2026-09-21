@@ -306,6 +306,22 @@ app.delete('/api/meals', async (req, res) => {
 // Lấy danh sách đi chợ
 app.get('/api/groceries', async (req, res) => {
   try {
+    // Tự động loại bỏ / xóa các món đi chợ chưa mua của những ngày đã qua
+    try {
+      await pool.query(`
+        DELETE FROM grocery_items 
+        WHERE (plan_date IS NOT NULL AND plan_date < CURRENT_DATE AND is_bought = false)
+           OR (plan_date IS NULL AND is_bought = false AND EXISTS (
+                SELECT 1 FROM meal_plans mp, jsonb_array_elements(mp.ingredients) ing
+                WHERE mp.plan_date < CURRENT_DATE 
+                  AND LOWER(TRIM(ing->>'name')) = LOWER(TRIM(grocery_items.item_name))
+                  AND (ing->>'isBought')::boolean = false
+              ));
+      `);
+    } catch (cleanErr) {
+      console.warn('Lỗi dọn dẹp món đi chợ quá hạn:', cleanErr.message);
+    }
+
     const result = await pool.query(`
       SELECT 
         id, 
@@ -313,8 +329,10 @@ app.get('/api/groceries', async (req, res) => {
         quantity, 
         category, 
         is_bought as checked,
+        TO_CHAR(plan_date, 'YYYY-MM-DD') as plan_date,
         created_at
       FROM grocery_items
+      WHERE NOT (plan_date IS NOT NULL AND plan_date < CURRENT_DATE AND is_bought = false)
       ORDER BY is_bought ASC, created_at ASC;
     `);
     res.json(result.rows);
@@ -325,15 +343,15 @@ app.get('/api/groceries', async (req, res) => {
 
 // Thêm mới món đi chợ
 app.post('/api/groceries', async (req, res) => {
-  const { id, name, quantity, category, checked } = req.body;
+  const { id, name, quantity, category, checked, plan_date } = req.body;
   const itemId = id || Date.now().toString();
 
   try {
     const result = await pool.query(
-      `INSERT INTO grocery_items (id, item_name, quantity, category, is_bought)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, item_name as name, quantity, category, is_bought as checked;`,
-      [itemId, name, quantity || '1 phần', category || 'Rau củ', checked || false]
+      `INSERT INTO grocery_items (id, item_name, quantity, category, is_bought, plan_date)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, item_name as name, quantity, category, is_bought as checked, TO_CHAR(plan_date, 'YYYY-MM-DD') as plan_date;`,
+      [itemId, name, quantity || '1 phần', category || 'Rau củ', checked || false, plan_date || null]
     );
     
     // Ghi log
@@ -347,7 +365,7 @@ app.post('/api/groceries', async (req, res) => {
 
 // Thêm hàng loạt món đi chợ (từ nguyên liệu thực đơn)
 app.post('/api/groceries/batch', async (req, res) => {
-  const { items } = req.body; // array of { name, quantity, category }
+  const { items, plan_date } = req.body; // array of { name, quantity, category, plan_date? }
   if (!Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: 'Danh sách nguyên liệu rỗng' });
   }
@@ -358,12 +376,13 @@ app.post('/api/groceries/batch', async (req, res) => {
     const inserted = [];
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
-      const id = `${Date.now()}-${i}`;
+      const id = item.id || `${Date.now()}-${i}`;
+      const itemPlanDate = item.plan_date || plan_date || null;
       const resItem = await client.query(
-        `INSERT INTO grocery_items (id, item_name, quantity, category, is_bought)
-         VALUES ($1, $2, $3, $4, false)
-         RETURNING id, item_name as name, quantity, category, is_bought as checked;`,
-        [id, item.name, item.quantity || 'Theo khẩu phần', item.category || 'Rau củ']
+        `INSERT INTO grocery_items (id, item_name, quantity, category, is_bought, plan_date)
+         VALUES ($1, $2, $3, $4, false, $5)
+         RETURNING id, item_name as name, quantity, category, is_bought as checked, TO_CHAR(plan_date, 'YYYY-MM-DD') as plan_date;`,
+        [id, item.name, item.quantity || 'Theo khẩu phần', item.category || 'Rau củ', itemPlanDate]
       );
       inserted.push(resItem.rows[0]);
     }

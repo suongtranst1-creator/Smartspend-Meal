@@ -66,12 +66,14 @@ CREATE TABLE IF NOT EXISTS grocery_items (
     category VARCHAR(50) DEFAULT 'Rau củ',
     estimated_price NUMERIC(15, 2) DEFAULT 0,
     is_bought BOOLEAN DEFAULT FALSE,
+    plan_date DATE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Đánh chỉ mục tăng tốc lọc các món chưa mua / đã mua
 CREATE INDEX IF NOT EXISTS idx_grocery_is_bought ON grocery_items (is_bought);
 CREATE INDEX IF NOT EXISTS idx_grocery_category ON grocery_items (category);
+CREATE INDEX IF NOT EXISTS idx_grocery_plan_date ON grocery_items (plan_date);
 
 COMMENT ON TABLE grocery_items IS 'Danh sách nguyên liệu và thực phẩm cần đi chợ';
 COMMENT ON COLUMN grocery_items.category IS 'Nhóm thực phẩm: Rau củ, Thịt cá, Trứng sữa, Gia vị, Đồ khô';

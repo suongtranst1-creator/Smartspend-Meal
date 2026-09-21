@@ -93,9 +93,12 @@ export async function initializeDatabase() {
         category VARCHAR(50) DEFAULT 'Rau củ',
         estimated_price NUMERIC(15, 2) DEFAULT 0,
         is_bought BOOLEAN DEFAULT FALSE,
+        plan_date DATE,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     );
     CREATE INDEX IF NOT EXISTS idx_grocery_is_bought ON grocery_items (is_bought);
+    ALTER TABLE grocery_items ADD COLUMN IF NOT EXISTS plan_date DATE;
+    CREATE INDEX IF NOT EXISTS idx_grocery_plan_date ON grocery_items (plan_date);
 
     -- 4. Bảng categories
     CREATE TABLE IF NOT EXISTS categories (
@@ -138,6 +141,27 @@ export async function initializeDatabase() {
 
   try {
     await pool.query(initSql);
+
+    // Tự động bỏ qua / xóa các món đi chợ chưa mua của các ngày đã qua
+    try {
+      const cleanupSql = `
+        DELETE FROM grocery_items 
+        WHERE (plan_date IS NOT NULL AND plan_date < CURRENT_DATE AND is_bought = false)
+           OR (plan_date IS NULL AND is_bought = false AND EXISTS (
+                SELECT 1 FROM meal_plans mp, jsonb_array_elements(mp.ingredients) ing
+                WHERE mp.plan_date < CURRENT_DATE 
+                  AND LOWER(TRIM(ing->>'name')) = LOWER(TRIM(grocery_items.item_name))
+                  AND (ing->>'isBought')::boolean = false
+              ));
+      `;
+      const cleanupResult = await pool.query(cleanupSql);
+      if (cleanupResult.rowCount > 0) {
+        console.log(`🧹 Đã tự động dọn dẹp ${cleanupResult.rowCount} món chưa mua của ngày đã qua khỏi danh sách đi chợ.`);
+      }
+    } catch (cleanupErr) {
+      console.warn('Cảnh báo dọn dẹp món đi chợ quá hạn:', cleanupErr.message);
+    }
+
     console.log('✅ Đã xác minh & khởi tạo cấu trúc các bảng PostgreSQL hoàn tất!');
   } catch (err) {
     console.error('❌ Lỗi khi khởi tạo bảng trong PostgreSQL:', err.message);

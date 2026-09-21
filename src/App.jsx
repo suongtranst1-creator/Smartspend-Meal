@@ -99,6 +99,46 @@ const EMPTY_MEAL_SLOT = {
 // Initial Shopping Items (Empty, ready for user inputs or PostgreSQL sync)
 const INITIAL_SHOPPING_ITEMS = [];
 
+// Hàm lọc bỏ các món thực đơn chưa mua của các ngày đã qua
+const filterExpiredUnboughtGroceries = (items = [], meals = {}) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return items.filter((item) => {
+    // Nếu món đã mua (checked), giữ lại để người dùng đối chiếu / chốt hóa đơn
+    if (item.checked) return true;
+
+    // 1. Kiểm tra plan_date gắn kèm
+    if (item.plan_date) {
+      const pDate = new Date(item.plan_date);
+      pDate.setHours(0, 0, 0, 0);
+      if (pDate < today) return false;
+    }
+
+    // 2. Kiểm tra chéo với mealData đối với dữ liệu cũ chưa có plan_date
+    if (meals && typeof meals === 'object') {
+      for (const [dateStr, dayMeals] of Object.entries(meals)) {
+        const d = new Date(dateStr);
+        d.setHours(0, 0, 0, 0);
+        if (d < today && Array.isArray(dayMeals)) {
+          for (const m of dayMeals) {
+            const hasMatchingUnboughtIng = m.ingredients?.some(
+              (ing) =>
+                ing.name?.trim().toLowerCase() === item.name?.trim().toLowerCase() &&
+                !ing.isBought
+            );
+            if (hasMatchingUnboughtIng) {
+              return false;
+            }
+          }
+        }
+      }
+    }
+
+    return true;
+  });
+};
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('spend'); // 'spend' | 'meal' | 'shop'
   
@@ -215,11 +255,15 @@ export default function App() {
             }
 
             // Load meal plans from PostgreSQL
+            let loadedMeals = {};
             try {
               const mealsRes = await fetch('/api/meals');
               if (mealsRes.ok) {
                 const mealsJson = await mealsRes.json();
-                if (mealsJson) setMealData(mealsJson);
+                if (mealsJson) {
+                  loadedMeals = mealsJson;
+                  setMealData(mealsJson);
+                }
               }
             } catch (e) {
               console.error(e);
@@ -230,7 +274,9 @@ export default function App() {
               const grocRes = await fetch('/api/groceries');
               if (grocRes.ok) {
                 const grocData = await grocRes.json();
-                if (Array.isArray(grocData)) setShoppingList(grocData);
+                if (Array.isArray(grocData)) {
+                  setShoppingList(filterExpiredUnboughtGroceries(grocData, loadedMeals));
+                }
               }
             } catch (e) {
               console.error(e);
@@ -570,6 +616,10 @@ export default function App() {
     const newMealData = { ...mealData };
     
     Object.keys(newMealData).forEach(plan_date => {
+      // Nếu món có lưu plan_date cụ thể, chỉ cập nhật đúng ngày đó
+      if (itemToToggle.plan_date && itemToToggle.plan_date !== plan_date) {
+        return;
+      }
       let dayMealsUpdated = false;
       const updatedDayMeals = newMealData[plan_date].map(meal => {
         let mealUpdated = false;
@@ -687,7 +737,7 @@ export default function App() {
   };
 
   // Batch add ingredients from meal
-  const handleAddMealIngredientsToCart = async (mealTitle, ingredients) => {
+  const handleAddMealIngredientsToCart = async (planDate, mealTitle, ingredients) => {
     if (!ingredients || ingredients.length === 0) return;
     
     // Lấy danh sách tên món đã có trong giỏ (không phân biệt hoa thường)
@@ -716,6 +766,7 @@ export default function App() {
       quantity: 'Theo khẩu phần',
       category: 'Rau củ',
       checked: false,
+      plan_date: planDate || null,
     }));
     
     setShoppingList((prev) => [...prev, ...newItems]);
@@ -725,7 +776,7 @@ export default function App() {
       await fetch('/api/groceries/batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: newItems }),
+        body: JSON.stringify({ items: newItems, plan_date: planDate || null }),
       });
     } catch (err) {
       console.warn('API sync:', err);
@@ -740,7 +791,7 @@ export default function App() {
       return;
     }
 
-    const completedItems = shoppingList.filter((i) => i.checked);
+    const completedItems = activeShoppingList.filter((i) => i.checked);
     const completedCount = completedItems.length;
 
     const newExpense = {
@@ -753,7 +804,7 @@ export default function App() {
     };
 
     setTransactions([newExpense, ...transactions]);
-    setShoppingList(shoppingList.filter((i) => !i.checked));
+    setShoppingList(activeShoppingList.filter((i) => !i.checked));
     setActualTotalBill('');
     showToast(`Đã chốt hóa đơn ${formatVND(billAmount)} và ghi vào Sổ Thu Chi!`);
 
@@ -769,7 +820,7 @@ export default function App() {
   };
 
   const handleClearCompletedGroceries = async () => {
-    setShoppingList(shoppingList.filter((i) => !i.checked));
+    setShoppingList(activeShoppingList.filter((i) => !i.checked));
     showToast('Đã dọn dẹp các món đã mua');
     try {
       await fetch('/api/groceries/bought', { method: 'DELETE' });
@@ -842,7 +893,15 @@ export default function App() {
     trua: { main: '', side: '', calories: '', ingredients: [] },
     toi: { main: '', side: '', calories: '', ingredients: [] },
   };
-  const checkedShoppingCount = shoppingList.filter((i) => i.checked).length;
+
+  // Danh sách đi chợ hợp lệ (tự động bỏ qua các món chưa mua của ngày đã qua)
+  const activeShoppingList = useMemo(() => {
+    return filterExpiredUnboughtGroceries(shoppingList, mealData);
+  }, [shoppingList, mealData]);
+
+  const checkedShoppingCount = useMemo(() => {
+    return activeShoppingList.filter((i) => i.checked).length;
+  }, [activeShoppingList]);
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800 pb-20 md:pb-10">
@@ -930,9 +989,9 @@ export default function App() {
             >
               <ShoppingCart className="w-4 h-4" />
               <span>Đi Chợ</span>
-              {shoppingList.length > 0 && (
+              {activeShoppingList.length > 0 && (
                 <span className="bg-emerald-600 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold">
-                  {shoppingList.length}
+                  {activeShoppingList.length}
                 </span>
               )}
             </button>
@@ -1331,6 +1390,11 @@ export default function App() {
                                       <span className={ing.isBought ? 'line-through text-gray-400' : ''}>
                                         {ing.name}
                                       </span>
+                                      {isPast && !ing.isBought && (
+                                        <span className="text-[10px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded ml-auto font-medium">
+                                          Đã bỏ qua
+                                        </span>
+                                      )}
                                     </li>
                                   ))
                                 ) : (
@@ -1346,7 +1410,7 @@ export default function App() {
                           <div className="p-4 bg-gray-50/50 border-t border-gray-100">
                             <button
                               disabled={!meal.ingredients || meal.ingredients.length === 0 || isPast || meal.ingredients.every(i => i.isBought)}
-                              onClick={() => handleAddMealIngredientsToCart(`${meal.meal_name} - ${meal.main || 'Món ăn'}`, meal.ingredients || [])}
+                              onClick={() => handleAddMealIngredientsToCart(selectedDay, `${meal.meal_name} - ${meal.main || 'Món ăn'}`, meal.ingredients || [])}
                               className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-emerald-700 hover:text-emerald-800 bg-white hover:bg-emerald-50 border border-emerald-200 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white"
                             >
                               <Plus className="w-3.5 h-3.5" />
@@ -1442,7 +1506,7 @@ export default function App() {
                       Danh sách thực phẩm
                     </h3>
                     <span className="text-xs bg-gray-100 text-gray-600 font-medium px-2 py-0.5 rounded-full">
-                      {checkedShoppingCount} / {shoppingList.length} đã mua
+                      {checkedShoppingCount} / {activeShoppingList.length} đã mua
                     </span>
                   </div>
 
@@ -1457,12 +1521,12 @@ export default function App() {
                 </div>
 
                 <div className="divide-y divide-gray-100">
-                  {shoppingList.length === 0 ? (
+                  {activeShoppingList.length === 0 ? (
                     <div className="p-10 text-center text-gray-400 text-sm">
                       Giỏ đi chợ đang trống. Hãy thêm nguyên liệu từ Thực đơn hoặc nhập ở trên!
                     </div>
                   ) : (
-                    shoppingList.map((item) => (
+                    activeShoppingList.map((item) => (
                       <div
                         key={item.id}
                         onClick={() => handleToggleCheck(item.id)}
@@ -1503,6 +1567,12 @@ export default function App() {
                           <span className="hidden sm:inline-block text-[11px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md">
                             {item.category}
                           </span>
+
+                          {item.plan_date && (
+                            <span className="hidden sm:inline-flex items-center text-[10px] bg-sky-50 text-sky-700 px-2 py-0.5 rounded-md font-medium">
+                              Thực đơn {formatDate(item.plan_date)}
+                            </span>
+                          )}
                         </div>
 
                         {/* Actions: Edit and Delete */}
@@ -2102,9 +2172,9 @@ export default function App() {
         >
           <div className="relative">
             <ShoppingCart className="w-5 h-5" />
-            {shoppingList.length > 0 && (
+            {activeShoppingList.length > 0 && (
               <span className="absolute -top-1.5 -right-2 bg-emerald-600 text-white text-[9px] px-1 py-0.2 rounded-full font-bold">
-                {shoppingList.length}
+                {activeShoppingList.length}
               </span>
             )}
           </div>
