@@ -57,9 +57,10 @@
   - **Chỉ báo trực quan (Visual Dots)**: Chấm xanh hiển thị trên thanh ngày giúp nhận biết ngay ngày nào đã có kế hoạch bữa ăn.
   - **Khóa bảo vệ dữ liệu quá khứ**: Các ngày đã qua được khóa an toàn (chế độ chỉ xem), ngăn chặn vô tình chỉnh sửa thực đơn cũ.
   - **Tự do đặt tên bữa ăn**: Không giới hạn cố định, người dùng có thể thêm bất kỳ bữa ăn nào (Bữa Sáng, Bữa Trưa, Bữa Tối, Bữa Xế, Ăn Vặt...) kèm lượng calo, món chính, món phụ và danh sách nguyên liệu.
-* **Đồng Bộ Nguyên Liệu Giữa Thực Đơn & Giỏ Đi Chợ**:
-  - **Theo dõi nguyên liệu đã mua 2 chiều**: Có thể đánh dấu đã mua trực tiếp ngay trên thẻ thực đơn hoặc từ danh sách đi chợ, hệ thống tự động đồng bộ trạng thái giữa 2 tab theo đúng ngày.
-  - **Nút "Thêm món chưa mua vào giỏ"**: Tự động lọc các nguyên liệu còn thiếu và chuyển vào giỏ đi chợ, tích hợp cơ chế Deduplication (bỏ qua những món đã có trong giỏ hoặc đã mua).
+* **Đồng Bộ Nguyên Liệu Giữa Thực Đơn & Giỏ Đi Chợ (Thông Minh & Thực Tế)**:
+  - **Tự động loại bỏ món đã có sẵn ra khỏi Giỏ Đi Chợ**: Khi người dùng đánh dấu nguyên liệu đã có sẵn / đã chuẩn bị ở Thực Đơn Tuần (Tab 2), hệ thống sẽ **tự động loại bỏ hoàn toàn món đó ra khỏi giỏ hàng Đi Chợ (Tab 3)** (xóa khỏi danh sách và CSDL thay vì để gạch ngang), đảm bảo giỏ hàng chỉ tập trung vào những thứ cần đi mua và số lượng đếm trên huy hiệu menu luôn chuẩn xác. Nếu bỏ tick ở Thực Đơn, nguyên liệu sẽ tự động được thêm lại vào giỏ.
+  - **Theo dõi nguyên liệu 2 chiều**: Đánh dấu mua sắm tại Tab Đi Chợ cũng tự động liên thông đồng bộ với trạng thái nguyên liệu trên thẻ Thực Đơn.
+  - **Nút "Thêm món chưa mua vào giỏ"**: Tự động lọc các nguyên liệu còn thiếu và chuyển vào giỏ đi chợ, tích hợp cơ chế Deduplication (bỏ qua những món đã có trong giỏ hoặc đã có sẵn).
 * **Cải Tiến Nhãn Món Đi Chợ (Gán Tên Bữa Ăn & Ngày Cụ Thể)**:
   - Loại bỏ hoàn toàn chữ *"Theo khẩu phần"* chung chung.
   - Thay thế bằng **tên bữa ăn cụ thể kèm ngày tháng** (ví dụ: `Bữa Trưa 24/09`, `Bữa Tối 21/09`), giúp người dùng nhận biết tức thì nguyên liệu này được mua cho bữa ăn nào.

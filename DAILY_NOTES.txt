@@ -119,6 +119,11 @@ Mục đích: Theo dõi tiến độ, ghi chép lại các tính năng đã phá
     - Tự động lọc sạch các món đã có sẵn khỏi giỏ hàng ngay khi tải ứng dụng, cập nhật chính xác số lượng trên huy hiệu "Đi Chợ".
     - Nếu người dùng bỏ tick chọn ở Thực Đơn (chưa có sẵn), hệ thống tự động thêm lại nguyên liệu vào Giỏ Đi Chợ.
 
+[x] 15. Dữ liệu thử nghiệm phong phú cho Thực Đơn & Đi Chợ (22/09/2026):
+    - Đã nạp và liên thông dữ liệu cho 2 bữa ăn trong ngày Thứ Ba (22/09/2026):
+      + Bữa Trưa: Lẩu hải sản (Tôm cua, Thịt bò, Rau các loại, Nấm) - thử nghiệm tính năng tick chọn nguyên liệu đã có sẵn (Tôm cua, Thịt bò, Rau các loại) tự động loại bỏ khỏi giỏ hàng.
+      + Bữa Tối: Lẩu Thái (Cá tầm, Mực, Thịt bò, Nấm kim châm) - 4 nguyên liệu đã được liên thông vào giỏ đi chợ với nhãn "Bữa Tối 22/09" để người dùng kiểm thử quy trình thực tế.
+
 * Kế hoạch tiếp theo (To-do):
     - [ ] Kiểm thử toàn diện các luồng nghiệp vụ trên môi trường thật.
     - [ ] Chuẩn bị bài thuyết trình / tài liệu nộp đề tài bảng Văn phòng.
