@@ -36,9 +36,11 @@
   - `Số Dư Hiện Tại`: Thể hiện tình trạng tài chính an toàn trong thẻ nền xanh ngọc sang trọng.
 * **Ghi Chép & Quản Lý Giao Dịch**:
   - Thêm mới, chỉnh sửa và xóa khoản thu/chi linh hoạt với đầy đủ thông tin: Số tiền (VNĐ), Danh mục (Ăn uống, Tiền nhà, Hóa đơn, Lương...), Ngày ghi, Tiêu đề giao dịch.
-* **Bộ Lọc Đa Chiều & Phân Trang**:
+* **Bộ Lọc Đa Chiều & Sắp Xếp Nâng Cao (Filter & Sort)**:
   - Lọc danh sách giao dịch theo: *Tất cả*, *Khoản Chi*, *Khoản Thu*.
   - Lọc theo **Khoảng thời gian (Từ ngày ➔ Đến ngày)**.
+  - **Sắp xếp linh hoạt (Sort)**: Hỗ trợ 4 chế độ: *Mới nhất (Mặc định)*, *Cũ nhất*, *Số tiền: Cao ➔ Thấp*, *Số tiền: Thấp ➔ Cao*.
+  - **Nút Đặt lại / Reset (Icon mũi tên xoay tròn `RotateCcw`)**: Khôi phục nhanh chóng toàn bộ bộ lọc và chế độ sắp xếp về trạng thái bình thường (mặc định) với 1 cú click.
   - Tích hợp tính năng **Phân trang (Xem thêm)** tối ưu tốc độ tải và hiệu năng hiển thị.
 * **Xuất Báo Cáo CSV (Export Data)**:
   - Xuất toàn bộ lịch sử giao dịch ra tệp CSV định dạng chuẩn UTF-8 (hỗ trợ BOM), mở trực tiếp trên Microsoft Excel hoặc Google Sheets không bị lỗi font tiếng Việt.

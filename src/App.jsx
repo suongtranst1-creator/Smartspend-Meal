@@ -26,7 +26,9 @@ import {
   X,
   Pencil,
   Database,
-  Settings
+  Settings,
+  RotateCcw,
+  ArrowUpDown
 } from 'lucide-react';
 
 // Currency Formatter
@@ -146,6 +148,7 @@ export default function App() {
   const [transactions, setTransactions] = useState(INITIAL_TRANSACTIONS);
   const [filterType, setFilterType] = useState('all'); // 'all' | 'income' | 'expense'
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
+  const [sortBy, setSortBy] = useState('date-desc'); // 'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc'
   const [displayLimit, setDisplayLimit] = useState(10);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null); // null when creating new
@@ -337,7 +340,7 @@ export default function App() {
   const balance = totalIncome - totalExpense;
 
   const filteredTransactions = useMemo(() => {
-    let result = transactions;
+    let result = [...transactions];
     if (filterType !== 'all') {
       result = result.filter((t) => t.type === filterType);
     }
@@ -347,8 +350,40 @@ export default function App() {
     if (dateRange.end) {
       result = result.filter((t) => t.date <= dateRange.end);
     }
+
+    // Sắp xếp danh sách
+    result.sort((a, b) => {
+      if (sortBy === 'date-asc') {
+        const dateDiff = (a.date || '').localeCompare(b.date || '');
+        if (dateDiff !== 0) return dateDiff;
+        return (a.created_at || '').localeCompare(b.created_at || '');
+      }
+      if (sortBy === 'amount-desc') {
+        return Number(b.amount || 0) - Number(a.amount || 0);
+      }
+      if (sortBy === 'amount-asc') {
+        return Number(a.amount || 0) - Number(b.amount || 0);
+      }
+      // Mặc định: 'date-desc' (Mới nhất trước)
+      const dateDiff = (b.date || '').localeCompare(a.date || '');
+      if (dateDiff !== 0) return dateDiff;
+      return (b.created_at || '').localeCompare(a.created_at || '');
+    });
+
     return result;
-  }, [transactions, filterType, dateRange]);
+  }, [transactions, filterType, dateRange, sortBy]);
+
+  // Kiểm tra xem có đang lọc hoặc sort khác mặc định không
+  const isFilterOrSortActive = filterType !== 'all' || Boolean(dateRange.start) || Boolean(dateRange.end) || sortBy !== 'date-desc';
+
+  // Hàm đặt lại toàn bộ filter và sort về bình thường (mặc định)
+  const handleResetFilters = () => {
+    setFilterType('all');
+    setDateRange({ start: '', end: '' });
+    setSortBy('date-desc');
+    setDisplayLimit(10);
+    showToast('Đã đặt lại bộ lọc và sắp xếp lịch sử về mặc định');
+  };
 
   // Open modal to add new transaction
   const handleOpenAddTransaction = () => {
@@ -1111,7 +1146,7 @@ export default function App() {
                 >
                   Khoản Thu
                 </button>
-                <div className="flex items-center gap-1.5 sm:ml-2">
+                <div className="flex items-center gap-1.5 sm:ml-1">
                   <input
                     type="date"
                     className="text-xs px-2.5 py-1.5 border border-gray-200 rounded-lg text-gray-600 outline-none focus:border-emerald-500"
@@ -1128,6 +1163,36 @@ export default function App() {
                     title="Đến ngày"
                   />
                 </div>
+
+                {/* Sắp xếp danh sách */}
+                <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-600 shadow-xs">
+                  <ArrowUpDown className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="text-xs text-gray-700 bg-transparent outline-none cursor-pointer font-medium pr-1"
+                    title="Sắp xếp danh sách giao dịch"
+                  >
+                    <option value="date-desc">Mới nhất (Mặc định)</option>
+                    <option value="date-asc">Cũ nhất</option>
+                    <option value="amount-desc">Số tiền: Cao ➔ Thấp</option>
+                    <option value="amount-asc">Số tiền: Thấp ➔ Cao</option>
+                  </select>
+                </div>
+
+                {/* Nút Reset / Đặt lại về bình thường */}
+                <button
+                  onClick={handleResetFilters}
+                  title="Đặt lại bộ lọc và sắp xếp về bình thường"
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all group ${
+                    isFilterOrSortActive
+                      ? 'bg-amber-50 text-amber-700 border border-amber-300 hover:bg-amber-100 shadow-xs cursor-pointer'
+                      : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50 hover:text-gray-700'
+                  }`}
+                >
+                  <RotateCcw className={`w-3.5 h-3.5 transition-transform duration-300 ${isFilterOrSortActive ? 'group-hover:-rotate-90 text-amber-600' : 'group-hover:-rotate-90'}`} />
+                  <span>{isFilterOrSortActive ? 'Đặt lại bộ lọc' : 'Mặc định'}</span>
+                </button>
               </div>
 
               <button
@@ -1141,12 +1206,31 @@ export default function App() {
 
             {/* Transaction History List with Edit and Delete */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-xs overflow-hidden">
-              <div className="p-4 sm:p-5 border-b border-gray-100 flex items-center justify-between">
-                <h3 className="font-bold text-gray-900 text-base flex items-center gap-2">
+              <div className="p-4 sm:p-5 border-b border-gray-100 flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
                   <Receipt className="w-4 h-4 text-emerald-600" />
-                  Lịch sử giao dịch gần đây
-                </h3>
-                <span className="text-xs text-gray-400">Thời gian thực</span>
+                  <h3 className="font-bold text-gray-900 text-base">
+                    Lịch sử giao dịch gần đây
+                  </h3>
+                  {isFilterOrSortActive && (
+                    <span className="text-[10px] bg-amber-100 text-amber-800 font-semibold px-2 py-0.5 rounded-full">
+                      Đang tùy chỉnh
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <span>{filteredTransactions.length} giao dịch</span>
+                  {isFilterOrSortActive && (
+                    <button
+                      onClick={handleResetFilters}
+                      className="text-emerald-600 hover:text-emerald-700 hover:underline flex items-center gap-1 font-medium cursor-pointer"
+                      title="Đặt lại về bình thường"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      Về mặc định
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="divide-y divide-gray-100">

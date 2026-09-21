@@ -73,6 +73,10 @@ Mục đích: Theo dõi tiến độ, ghi chép lại các tính năng đã phá
     - Cập nhật toàn bộ các tính năng mới vào README.md.
     - Khởi tạo và ghi nhận nhật ký phát triển đầy đủ từ ngày 18/09 đến 21/09 vào DAILY_NOTES.txt.
     - Đồng bộ tất cả các commit lên nhánh main của repository GitHub.
+[x] 6. Bộ lọc sắp xếp & Nút Reset lịch sử giao dịch (Sổ Thu Chi):
+    - Bổ sung menu sắp xếp lịch sử giao dịch: Mới nhất (Mặc định), Cũ nhất, Số tiền: Cao ➔ Thấp, Số tiền: Thấp ➔ Cao.
+    - Thêm nút Đặt lại (Reset) với biểu tượng mũi tên xoay tròn (RotateCcw) cho phép đưa danh sách giao dịch, bộ lọc loại (Thu/Chi), ngày tháng và thứ tự hiển thị về trạng thái mặc định ban đầu chỉ với 1 cú nhấp chuột.
+    - Hiển thị chỉ báo "Đang tùy chỉnh" và nút quay về mặc định ngay trên tiêu đề danh sách giao dịch.
 
 * Kế hoạch tiếp theo (To-do):
     - [ ] Kiểm thử toàn diện các luồng nghiệp vụ trên môi trường thật.
