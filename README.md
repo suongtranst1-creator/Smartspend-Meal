@@ -106,6 +106,7 @@
 - **Tối ưu Mobile-First**:
   - **Trên Desktop**: Menu điều hướng đặt ở Header trên cùng, hiển thị đầy đủ các cột và bảng phân tích.
   - **Trên Mobile / Tablet**: Tự động chuyển thành **Bottom Navigation Bar** cố định ở chân màn hình kèm huy hiệu đếm giỏ hàng tiện lợi khi thao tác bằng 1 tay trong lúc đi chợ.
+  - **Chống vỡ layout và nhảy dòng (Responsive Layout Protection)**: Bổ sung các cơ chế `whitespace-nowrap tabular-nums shrink-0`, cắt ngắn văn bản dài `truncate min-w-0 flex-1` và căn chỉnh tỷ lệ icon/nút bấm giúp hàng giao dịch và giỏ đi chợ hiển thị gọn gàng, liền mạch không bị rớt dấu tiền tệ hay ngắt chữ theo chiều dọc trên các dòng điện thoại màn hình nhỏ (< 380px).
 
 ---
 

@@ -1332,7 +1332,7 @@ export default function App() {
 
               <button
                 onClick={handleOpenAddTransaction}
-                className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-semibold text-sm shadow-sm hover:shadow active:scale-98 transition-all shrink-0"
+                className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-semibold text-sm shadow-sm hover:shadow active:scale-98 transition-all shrink-0 w-full sm:w-auto"
               >
                 <Plus className="w-4 h-4" />
                 <span>Thêm giao dịch mới</span>
@@ -1341,19 +1341,19 @@ export default function App() {
 
             {/* Transaction History List with Edit and Delete */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs overflow-hidden">
-              <div className="p-4 sm:p-5 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between flex-wrap gap-2">
+              <div className="p-3.5 sm:p-5 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-2">
-                  <Receipt className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  <h3 className="font-bold text-gray-900 dark:text-white text-base">
+                  <Receipt className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <h3 className="font-bold text-gray-900 dark:text-white text-sm sm:text-base whitespace-nowrap">
                     Lịch sử giao dịch gần đây
                   </h3>
                   {isFilterOrSortActive && (
-                    <span className="text-[10px] bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 font-semibold px-2 py-0.5 rounded-full">
+                    <span className="text-[10px] bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">
                       Đang tùy chỉnh
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
                   <span>{filteredTransactions.length} giao dịch</span>
                   {isFilterOrSortActive && (
                     <button
@@ -1377,64 +1377,69 @@ export default function App() {
                   filteredTransactions.slice(0, displayLimit).map((item) => (
                     <div
                       key={item.id}
-                      className="p-4 sm:px-5 flex items-center justify-between hover:bg-gray-50/80 dark:hover:bg-gray-700/40 transition-colors group"
+                      className="p-3 sm:p-4 sm:px-5 flex items-center justify-between gap-2 sm:gap-4 hover:bg-gray-50/80 dark:hover:bg-gray-700/40 transition-colors group"
                     >
-                      <div className="flex items-center gap-3.5">
+                      {/* Left: Type Icon + Title + Category & Date Badges */}
+                      <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1">
                         <div
-                          className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                          className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 ${
                             item.type === 'income'
                               ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400'
                               : 'bg-rose-50 dark:bg-rose-950/40 text-rose-500 dark:text-rose-400'
                           }`}
                         >
                           {item.type === 'income' ? (
-                            <TrendingUp className="w-5 h-5" />
+                            <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
                           ) : (
-                            <TrendingDown className="w-5 h-5" />
+                            <TrendingDown className="w-4 h-4 sm:w-5 sm:h-5" />
                           )}
                         </div>
-                        <div>
-                          <div className="font-semibold text-gray-900 dark:text-white text-sm">
+                        <div className="min-w-0 flex-1">
+                          <div
+                            className="font-semibold text-gray-900 dark:text-white text-xs sm:text-sm truncate"
+                            title={item.title}
+                          >
                             {item.title}
                           </div>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[11px] bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-md font-medium">
+                          <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 overflow-hidden">
+                            <span className="text-[10px] sm:text-[11px] bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 sm:px-2 py-0.5 rounded-md font-medium whitespace-nowrap shrink-0">
                               {item.category}
                             </span>
-                            <span className="text-[11px] text-gray-400 dark:text-gray-500 flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
+                            <span className="text-[10px] sm:text-[11px] text-gray-400 dark:text-gray-500 flex items-center gap-1 whitespace-nowrap shrink-0">
+                              <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
                               {formatDate(item.date)}
                             </span>
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3">
+                      {/* Right: Formatted Amount (Never Wrap) + Edit/Delete Buttons */}
+                      <div className="flex items-center gap-1 sm:gap-2.5 shrink-0 text-right ml-1">
                         <span
-                          className={`font-bold text-sm sm:text-base ${
+                          className={`font-bold text-xs sm:text-base whitespace-nowrap tabular-nums shrink-0 ${
                             item.type === 'income'
                               ? 'text-emerald-600 dark:text-emerald-400'
                               : 'text-rose-600 dark:text-rose-400'
                           }`}
                         >
-                          {item.type === 'income' ? '+' : '-'} {formatVND(item.amount)}
+                          {item.type === 'income' ? '+' : '-'}&nbsp;{formatVND(item.amount)}
                         </span>
                         
                         {/* Edit & Delete Action Buttons */}
-                        <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-0.5 sm:gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
                           <button
                             onClick={() => handleOpenEditTransaction(item)}
-                            className="text-gray-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors"
+                            className="text-gray-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 p-1 sm:p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors"
                             title="Chỉnh sửa giao dịch"
                           >
-                            <Pencil className="w-4 h-4" />
+                            <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteTransaction(item.id)}
-                            className="text-gray-400 dark:text-gray-500 hover:text-rose-500 dark:hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                            className="text-gray-400 dark:text-gray-500 hover:text-rose-500 dark:hover:text-rose-400 p-1 sm:p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
                             title="Xóa giao dịch"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                           </button>
                         </div>
                       </div>
@@ -1737,14 +1742,14 @@ export default function App() {
                       <div
                         key={item.id}
                         onClick={() => handleToggleCheck(item.id)}
-                        className={`p-3.5 sm:px-5 flex items-center justify-between cursor-pointer select-none transition-colors ${
+                        className={`p-3 sm:p-3.5 sm:px-5 flex items-center justify-between gap-2 cursor-pointer select-none transition-colors ${
                           item.checked ? 'bg-gray-50/50 dark:bg-gray-800/40' : 'hover:bg-gray-50/80 dark:hover:bg-gray-700/40'
                         }`}
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                           <button
                             type="button"
-                            className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
+                            className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors shrink-0 ${
                               item.checked
                                 ? 'text-emerald-600 dark:text-emerald-400'
                                 : 'text-gray-300 dark:text-gray-600 hover:text-gray-400'
@@ -1758,28 +1763,29 @@ export default function App() {
                           </button>
 
                           <span
-                            className={`text-sm font-medium transition-all ${
+                            className={`text-xs sm:text-sm font-medium transition-all truncate min-w-0 ${
                               item.checked
                                 ? 'line-through text-gray-400 dark:text-gray-500'
                                 : 'text-gray-800 dark:text-gray-200'
                             }`}
+                            title={item.name}
                           >
                             {item.name}
                           </span>
 
-                          <span className="text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 px-2.5 py-0.5 rounded-full">
+                          <span className="text-[10px] sm:text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 px-2 sm:px-2.5 py-0.5 rounded-full whitespace-nowrap shrink-0">
                             {getDisplayQuantity(item)}
                           </span>
 
                           {item.plan_date && !getDisplayQuantity(item)?.includes('/') && (
-                            <span className="hidden sm:inline-flex items-center text-[10px] bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 px-2 py-0.5 rounded-md font-medium">
+                            <span className="hidden sm:inline-flex items-center text-[10px] bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 px-2 py-0.5 rounded-md font-medium whitespace-nowrap shrink-0">
                               Thực đơn {formatDate(item.plan_date)}
                             </span>
                           )}
                         </div>
 
                         {/* Actions: Edit and Delete */}
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-0.5 sm:gap-1 shrink-0 ml-1">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -1788,7 +1794,7 @@ export default function App() {
                             className="text-gray-300 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 p-1 rounded-lg transition-colors"
                             title="Chỉnh sửa món này"
                           >
-                            <Pencil className="w-4 h-4" />
+                            <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                           </button>
                           <button
                             onClick={(e) => {
@@ -1798,7 +1804,7 @@ export default function App() {
                             className="text-gray-300 dark:text-gray-500 hover:text-rose-500 dark:hover:text-rose-400 p-1 rounded-lg transition-colors"
                             title="Xóa món"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                           </button>
                         </div>
                       </div>

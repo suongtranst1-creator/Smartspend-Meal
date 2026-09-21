@@ -99,6 +99,12 @@ Mục đích: Theo dõi tiến độ, ghi chép lại các tính năng đã phá
     - Giới hạn bảng hiển thị đúng 10 bản ghi mới nhất giúp giao diện gọn gàng, trực quan và tải nhanh.
     - Chuẩn hóa định dạng thời gian thành `dd/mm/yyyy HH:mm:ss` cả ở phía CSDL PostgreSQL lẫn bộ lọc hiển thị phía giao diện.
     - Bổ sung nút "Xuất Nhật Ký (CSV)" cho phép tải toàn bộ lịch sử thao tác hệ thống ra tệp CSV định dạng chuẩn UTF-8 mở trên Excel không bị lỗi font tiếng Việt.
+[x] 12. Tối ưu hóa giao diện di động (Mobile Responsive Layout):
+    - Khắc phục triệt để lỗi vỡ layout và nhảy dòng trên điện thoại:
+      + Số tiền giao dịch bị rớt dấu `+`/`-` xuống dòng riêng lẻ: Bổ sung `whitespace-nowrap tabular-nums shrink-0` kết hợp khoảng trắng không ngắt dòng `&nbsp;` đảm bảo số tiền và dấu luôn hiển thị liền mạch trên một hàng.
+      + Tên danh mục (ví dụ "Ăn uống" bị ngắt thành "Ăn" và "uống") và ngày tháng (ví dụ "21/09/2026" bị rớt số năm) do flexbox co ép: Bổ sung `whitespace-nowrap shrink-0` cho các huy hiệu (badge), đồng thời thêm `truncate min-w-0 flex-1` cho tiêu đề giao dịch.
+      + Cân đối khoảng cách hàng: Giảm padding hàng từ `p-4` xuống `p-3 sm:p-4`, tinh chỉnh kích thước biểu tượng và nút Sửa/Xóa (`p-1 sm:p-1.5`, `w-3.5 h-3.5 sm:w-4 sm:h-4`) giúp tiết kiệm hơn 24px chiều ngang, hiển thị trọn vẹn và đẹp mắt trên các dòng điện thoại màn hình nhỏ (< 380px).
+      + Đồng bộ tối ưu tương tự cho hàng danh sách món đi chợ ở Tab 3 (Đi Chợ) và nút "Thêm giao dịch mới" dạng linh hoạt theo chiều rộng màn hình.
 
 * Kế hoạch tiếp theo (To-do):
     - [ ] Kiểm thử toàn diện các luồng nghiệp vụ trên môi trường thật.
