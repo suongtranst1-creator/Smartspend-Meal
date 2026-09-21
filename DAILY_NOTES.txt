@@ -113,6 +113,12 @@ Mục đích: Theo dõi tiến độ, ghi chép lại các tính năng đã phá
       + Tự động đối soát (auto-reconcile) trạng thái đã mua giữa `meal_plans` và `grocery_items` ngay khi nạp dữ liệu ban đầu từ CSDL.
       + Chuẩn hóa so khớp tên nguyên liệu không phân biệt hoa thường và khoảng trắng (`trim().toLowerCase()`).
 
+[x] 14. Tự động loại bỏ món đã có sẵn ra khỏi Giỏ Đi Chợ:
+    - Đáp ứng đúng luồng nghiệp vụ thực tế: Khi người dùng tick chọn nguyên liệu đã có sẵn ở Thực Đơn Tuần (Tab 2), hệ thống sẽ TỰ ĐỘNG BỎ HOÀN TOÀN món đó ra khỏi Giỏ Đi Chợ (Tab 3) thay vì chỉ gạch ngang, đảm bảo giỏ đi chợ chỉ chứa các nguyên liệu thực sự cần mua.
+    - Xóa bản ghi tương ứng khỏi bảng `grocery_items` trong CSDL PostgreSQL.
+    - Tự động lọc sạch các món đã có sẵn khỏi giỏ hàng ngay khi tải ứng dụng, cập nhật chính xác số lượng trên huy hiệu "Đi Chợ".
+    - Nếu người dùng bỏ tick chọn ở Thực Đơn (chưa có sẵn), hệ thống tự động thêm lại nguyên liệu vào Giỏ Đi Chợ.
+
 * Kế hoạch tiếp theo (To-do):
     - [ ] Kiểm thử toàn diện các luồng nghiệp vụ trên môi trường thật.
     - [ ] Chuẩn bị bài thuyết trình / tài liệu nộp đề tài bảng Văn phòng.

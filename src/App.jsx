@@ -161,23 +161,41 @@ const EMPTY_MEAL_SLOT = {
 // Initial Shopping Items (Empty, ready for user inputs or PostgreSQL sync)
 const INITIAL_SHOPPING_ITEMS = [];
 
-// Hàm lọc bỏ các món thực đơn chưa mua của các ngày đã qua
+// Hàm lọc bỏ các món không cần mua (đã có sẵn trong thực đơn hoặc quá hạn chưa mua)
 const filterExpiredUnboughtGroceries = (items = [], meals = {}) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   return items.filter((item) => {
-    // Nếu món đã mua (checked), giữ lại để người dùng đối chiếu / chốt hóa đơn
+    // 1. Nếu nguyên liệu đã được đánh dấu "Có rồi" bên Thực Đơn Tuần (isBought: true) -> Bỏ luôn khỏi giỏ hàng
+    if (meals && typeof meals === 'object') {
+      const targetDates = item.plan_date ? [item.plan_date] : Object.keys(meals);
+      for (const dStr of targetDates) {
+        const dayMeals = meals[dStr];
+        if (Array.isArray(dayMeals)) {
+          for (const m of dayMeals) {
+            const matchingIng = m.ingredients?.find(
+              (i) => i.name?.trim().toLowerCase() === item.name?.trim().toLowerCase()
+            );
+            if (matchingIng?.isBought) {
+              return false; // Bỏ hoàn toàn khỏi giỏ hàng, không hiển thị gạch ngang
+            }
+          }
+        }
+      }
+    }
+
+    // 2. Nếu món đã mua tại giỏ đi chợ (checked), giữ lại để người dùng đối chiếu / chốt hóa đơn
     if (item.checked) return true;
 
-    // 1. Kiểm tra plan_date gắn kèm
+    // 3. Kiểm tra plan_date gắn kèm: nếu ngày thực đơn đã qua mà chưa mua -> tự động bỏ qua
     if (item.plan_date) {
       const pDate = new Date(item.plan_date);
       pDate.setHours(0, 0, 0, 0);
       if (pDate < today) return false;
     }
 
-    // 2. Kiểm tra chéo với mealData đối với dữ liệu cũ chưa có plan_date
+    // 4. Kiểm tra chéo với mealData đối với dữ liệu cũ chưa có plan_date
     if (meals && typeof meals === 'object') {
       for (const [dateStr, dayMeals] of Object.entries(meals)) {
         const d = new Date(dateStr);
@@ -348,24 +366,7 @@ export default function App() {
               if (grocRes.ok) {
                 const grocData = await grocRes.json();
                 if (Array.isArray(grocData)) {
-                  // Đối soát đồng bộ trạng thái checked nếu nguyên liệu trong thực đơn đã được đánh dấu mua
-                  const reconciledGroceries = grocData.map((gItem) => {
-                    if (gItem.checked) return gItem;
-                    if (gItem.plan_date && loadedMeals[gItem.plan_date]) {
-                      const dayMeals = loadedMeals[gItem.plan_date];
-                      for (const m of dayMeals) {
-                        const matchingIng = m.ingredients?.find(
-                          (i) => i.name?.toLowerCase().trim() === gItem.name?.toLowerCase().trim()
-                        );
-                        if (matchingIng?.isBought) {
-                          return { ...gItem, checked: true };
-                        }
-                      }
-                    }
-                    return gItem;
-                  });
-
-                  setShoppingList(filterExpiredUnboughtGroceries(reconciledGroceries, loadedMeals));
+                  setShoppingList(filterExpiredUnboughtGroceries(grocData, loadedMeals));
                 }
               }
             } catch (e) {
@@ -706,18 +707,61 @@ export default function App() {
       [plan_date]: dayMeals,
     });
 
-    // 1. Đồng bộ tức thì sang danh sách Đi Chợ (Tab 3)
-    const matchedGroceryItems = [];
-    const updatedShoppingList = shoppingList.map((item) => {
-      const isMatchName = item.name.toLowerCase().trim() === ingredientName.toLowerCase().trim();
-      const isMatchDate = !item.plan_date || item.plan_date === plan_date;
-      if (isMatchName && isMatchDate) {
-        matchedGroceryItems.push(item);
-        return { ...item, checked: newBoughtStatus };
+    // 1. Xử lý đồng bộ danh sách Đi Chợ (Tab 3):
+    if (newBoughtStatus) {
+      // Khi đã có sẵn nguyên liệu (tick chọn) -> Bỏ luôn khỏi giỏ hàng đi chợ, không để gạch ngang
+      const itemsToRemove = shoppingList.filter((item) => {
+        const isMatchName = item.name.toLowerCase().trim() === ingredientName.toLowerCase().trim();
+        const isMatchDate = !item.plan_date || item.plan_date === plan_date;
+        return isMatchName && isMatchDate;
+      });
+
+      // Xóa khỏi state shoppingList
+      setShoppingList((prev) =>
+        prev.filter((item) => {
+          const isMatchName = item.name.toLowerCase().trim() === ingredientName.toLowerCase().trim();
+          const isMatchDate = !item.plan_date || item.plan_date === plan_date;
+          return !(isMatchName && isMatchDate);
+        })
+      );
+
+      // Xóa khỏi CSDL (bảng grocery_items)
+      for (const item of itemsToRemove) {
+        fetch(`/api/groceries/${item.id}`, { method: 'DELETE' }).catch((e) =>
+          console.warn('Delete grocery item error:', e)
+        );
       }
-      return item;
-    });
-    setShoppingList(updatedShoppingList);
+      showToast(`Đã bỏ "${ingredientName}" ra khỏi giỏ đi chợ (vì đã có sẵn)`);
+    } else {
+      // Khi bỏ tick (chưa có sẵn) -> Tự động thêm lại vào giỏ đi chợ nếu chưa có
+      const existsInCart = shoppingList.some((item) => {
+        const isMatchName = item.name.toLowerCase().trim() === ingredientName.toLowerCase().trim();
+        const isMatchDate = !item.plan_date || item.plan_date === plan_date;
+        return isMatchName && isMatchDate;
+      });
+
+      if (!existsInCart) {
+        const mealTag = formatMealTag(plan_date, meal_name);
+        const newItem = {
+          id: `${Date.now()}`,
+          name: ingredientName,
+          quantity: mealTag,
+          category: '',
+          checked: false,
+          plan_date: plan_date || null,
+        };
+
+        setShoppingList((prev) => [...prev, newItem]);
+
+        fetch('/api/groceries', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newItem),
+        }).catch((e) => console.warn('Re-add grocery error:', e));
+
+        showToast(`Đã thêm lại "${ingredientName}" vào giỏ đi chợ`);
+      }
+    }
 
     // 2. Lưu thực đơn xuống DB
     if (updatedMeal) {
@@ -730,28 +774,6 @@ export default function App() {
       } catch (err) {
         console.warn('API sync meal error:', err);
       }
-    }
-
-    // 3. Đồng bộ trạng thái món đi chợ xuống DB
-    try {
-      // Toggle các món tìm thấy trong giỏ
-      for (const grocItem of matchedGroceryItems) {
-        if (grocItem.checked !== newBoughtStatus) {
-          await fetch(`/api/groceries/${grocItem.id}/toggle`, { method: 'PATCH' });
-        }
-      }
-      // Gọi endpoint sync-status tổng quát theo tên & ngày
-      await fetch('/api/groceries/sync-status', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          plan_date,
-          name: ingredientName,
-          checked: newBoughtStatus,
-        }),
-      });
-    } catch (err) {
-      console.warn('API sync grocery error:', err);
     }
   };
 
