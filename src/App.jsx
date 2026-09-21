@@ -914,26 +914,26 @@ export default function App() {
       )}
 
       {/* Navigation Header */}
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-xs">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-600/20">
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-xs">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3 sm:gap-4">
+          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-600/20 shrink-0">
               <Sparkles className="w-5 h-5" />
             </div>
-            <div>
-              <h1 className="font-bold text-lg leading-none text-gray-900 tracking-tight flex items-center gap-1.5">
+            <div className="shrink-0">
+              <h1 className="font-bold text-base sm:text-lg leading-none text-gray-900 tracking-tight flex items-center gap-1.5 whitespace-nowrap">
                 SmartSpend <span className="text-emerald-600">&</span> Meal
               </h1>
-              <p className="text-xs text-gray-500 mt-0.5 font-normal">
+              <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5 font-normal whitespace-nowrap">
                 Sổ Thu Chi & Thực Đơn Đi Chợ Tuần
               </p>
             </div>
           </div>
 
           {/* Database Connection Indicator & Navigation */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <div
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-all ${
+              className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-semibold border transition-all whitespace-nowrap ${
                 dbStatus.connected
                   ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                   : 'bg-amber-50 text-amber-800 border-amber-200'
@@ -946,73 +946,73 @@ export default function App() {
             >
               <Database className="w-3.5 h-3.5 text-current shrink-0" />
               <span
-                className={`w-1.5 h-1.5 rounded-full ${
+                className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                   dbStatus.connected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
                 }`}
               />
-              <span className="hidden sm:inline">
+              <span className="hidden sm:inline whitespace-nowrap">
                 {dbStatus.connected ? 'PostgreSQL: Đã kết nối' : 'PostgreSQL: Sẵn sàng'}
               </span>
             </div>
 
             {/* Desktop Navigation Tabs */}
-            <nav className="hidden md:flex items-center gap-1 bg-gray-100/80 p-1 rounded-xl border border-gray-200/60">
-            <button
-              onClick={() => setActiveTab('spend')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                activeTab === 'spend'
-                  ? 'bg-white text-emerald-700 shadow-xs'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/50'
-              }`}
-            >
-              <Wallet className="w-4 h-4" />
-              <span>Sổ Thu Chi</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('meal')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                activeTab === 'meal'
-                  ? 'bg-white text-emerald-700 shadow-xs'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/50'
-              }`}
-            >
-              <Utensils className="w-4 h-4" />
-              <span>Thực Đơn Tuần</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('shop')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all relative ${
-                activeTab === 'shop'
-                  ? 'bg-white text-emerald-700 shadow-xs'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/50'
-              }`}
-            >
-              <ShoppingCart className="w-4 h-4" />
-              <span>Đi Chợ</span>
-              {activeShoppingList.length > 0 && (
-                <span className="bg-emerald-600 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold">
-                  {activeShoppingList.length}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('settings')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                activeTab === 'settings'
-                  ? 'bg-white text-emerald-700 shadow-xs'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/50'
-              }`}
-            >
-              <Settings className="w-4 h-4" />
-              <span>Cài Đặt</span>
-            </button>
-          </nav>
+            <nav className="hidden md:flex items-center gap-0.5 lg:gap-1 bg-gray-100/90 p-1 rounded-xl border border-gray-200/60 shrink-0">
+              <button
+                onClick={() => setActiveTab('spend')}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 lg:px-3.5 lg:py-2 rounded-lg text-xs lg:text-sm font-semibold whitespace-nowrap transition-all ${
+                  activeTab === 'spend'
+                    ? 'bg-white text-emerald-700 shadow-xs'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/50'
+                }`}
+              >
+                <Wallet className="w-4 h-4 shrink-0" />
+                <span className="whitespace-nowrap">Sổ Thu Chi</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('meal')}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 lg:px-3.5 lg:py-2 rounded-lg text-xs lg:text-sm font-semibold whitespace-nowrap transition-all ${
+                  activeTab === 'meal'
+                    ? 'bg-white text-emerald-700 shadow-xs'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/50'
+                }`}
+              >
+                <Utensils className="w-4 h-4 shrink-0" />
+                <span className="whitespace-nowrap">Thực Đơn Tuần</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('shop')}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 lg:px-3.5 lg:py-2 rounded-lg text-xs lg:text-sm font-semibold whitespace-nowrap transition-all relative ${
+                  activeTab === 'shop'
+                    ? 'bg-white text-emerald-700 shadow-xs'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/50'
+                }`}
+              >
+                <ShoppingCart className="w-4 h-4 shrink-0" />
+                <span className="whitespace-nowrap">Đi Chợ</span>
+                {activeShoppingList.length > 0 && (
+                  <span className="bg-emerald-600 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold ml-0.5">
+                    {activeShoppingList.length}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab('settings')}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 lg:px-3.5 lg:py-2 rounded-lg text-xs lg:text-sm font-semibold whitespace-nowrap transition-all ${
+                  activeTab === 'settings'
+                    ? 'bg-white text-emerald-700 shadow-xs'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/50'
+                }`}
+              >
+                <Settings className="w-4 h-4 shrink-0" />
+                <span className="whitespace-nowrap">Cài Đặt</span>
+              </button>
+            </nav>
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
 
       {/* Main Content Area */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 pt-6">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-6">
         {/* ========================================================================= */}
         {/* TAB 1: THU CHI (EXPENSE TRACKER)                                          */}
         {/* ========================================================================= */}
