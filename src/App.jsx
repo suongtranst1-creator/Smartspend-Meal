@@ -28,7 +28,8 @@ import {
   Database,
   Settings,
   RotateCcw,
-  ArrowUpDown
+  ArrowUpDown,
+  Download
 } from 'lucide-react';
 
 // Currency Formatter
@@ -86,6 +87,27 @@ const formatMealTag = (dateString, mealName) => {
     .join(' ');
 
   return datePart ? `${titleCaseName} ${datePart}` : titleCaseName;
+};
+
+// System Log Time Formatter (-> DD/MM/YYYY HH:mm:ss)
+const formatLogTime = (timeStr) => {
+  if (!timeStr) return '';
+  if (/^\d{2}\/\d{2}\/\d{4}/.test(timeStr)) return timeStr;
+  const parts = timeStr.trim().split(' ');
+  if (parts.length >= 2 && parts[0].includes('-')) {
+    const d = parts[0].split('-');
+    if (d.length === 3) {
+      return `${d[2]}/${d[1]}/${d[0]} ${parts[1].slice(0, 8)}`;
+    }
+  }
+  if (timeStr.includes('T')) {
+    const [datePart, timePart] = timeStr.split('T');
+    const d = datePart.split('-');
+    if (d.length === 3) {
+      return `${d[2]}/${d[1]}/${d[0]} ${(timePart || '').slice(0, 8)}`;
+    }
+  }
+  return timeStr;
 };
 
 // Initial Transactions (Empty, ready for user inputs or PostgreSQL sync)
@@ -975,7 +997,7 @@ export default function App() {
     const csvContent = [
       header.join(','),
       ...transactions.map(t => [
-        t.date,
+        `"${formatDate(t.date)}"`,
         t.type === 'income' ? 'Thu' : 'Chi',
         t.amount,
         `"${t.category}"`,
@@ -993,6 +1015,33 @@ export default function App() {
     link.click();
     document.body.removeChild(link);
     showToast('Đã xuất file CSV thành công!');
+  };
+
+  const handleExportLogsCSV = () => {
+    if (!systemLogs || systemLogs.length === 0) {
+      alert('Chưa có bản ghi nhật ký nào để xuất!');
+      return;
+    }
+    const header = ['Thời gian', 'Hành động', 'Loại', 'Chi tiết'];
+    const csvContent = [
+      header.join(','),
+      ...systemLogs.map(log => [
+        `"${formatLogTime(log.time)}"`,
+        `"${(log.action || '').replace(/"/g, '""')}"`,
+        `"${(log.entity_type || '').replace(/"/g, '""')}"`,
+        `"${(log.entity_name || '').replace(/"/g, '""')}"`
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `nhat-ky-he-thong-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Đã xuất file nhật ký (CSV) thành công!');
   };
 
   const currentMeal = mealData[selectedDay] || mealData[todayKey] || {
@@ -2274,14 +2323,30 @@ export default function App() {
 
             {/* System Logs */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 md:p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-              <h2 className="text-lg font-bold flex items-center gap-2 mb-4 dark:text-gray-100">
-                <Clock className="w-5 h-5 text-gray-500 dark:text-gray-400" /> Nhật ký hệ thống (Logs)
-              </h2>
+              <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                  <h2 className="text-lg font-bold dark:text-gray-100">
+                    Nhật ký hệ thống (Logs)
+                  </h2>
+                  <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium px-2.5 py-0.5 rounded-full">
+                    {Math.min(10, systemLogs.length)} / {systemLogs.length} mới nhất
+                  </span>
+                </div>
+                <button
+                  onClick={handleExportLogsCSV}
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-all cursor-pointer"
+                  title="Xuất toàn bộ nhật ký hệ thống ra file CSV"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Xuất Nhật Ký (CSV)</span>
+                </button>
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-gray-100 dark:border-gray-700 text-xs text-gray-400 uppercase tracking-wider">
-                      <th className="py-3 pr-4 font-semibold">Thời gian</th>
+                      <th className="py-3 pr-4 font-semibold">Thời gian (dd/mm/yyyy)</th>
                       <th className="py-3 px-4 font-semibold">Hành động</th>
                       <th className="py-3 px-4 font-semibold">Loại</th>
                       <th className="py-3 pl-4 font-semibold">Chi tiết</th>
@@ -2291,9 +2356,11 @@ export default function App() {
                     {systemLogs.length === 0 ? (
                       <tr><td colSpan="4" className="py-4 text-center text-gray-500 dark:text-gray-400">Chưa có bản ghi nào</td></tr>
                     ) : (
-                      systemLogs.map(log => (
+                      systemLogs.slice(0, 10).map(log => (
                         <tr key={log.id} className="border-b border-gray-50 dark:border-gray-700/50 hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors">
-                          <td className="py-3 pr-4 text-gray-500 dark:text-gray-400 tabular-nums text-xs">{log.time}</td>
+                          <td className="py-3 pr-4 text-gray-500 dark:text-gray-400 tabular-nums text-xs whitespace-nowrap">
+                            {formatLogTime(log.time)}
+                          </td>
                           <td className="py-3 px-4 font-medium dark:text-gray-200">{log.action}</td>
                           <td className="py-3 px-4 text-emerald-600 dark:text-emerald-400">{log.entity_type}</td>
                           <td className="py-3 pl-4 text-gray-600 dark:text-gray-300">{log.entity_name}</td>
@@ -2303,6 +2370,11 @@ export default function App() {
                   </tbody>
                 </table>
               </div>
+              {systemLogs.length > 10 && (
+                <div className="mt-3.5 pt-3 border-t border-gray-100 dark:border-gray-700 text-xs text-center text-gray-400 dark:text-gray-500">
+                  Đang hiển thị 10 bản ghi mới nhất. Để xem toàn bộ lịch sử, vui lòng bấm nút <strong>"Xuất Nhật Ký (CSV)"</strong> ở trên.
+                </div>
+              )}
             </div>
           </div>
         )}

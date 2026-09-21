@@ -91,7 +91,7 @@ app.delete('/api/categories/:id', async (req, res) => {
 app.get('/api/logs', async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT id, action, entity_type, entity_name, TO_CHAR(created_at, 'YYYY-MM-DD HH24:MI:SS') as time
+      SELECT id, action, entity_type, entity_name, TO_CHAR(created_at, 'DD/MM/YYYY HH24:MI:SS') as time
       FROM system_logs 
       ORDER BY created_at DESC 
       LIMIT 100;

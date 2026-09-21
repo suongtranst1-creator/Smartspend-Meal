@@ -88,7 +88,9 @@
 * **Quản Lý Danh Mục Tùy Biến (Categories)**:
   - Hỗ trợ thêm và xóa các danh mục thu, chi theo thói quen cá nhân. Danh mục cập nhật tức thì vào các menu thả xuống trong toàn bộ ứng dụng.
 * **Nhật Ký Hoạt Động Hệ Thống (Audit Logs)**:
-  - Tự động ghi nhận mọi thao tác quan trọng (Thêm, Sửa, Xóa giao dịch, thực đơn, đi chợ, danh mục) kèm thời gian chi tiết, hỗ trợ người dùng rà soát biến động dữ liệu.
+  - Tự động ghi nhận mọi thao tác quan trọng (Thêm, Sửa, Xóa giao dịch, thực đơn, đi chợ, danh mục) kèm thời gian chi tiết chuẩn định dạng **`dd/mm/yyyy HH:mm:ss`**.
+  - **Tối ưu hiển thị 10 bản ghi mới nhất**: Bảng nhật ký được tinh gọn chỉ hiển thị 10 hành động gần nhất giúp giao diện gọn gàng, tải siêu nhanh.
+  - **Xuất file nhật ký (Export Logs CSV)**: Tích hợp nút *"Xuất Nhật Ký (CSV)"* cho phép tải về toàn bộ lịch sử thao tác hệ thống ra tệp CSV định dạng chuẩn UTF-8 để lưu trữ hoặc đối soát kiểm toán.
 * **Chỉ Báo Trạng Thái Kết Nối CSDL (DB Health Indicator)**:
   - Hiển thị trực quan trạng thái kết nối PostgreSQL (`PostgreSQL: Đã kết nối` / `Sẵn sàng`) ngay trên thanh Header.
 * **Tự Động Khởi Tạo & Di Trú Cấu Trúc (Auto-migration)**:

@@ -95,6 +95,10 @@ Mục đích: Theo dõi tiến độ, ghi chép lại các tính năng đã phá
 [x] 10. Hoàn thiện và đồng bộ toàn diện tài liệu README.md:
     - Bổ sung đầy đủ tất cả các tính năng mới được phát triển trong ngày vào tài liệu dự án: Bộ lọc sắp xếp & nút Reset giao dịch, Chế độ Dark/Light Mode toàn diện & Nút chuyển nhanh trên Header, Gán nhãn món đi chợ cụ thể theo Bữa ăn + Ngày, Tự động định dạng ngắt dấu hàng nghìn khi nhập tiền tệ.
     - Cập nhật sơ đồ cấu trúc cây thư mục mã nguồn và tài liệu lưu trữ.
+[x] 11. Tối ưu Nhật ký hệ thống (Logs) & Xuất file CSV:
+    - Giới hạn bảng hiển thị đúng 10 bản ghi mới nhất giúp giao diện gọn gàng, trực quan và tải nhanh.
+    - Chuẩn hóa định dạng thời gian thành `dd/mm/yyyy HH:mm:ss` cả ở phía CSDL PostgreSQL lẫn bộ lọc hiển thị phía giao diện.
+    - Bổ sung nút "Xuất Nhật Ký (CSV)" cho phép tải toàn bộ lịch sử thao tác hệ thống ra tệp CSV định dạng chuẩn UTF-8 mở trên Excel không bị lỗi font tiếng Việt.
 
 * Kế hoạch tiếp theo (To-do):
     - [ ] Kiểm thử toàn diện các luồng nghiệp vụ trên môi trường thật.
