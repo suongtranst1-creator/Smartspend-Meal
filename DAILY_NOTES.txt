@@ -1,0 +1,49 @@
+================================================================================
+🌿 SMARTSPEND & MEAL - NHẬT KÝ CÔNG VIỆC HÀNG NGÀY (DAILY NOTES)
+================================================================================
+
+Mục đích: Ghi chép lại các công việc, tính năng đã làm, lỗi đã sửa và kế hoạch tiếp theo mỗi ngày.
+
+--------------------------------------------------------------------------------
+📅 NGÀY: 21/09/2026 (Thứ Hai)
+--------------------------------------------------------------------------------
+[x] 1. Tự động bỏ qua món đi chợ quá hạn chưa mua:
+    - Bổ sung logic: Nếu ngày thực đơn đã qua mà nguyên liệu chưa mua (is_bought = false) thì tự động loại bỏ khỏi danh sách đi chợ.
+    - Thêm cột `plan_date` vào bảng `grocery_items` trong CSDL PostgreSQL.
+    - Hiển thị nhãn "Đã bỏ qua" màu vàng cam trên thẻ thực đơn của ngày đã qua.
+    - Giữ lại các món đã mua trong giỏ để đối chiếu và chốt hóa đơn.
+
+[x] 2. Tinh gọn danh sách đi chợ:
+    - Lược bỏ trường phân loại/hạng mục (Rau củ, Thịt cá, Gia vị...) ở form thêm nhanh nguyên liệu và modal chỉnh sửa.
+    - Chỉ giữ lại: Tên món + Số lượng + Nhãn ngày thực đơn để thao tác nhanh hơn.
+    - Cập nhật mục Cài đặt chỉ quản lý danh mục Thu & Chi.
+
+[x] 3. Sửa lỗi nhật ký hệ thống (system_logs):
+    - Tái cấu trúc bảng `system_logs` với các cột chuẩn: id (SERIAL), action, entity_type, entity_name, created_at.
+    - Khắc phục triệt để lỗi: column "entity_type" of relation "system_logs" does not exist.
+
+[x] 4. Cải tiến giao diện Header chống nhảy dòng:
+    - Bổ sung `whitespace-nowrap` và `shrink-0` cho Logo, thanh trạng thái CSDL và các nút điều hướng.
+    - Nâng container lên `max-w-6xl` giúp giao diện thông thoáng, không còn bị ngắt dòng chữ trên mọi kích thước màn hình.
+
+[x] 5. Tài liệu & Đồng bộ mã nguồn:
+    - Cập nhật toàn bộ các tính năng mới vào README.md.
+    - Commit và push toàn bộ mã nguồn lên nhánh main của GitHub.
+
+* Kế hoạch tiếp theo (To-do):
+    - [ ] Kiểm thử toàn diện các luồng nghiệp vụ trên môi trường thật.
+    - [ ] Chuẩn bị bài thuyết trình / tài liệu nộp đề tài bảng Văn phòng.
+
+--------------------------------------------------------------------------------
+📅 MẪU GHI CHÉP CHO CÁC NGÀY TIẾP THEO (Copy & Paste):
+--------------------------------------------------------------------------------
+/*
+📅 NGÀY: DD/MM/YYYY (Thứ ...)
+--------------------------------------------------------------------------------
+[ ] Công việc 1: ...
+[ ] Công việc 2: ...
+[ ] Lỗi phát sinh & cách sửa: ...
+* Ghi chú / Kế hoạch ngày mai:
+    - ...
+*/
+================================================================================
