@@ -131,12 +131,14 @@ export async function initializeDatabase() {
     -- 5. Bảng system_logs
     CREATE TABLE IF NOT EXISTS system_logs (
         id SERIAL PRIMARY KEY,
-        action VARCHAR(20) NOT NULL,
+        action VARCHAR(50) NOT NULL,
         entity_type VARCHAR(50) NOT NULL,
         entity_name VARCHAR(255),
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     );
     CREATE INDEX IF NOT EXISTS idx_system_logs_created_at ON system_logs (created_at DESC);
+    ALTER TABLE system_logs ADD COLUMN IF NOT EXISTS entity_type VARCHAR(50);
+    ALTER TABLE system_logs ADD COLUMN IF NOT EXISTS entity_name VARCHAR(255);
   `;
 
   try {

@@ -78,3 +78,30 @@ CREATE INDEX IF NOT EXISTS idx_grocery_plan_date ON grocery_items (plan_date);
 COMMENT ON TABLE grocery_items IS 'Danh sách nguyên liệu và thực phẩm cần đi chợ';
 COMMENT ON COLUMN grocery_items.category IS 'Nhóm thực phẩm: Rau củ, Thịt cá, Trứng sữa, Gia vị, Đồ khô';
 COMMENT ON COLUMN grocery_items.is_bought IS 'Trạng thái hoàn thành: true (đã mua), false (chưa mua)';
+
+
+-- ==========================================================
+-- 4. BẢNG CATEGORIES (Danh Mục Tùy Chỉnh)
+-- ==========================================================
+CREATE TABLE IF NOT EXISTS categories (
+    id VARCHAR(50) PRIMARY KEY,
+    type VARCHAR(20) NOT NULL CHECK (type IN ('income', 'expense', 'grocery')),
+    name VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_type_name UNIQUE (type, name)
+);
+CREATE INDEX IF NOT EXISTS idx_categories_type ON categories (type);
+
+
+-- ==========================================================
+-- 5. BẢNG SYSTEM_LOGS (Nhật Ký Thao Tác Hệ Thống)
+-- ==========================================================
+CREATE TABLE IF NOT EXISTS system_logs (
+    id SERIAL PRIMARY KEY,
+    action VARCHAR(50) NOT NULL,
+    entity_type VARCHAR(50) NOT NULL,
+    entity_name VARCHAR(255),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_system_logs_created_at ON system_logs (created_at DESC);
+
