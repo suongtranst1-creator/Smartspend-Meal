@@ -450,6 +450,42 @@ app.patch('/api/groceries/:id/toggle', async (req, res) => {
   }
 });
 
+// Đồng bộ trạng thái đã mua từ Thực đơn sang Đi chợ (theo plan_date và tên món)
+app.patch('/api/groceries/sync-status', async (req, res) => {
+  const { plan_date, name, checked } = req.body;
+  if (!name) {
+    return res.status(400).json({ error: 'Thiếu tên món nguyên liệu' });
+  }
+
+  try {
+    let query;
+    let params;
+    if (plan_date) {
+      query = `
+        UPDATE grocery_items
+        SET is_bought = $1
+        WHERE LOWER(TRIM(item_name)) = LOWER(TRIM($2))
+          AND (plan_date = $3 OR plan_date IS NULL)
+        RETURNING id, item_name as name, is_bought as checked, plan_date;
+      `;
+      params = [!!checked, name, plan_date];
+    } else {
+      query = `
+        UPDATE grocery_items
+        SET is_bought = $1
+        WHERE LOWER(TRIM(item_name)) = LOWER(TRIM($2))
+        RETURNING id, item_name as name, is_bought as checked, plan_date;
+      `;
+      params = [!!checked, name];
+    }
+
+    const result = await pool.query(query, params);
+    res.json({ updatedCount: result.rowCount, items: result.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Xóa 1 món đi chợ
 app.delete('/api/groceries/:id', async (req, res) => {
   const { id } = req.params;

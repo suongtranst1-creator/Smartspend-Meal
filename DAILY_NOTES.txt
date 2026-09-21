@@ -106,6 +106,13 @@ Mục đích: Theo dõi tiến độ, ghi chép lại các tính năng đã phá
       + Cân đối khoảng cách hàng: Giảm padding hàng từ `p-4` xuống `p-3 sm:p-4`, tinh chỉnh kích thước biểu tượng và nút Sửa/Xóa (`p-1 sm:p-1.5`, `w-3.5 h-3.5 sm:w-4 sm:h-4`) giúp tiết kiệm hơn 24px chiều ngang, hiển thị trọn vẹn và đẹp mắt trên các dòng điện thoại màn hình nhỏ (< 380px).
       + Đồng bộ tối ưu tương tự cho hàng danh sách món đi chợ ở Tab 3 (Đi Chợ) và nút "Thêm giao dịch mới" dạng linh hoạt theo chiều rộng màn hình.
 
+[x] 13. Sửa lỗi đồng bộ 2 chiều Thực Đơn Tuần ➔ Đi Chợ:
+    - Khắc phục lỗi khi người dùng tick chọn đã có/đã mua nguyên liệu bên Thực Đơn Tuần (Tab 2) thì danh sách Đi Chợ (Tab 3) không tự động tick:
+      + Bổ sung logic cập nhật trạng thái `checked` tức thì cho `shoppingList` trong hàm `handleToggleIngredientBought`.
+      + Đồng bộ trạng thái `is_bought` xuống CSDL PostgreSQL qua API `PATCH /api/groceries/:id/toggle` và endpoint mới `PATCH /api/groceries/sync-status`.
+      + Tự động đối soát (auto-reconcile) trạng thái đã mua giữa `meal_plans` và `grocery_items` ngay khi nạp dữ liệu ban đầu từ CSDL.
+      + Chuẩn hóa so khớp tên nguyên liệu không phân biệt hoa thường và khoảng trắng (`trim().toLowerCase()`).
+
 * Kế hoạch tiếp theo (To-do):
     - [ ] Kiểm thử toàn diện các luồng nghiệp vụ trên môi trường thật.
     - [ ] Chuẩn bị bài thuyết trình / tài liệu nộp đề tài bảng Văn phòng.

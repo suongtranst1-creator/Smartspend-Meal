@@ -348,7 +348,24 @@ export default function App() {
               if (grocRes.ok) {
                 const grocData = await grocRes.json();
                 if (Array.isArray(grocData)) {
-                  setShoppingList(filterExpiredUnboughtGroceries(grocData, loadedMeals));
+                  // Đối soát đồng bộ trạng thái checked nếu nguyên liệu trong thực đơn đã được đánh dấu mua
+                  const reconciledGroceries = grocData.map((gItem) => {
+                    if (gItem.checked) return gItem;
+                    if (gItem.plan_date && loadedMeals[gItem.plan_date]) {
+                      const dayMeals = loadedMeals[gItem.plan_date];
+                      for (const m of dayMeals) {
+                        const matchingIng = m.ingredients?.find(
+                          (i) => i.name?.toLowerCase().trim() === gItem.name?.toLowerCase().trim()
+                        );
+                        if (matchingIng?.isBought) {
+                          return { ...gItem, checked: true };
+                        }
+                      }
+                    }
+                    return gItem;
+                  });
+
+                  setShoppingList(filterExpiredUnboughtGroceries(reconciledGroceries, loadedMeals));
                 }
               }
             } catch (e) {
@@ -667,15 +684,18 @@ export default function App() {
   const handleToggleIngredientBought = async (plan_date, meal_name, ingredientName) => {
     let dayMeals = mealData[plan_date] ? [...mealData[plan_date]] : [];
     let updatedMeal = null;
+    let newBoughtStatus = false;
 
     dayMeals = dayMeals.map((m) => {
       if (m.meal_name === meal_name) {
-        updatedMeal = {
-          ...m,
-          ingredients: m.ingredients.map((i) =>
-            i.name === ingredientName ? { ...i, isBought: !i.isBought } : i
-          ),
-        };
+        const updatedIngredients = m.ingredients.map((i) => {
+          if (i.name.toLowerCase().trim() === ingredientName.toLowerCase().trim()) {
+            newBoughtStatus = !i.isBought;
+            return { ...i, isBought: newBoughtStatus };
+          }
+          return i;
+        });
+        updatedMeal = { ...m, ingredients: updatedIngredients };
         return updatedMeal;
       }
       return m;
@@ -686,6 +706,20 @@ export default function App() {
       [plan_date]: dayMeals,
     });
 
+    // 1. Đồng bộ tức thì sang danh sách Đi Chợ (Tab 3)
+    const matchedGroceryItems = [];
+    const updatedShoppingList = shoppingList.map((item) => {
+      const isMatchName = item.name.toLowerCase().trim() === ingredientName.toLowerCase().trim();
+      const isMatchDate = !item.plan_date || item.plan_date === plan_date;
+      if (isMatchName && isMatchDate) {
+        matchedGroceryItems.push(item);
+        return { ...item, checked: newBoughtStatus };
+      }
+      return item;
+    });
+    setShoppingList(updatedShoppingList);
+
+    // 2. Lưu thực đơn xuống DB
     if (updatedMeal) {
       try {
         await fetch('/api/meals', {
@@ -694,8 +728,30 @@ export default function App() {
           body: JSON.stringify({ plan_date, ...updatedMeal }),
         });
       } catch (err) {
-        console.warn('API sync:', err);
+        console.warn('API sync meal error:', err);
       }
+    }
+
+    // 3. Đồng bộ trạng thái món đi chợ xuống DB
+    try {
+      // Toggle các món tìm thấy trong giỏ
+      for (const grocItem of matchedGroceryItems) {
+        if (grocItem.checked !== newBoughtStatus) {
+          await fetch(`/api/groceries/${grocItem.id}/toggle`, { method: 'PATCH' });
+        }
+      }
+      // Gọi endpoint sync-status tổng quát theo tên & ngày
+      await fetch('/api/groceries/sync-status', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan_date,
+          name: ingredientName,
+          checked: newBoughtStatus,
+        }),
+      });
+    } catch (err) {
+      console.warn('API sync grocery error:', err);
     }
   };
 
@@ -733,7 +789,7 @@ export default function App() {
       const updatedDayMeals = newMealData[plan_date].map(meal => {
         let mealUpdated = false;
         const newIngredients = meal.ingredients?.map(ing => {
-          if (ing.name === itemToToggle.name && !!ing.isBought !== newCheckedStatus) {
+          if (ing.name.toLowerCase().trim() === itemToToggle.name.toLowerCase().trim() && !!ing.isBought !== newCheckedStatus) {
             mealUpdated = true;
             return { ...ing, isBought: newCheckedStatus };
           }
