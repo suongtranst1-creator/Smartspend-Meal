@@ -217,6 +217,14 @@ Mục đích: Theo dõi tiến độ, ghi chép lại các tính năng đã phá
     - Đồng bộ Hộp thông tin (Info Box):
       + Nâng cấp hộp cảnh báo lưu ý chốt sổ đồng bộ phong cách với hộp Mẹo: Nền xanh ngọc nhạt êm dịu, viền bo cong tròn mềm mại (`rounded-3xl border-emerald-200/60`), icon `AlertCircle` đặt trong huy hiệu xanh thương hiệu tạo nên một khối thông tin độc lập, thẩm mỹ cao.
 
+[x] 13. Sửa triệt để lỗi thêm món vào giỏ đi chợ và lỗi không xóa được món đã tick đã mua:
+    - Sửa lỗi không thêm được món chưa mua vào giỏ hàng:
+      + Điều chỉnh logic kiểm tra trùng lặp tại `handleAddMealIngredientsToCart`: Thay vì kiểm tra tên món trên toàn bộ giỏ hàng (khiến các món trùng tên ở các bữa/ngày khác nhau hoặc các món đã mua trước đó bị chặn), hệ thống nay chỉ bỏ qua nếu món đó đã tồn tại chưa mua trong chính bữa ăn và ngày đó.
+      + Tinh gọn hàm `filterExpiredUnboughtGroceries`: Loại bỏ logic đối chiếu chéo tên món qua các ngày cũ gây triệt tiêu nhầm các món nguyên liệu hợp lệ. Hệ thống nay chỉ tự động bỏ qua các món quá hạn chưa mua (`plan_date < hôm nay`) một cách an toàn bằng hàm `parseLocalDate`.
+    - Sửa lỗi không xóa được các món đã tick đã mua trong tab Đi Chợ:
+      + Khắc phục lỗi Express routing trong `server/index.js`: Route `DELETE /api/groceries/bought` trước đó bị đặt sau `DELETE /api/groceries/:id`, khiến Express nhận diện nhầm `'bought'` là một ID món và trả về lỗi 404 (`Không tìm thấy món`). Sau khi đảo vị trí route lên trước, lệnh xóa các món đã mua hoạt động chuẩn xác 100%.
+      + Đồng bộ state `setShoppingList((prev) => prev.filter(i => !i.checked))` khi chốt sổ hoặc bấm xóa món đã mua, đảm bảo giỏ hàng lập tức dọn sạch các món đã mua trên cả giao diện và cơ sở dữ liệu PostgreSQL.
+
 * Kế hoạch tiếp theo (To-do):
     - [ ] Kiểm thử toàn diện các luồng nghiệp vụ trên môi trường thật.
     - [ ] Chuẩn bị bài thuyết trình / tài liệu nộp đề tài bảng Văn phòng.

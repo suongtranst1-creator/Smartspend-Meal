@@ -533,7 +533,21 @@ app.patch('/api/groceries/sync-status', async (req, res) => {
   }
 });
 
-// Xóa 1 món đi chợ
+// Xóa các món đã mua (dọn dẹp giỏ hàng) - Phải đặt trước /:id để không bị Express coi 'bought' là tham số :id
+app.delete('/api/groceries/bought', async (req, res) => {
+  try {
+    const result = await pool.query('DELETE FROM grocery_items WHERE is_bought = true RETURNING id;');
+    
+    // Ghi log
+    await logAction('Xóa', 'Món đi chợ', `Xóa ${result.rows.length} món đã mua`);
+    
+    res.json({ message: `Đã xóa ${result.rows.length} món đã mua`, count: result.rows.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Xóa 1 món đi chợ theo ID
 app.delete('/api/groceries/:id', async (req, res) => {
   const { id } = req.params;
   try {
@@ -546,20 +560,6 @@ app.delete('/api/groceries/:id', async (req, res) => {
     await logAction('Xóa', 'Món đi chợ', `ID: ${id}`);
     
     res.json({ message: 'Đã xóa món', id });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Xóa các món đã mua (dọn dẹp giỏ hàng)
-app.delete('/api/groceries/bought', async (req, res) => {
-  try {
-    const result = await pool.query('DELETE FROM grocery_items WHERE is_bought = true RETURNING id;');
-    
-    // Ghi log
-    await logAction('Xóa', 'Món đi chợ', `Xóa ${result.rows.length} món đã mua`);
-    
-    res.json({ message: `Đã xóa ${result.rows.length} món đã mua`, count: result.rows.length });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
