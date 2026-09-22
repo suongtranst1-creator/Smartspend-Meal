@@ -208,6 +208,16 @@ Mục đích: Theo dõi tiến độ, ghi chép lại các tính năng đã phá
     - Tương tác "Đã mua đủ" hấp dẫn:
       + Khi toàn bộ nguyên liệu được đánh dấu đã mua, nút bấm chuyển trạng thái sang màu xanh lá cây đậm sang trọng (`bg-emerald-600 text-white border-emerald-500`) với icon `CheckCircle2` và dòng chữ "Đã mua đủ nguyên liệu" nổi bật, trực quan.
 
+[x] 12. Nâng cấp khu vực "Chốt Sổ Hóa Đơn" (Checkout Card - Đi Chợ):
+    - Thanh tiến độ đi chợ trực quan (Mini Progress Bar):
+      + Bổ sung thanh tiến độ nhỏ hiển thị tỷ lệ hoàn thành (`shoppingProgress%`) ngay dưới dòng "Đã hoàn thành: X/Y món".
+      + Thanh tiến độ tự động lấp đầy với hiệu ứng chuyển màu mượt mà Teal - Emerald và phát sáng xanh lá (`shadow-[0_0_10px_rgba(16,185,129,0.8)]`) khi đạt 100%, tạo cảm giác hoàn thành trọn vẹn và thôi thúc người dùng tự tin chốt sổ.
+    - Nút Call-to-Action (CTA) Chốt Sổ Hiện Đại:
+      + Rút gọn dòng chữ dài thành "Chốt hóa đơn & Ghi sổ" giúp bố cục nút thanh thoát, tập trung đúng hành động cốt lõi.
+      + Bổ sung hiệu ứng đổ bóng mờ phát quang màu xanh ngọc thương hiệu (Glow Shadow: `shadow-lg shadow-emerald-600/35 hover:shadow-emerald-600/50`) cùng hiệu ứng nâng nhẹ khi rê chuột.
+    - Đồng bộ Hộp thông tin (Info Box):
+      + Nâng cấp hộp cảnh báo lưu ý chốt sổ đồng bộ phong cách với hộp Mẹo: Nền xanh ngọc nhạt êm dịu, viền bo cong tròn mềm mại (`rounded-3xl border-emerald-200/60`), icon `AlertCircle` đặt trong huy hiệu xanh thương hiệu tạo nên một khối thông tin độc lập, thẩm mỹ cao.
+
 * Kế hoạch tiếp theo (To-do):
     - [ ] Kiểm thử toàn diện các luồng nghiệp vụ trên môi trường thật.
     - [ ] Chuẩn bị bài thuyết trình / tài liệu nộp đề tài bảng Văn phòng.
