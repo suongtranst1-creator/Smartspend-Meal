@@ -91,7 +91,6 @@
   - **Thống kê tiến độ mua sắm**: Thanh trạng thái hiển thị `X / Y đã mua` kèm huy hiệu số lượng trên menu điều hướng.
   - **Dọn dẹp nhanh**: Hỗ trợ nút *"Xóa món đã mua"* để dọn sạch các món đã hoàn thành.
 * **Chốt Sổ Hóa Đơn 1-Click (Finalize & Sync to Wallet)**:
-  - **Thanh tiến độ trực quan (Mini Progress Bar)**: Hiển thị tỷ lệ hoàn thành mua sắm theo thời gian thực (`X / Y món`), tự động chạy đầy 100% kèm hiệu ứng phát sáng xanh lá thúc đẩy hành động.
   - **Nút hành động nổi bật (Glow CTA Button)**: Nút "Chốt hóa đơn & Ghi sổ" tinh gọn nhãn, trang bị hiệu ứng đổ bóng mờ (Glow Shadow) màu xanh ngọc sang trọng và hiệu ứng nâng nhẹ khi rê chuột.
   - Nhập tổng số tiền thực tế trên hóa đơn đi chợ với tính năng **tự động ngắt dấu chấm hàng nghìn** (VD: `350.000`).
   - Nhấn nút **"Chốt hóa đơn & Ghi sổ"** ➔ Tự động sinh ra 1 khoản chi tiêu `Đi chợ` bên Tab 1, cập nhật lại số dư ví và dọn dẹp các món đã mua trong giỏ hàng.

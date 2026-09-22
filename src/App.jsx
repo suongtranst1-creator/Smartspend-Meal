@@ -1509,11 +1509,6 @@ export default function App() {
     return activeShoppingList.filter((i) => i.checked).length;
   }, [activeShoppingList]);
 
-  const shoppingProgress = useMemo(() => {
-    if (!activeShoppingList || activeShoppingList.length === 0) return 0;
-    return Math.round((checkedShoppingCount / activeShoppingList.length) * 100);
-  }, [activeShoppingList, checkedShoppingCount]);
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 pb-20 md:pb-10 transition-colors duration-200">
       {/* Toast Notification */}
@@ -2522,38 +2517,14 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Summary Info with Mini Progress Bar */}
-                <div className="p-3.5 bg-gray-50/90 dark:bg-gray-700/50 rounded-2xl space-y-2.5 text-xs text-gray-600 dark:text-gray-300 border border-gray-100 dark:border-gray-600/40">
-                  <div>
-                    <div className="flex items-center justify-between font-medium">
-                      <span className="text-gray-500 dark:text-gray-400">Đã hoàn thành:</span>
-                      <div className="flex items-center gap-1.5">
-                        <strong className="text-emerald-700 dark:text-emerald-400 font-bold text-xs sm:text-sm">
-                          {checkedShoppingCount}/{activeShoppingList.length} món
-                        </strong>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border transition-colors ${
-                          shoppingProgress === 100
-                            ? 'bg-emerald-600 text-white border-emerald-500 shadow-2xs'
-                            : 'text-emerald-700 dark:text-emerald-300 bg-emerald-100/70 dark:bg-emerald-950/60 border-emerald-200/60 dark:border-emerald-800/60'
-                        }`}>
-                          {shoppingProgress}%
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Mini Progress Bar (Animates to 100% with glow) */}
-                    <div className="mt-2 w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden p-0.5">
-                      <div
-                        className={`h-full rounded-full transition-all duration-500 ease-out ${
-                          shoppingProgress === 100
-                            ? 'bg-gradient-to-r from-teal-500 to-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]'
-                            : 'bg-gradient-to-r from-emerald-600 to-teal-500 shadow-[0_0_6px_rgba(16,185,129,0.4)]'
-                        }`}
-                        style={{ width: `${shoppingProgress}%` }}
-                      />
-                    </div>
+                {/* Summary Info */}
+                <div className="p-3.5 bg-gray-50/90 dark:bg-gray-700/50 rounded-2xl space-y-2 text-xs text-gray-600 dark:text-gray-300 border border-gray-100 dark:border-gray-600/40">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500 dark:text-gray-400 font-medium">Đã hoàn thành:</span>
+                    <strong className="text-emerald-700 dark:text-emerald-400 font-bold text-xs sm:text-sm">
+                      {checkedShoppingCount} món
+                    </strong>
                   </div>
-
                   <div className="flex justify-between items-center pt-2 border-t border-gray-200/60 dark:border-gray-600/50">
                     <span className="text-gray-500 dark:text-gray-400">Danh mục ghi sổ:</span>
                     <strong className="text-gray-800 dark:text-white font-semibold">Chi Tiêu ➔ Đi chợ</strong>
