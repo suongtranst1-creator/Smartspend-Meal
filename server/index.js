@@ -214,8 +214,9 @@ app.delete('/api/transactions/:id', async (req, res) => {
 app.get('/api/meals', async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT TO_CHAR(plan_date, 'YYYY-MM-DD') as date_str, meal_name, main_dish, side_dish, calories, ingredients
-      FROM meal_plans;
+      SELECT TO_CHAR(plan_date, 'YYYY-MM-DD') as date_str, meal_name, main_dish, side_dish, calories, ingredients, COALESCE(order_index, 0) as order_index
+      FROM meal_plans
+      ORDER BY plan_date ASC, COALESCE(order_index, 0) ASC, updated_at ASC;
     `);
 
     // Chuẩn hóa format về object { "YYYY-MM-DD": [ { meal_name: '...', main: '...', ... } ], ... }
@@ -241,9 +242,45 @@ app.get('/api/meals', async (req, res) => {
   }
 });
 
+// Sắp xếp lại thứ tự các bữa ăn trong ngày (Drag & Drop Reorder)
+app.put('/api/meals/reorder', async (req, res) => {
+  const { plan_date, meals } = req.body;
+  if (!plan_date || !Array.isArray(meals)) {
+    return res.status(400).json({ error: 'Thiếu thông tin plan_date hoặc danh sách meals' });
+  }
+
+  try {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      for (let i = 0; i < meals.length; i++) {
+        const m = meals[i];
+        const mealName = typeof m === 'string' ? m : m.meal_name;
+        await client.query(
+          `UPDATE meal_plans 
+           SET order_index = $1, updated_at = CURRENT_TIMESTAMP 
+           WHERE plan_date = $2 AND meal_name = $3;`,
+          [i, plan_date, mealName]
+        );
+      }
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+
+    await logAction('Sắp xếp', 'Thực đơn', `${plan_date} (${meals.length} bữa)`);
+    res.json({ message: 'Đã cập nhật thứ tự thực đơn', plan_date });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Lưu / Cập nhật thực đơn 1 bữa
 app.put('/api/meals', async (req, res) => {
-  const { plan_date, meal_name, main, side, calories, ingredients } = req.body;
+  const { plan_date, meal_name, main, side, calories, ingredients, order_index } = req.body;
   if (!plan_date || !meal_name) {
     return res.status(400).json({ error: 'Thiếu thông tin plan_date hoặc meal_name' });
   }
@@ -252,9 +289,19 @@ app.put('/api/meals', async (req, res) => {
   const ingredientsArray = Array.isArray(ingredients) ? ingredients : [];
 
   try {
+    // Nếu không truyền order_index và là món mới, lấy vị trí kế tiếp
+    let finalOrderIndex = order_index;
+    if (finalOrderIndex === undefined || finalOrderIndex === null) {
+      const countRes = await pool.query(
+        'SELECT COALESCE(MAX(order_index), -1) + 1 as next_idx FROM meal_plans WHERE plan_date = $1;',
+        [plan_date]
+      );
+      finalOrderIndex = countRes.rows[0]?.next_idx || 0;
+    }
+
     await pool.query(
-      `INSERT INTO meal_plans (id, plan_date, meal_name, main_dish, side_dish, calories, ingredients, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, CURRENT_TIMESTAMP)
+      `INSERT INTO meal_plans (id, plan_date, meal_name, main_dish, side_dish, calories, ingredients, order_index, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, CURRENT_TIMESTAMP)
        ON CONFLICT (plan_date, meal_name)
        DO UPDATE SET
          main_dish = EXCLUDED.main_dish,
@@ -262,7 +309,7 @@ app.put('/api/meals', async (req, res) => {
          calories = EXCLUDED.calories,
          ingredients = EXCLUDED.ingredients,
          updated_at = CURRENT_TIMESTAMP;`,
-      [id, plan_date, meal_name, main || '', side || '', calories || '', JSON.stringify(ingredientsArray)]
+      [id, plan_date, meal_name, main || '', side || '', calories || '', JSON.stringify(ingredientsArray), finalOrderIndex]
     );
 
     // Ghi log

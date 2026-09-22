@@ -21,15 +21,16 @@ import {
   Receipt,
   Clock,
   Tag,
+  ChevronLeft,
   ChevronRight,
   AlertCircle,
   X,
   Pencil,
   Database,
   Settings,
-  RotateCcw,
   ArrowUpDown,
-  Download
+  Download,
+  RotateCcw
 } from 'lucide-react';
 
 // Currency Formatter
@@ -219,6 +220,340 @@ const filterExpiredUnboughtGroceries = (items = [], meals = {}) => {
   });
 };
 
+// ==========================================================
+// Helper: Parse YYYY-MM-DD safely into local Date (no UTC shift)
+// ==========================================================
+const parseLocalDate = (dateStr) => {
+  if (!dateStr) return new Date();
+  const parts = String(dateStr).split('-').map(Number);
+  if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+    return new Date(parts[0], parts[1] - 1, parts[2]);
+  }
+  return new Date();
+};
+
+// ==========================================================
+// Component: DateRangePicker (Chọn khoảng 2 ngày có tô đậm)
+// ==========================================================
+function DateRangePicker({ startDate, endDate, onChange }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = React.useRef(null);
+
+  const initialDate = startDate ? parseLocalDate(startDate) : new Date();
+  const [viewDate, setViewDate] = useState(initialDate);
+  const [hoverDate, setHoverDate] = useState(null);
+  const [tempStart, setTempStart] = useState(startDate);
+
+  useEffect(() => {
+    setTempStart(startDate);
+  }, [startDate, endDate]);
+
+  useEffect(() => {
+    if (isOpen && startDate) {
+      setViewDate(parseLocalDate(startDate));
+    }
+  }, [isOpen, startDate]);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  const viewYear = viewDate.getFullYear();
+  const viewMonth = viewDate.getMonth(); // 0 - 11
+
+  const prevMonth = (e) => {
+    e.stopPropagation();
+    setViewDate(new Date(viewYear, viewMonth - 1, 1));
+  };
+
+  const nextMonth = (e) => {
+    e.stopPropagation();
+    setViewDate(new Date(viewYear, viewMonth + 1, 1));
+  };
+
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const firstDayOfWeek = new Date(viewYear, viewMonth, 1).getDay(); // 0 is Sun, 1 is Mon...
+  const startOffset = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
+
+  const handleSelectDay = (day) => {
+    const monthStr = String(viewMonth + 1).padStart(2, '0');
+    const dayStr = String(day).padStart(2, '0');
+    const clickedDate = `${viewYear}-${monthStr}-${dayStr}`;
+
+    if (!tempStart || (tempStart && endDate)) {
+      setTempStart(clickedDate);
+      onChange({ start: clickedDate, end: '' });
+    } else {
+      if (clickedDate < tempStart) {
+        onChange({ start: clickedDate, end: tempStart });
+        setTempStart(clickedDate);
+      } else {
+        onChange({ start: tempStart, end: clickedDate });
+      }
+      setIsOpen(false);
+    }
+  };
+
+  const setPreset = (type, e) => {
+    e.stopPropagation();
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+    if (type === 'today') {
+      onChange({ start: todayStr, end: todayStr });
+      setTempStart(todayStr);
+      setIsOpen(false);
+    } else if (type === 'last7') {
+      const past = new Date(now);
+      past.setDate(now.getDate() - 6);
+      const pastStr = `${past.getFullYear()}-${String(past.getMonth() + 1).padStart(2, '0')}-${String(past.getDate()).padStart(2, '0')}`;
+      onChange({ start: pastStr, end: todayStr });
+      setTempStart(pastStr);
+      setIsOpen(false);
+    } else if (type === 'thisMonth') {
+      const firstDay = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+      const lastDayNum = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      const lastDay = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(lastDayNum).padStart(2, '0')}`;
+      onChange({ start: firstDay, end: lastDay });
+      setTempStart(firstDay);
+      setIsOpen(false);
+    } else if (type === 'clear') {
+      onChange({ start: '', end: '' });
+      setTempStart('');
+      setIsOpen(false);
+    }
+  };
+
+  const displayText = () => {
+    if (startDate && endDate) {
+      return `${formatDate(startDate)} - ${formatDate(endDate)}`;
+    }
+    if (startDate && !endDate) {
+      return `${formatDate(startDate)} - Chọn ngày kết thúc`;
+    }
+    return 'dd/mm/yyyy - dd/mm/yyyy';
+  };
+
+  const hasRange = Boolean(startDate || endDate);
+
+  return (
+    <div className="relative inline-block" ref={containerRef}>
+      {/* Trigger Button: 1 nút duy nhất hiển thị khoảng ngày (dd/mm/yyyy - dd/mm/yyyy) */}
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer shadow-xs ${
+          hasRange
+            ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-200'
+            : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+        }`}
+        title="Chọn khoảng thời gian (dd/mm/yyyy - dd/mm/yyyy)"
+      >
+        <Calendar className={`w-3.5 h-3.5 shrink-0 ${hasRange ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400'}`} />
+        <span className={hasRange ? 'font-bold tracking-tight text-emerald-700 dark:text-emerald-300' : 'text-gray-500 dark:text-gray-400'}>
+          {displayText()}
+        </span>
+        {hasRange && (
+          <span
+            onClick={(e) => {
+              e.stopPropagation();
+              onChange({ start: '', end: '' });
+              setTempStart('');
+            }}
+            className="p-0.5 ml-0.5 hover:bg-emerald-200 dark:hover:bg-emerald-800 rounded-full text-emerald-700 dark:text-emerald-300 transition-colors"
+            title="Xóa khoảng ngày"
+          >
+            <X className="w-3 h-3" />
+          </span>
+        )}
+      </button>
+
+      {/* Popover Calendar (Tô đậm khoảng 2 mốc ngày đã chọn) */}
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-2 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-4 w-72 sm:w-80 max-w-[calc(100vw-2rem)] animate-in fade-in duration-200">
+          {/* Header trạng thái lựa chọn */}
+          <div className="mb-2.5 pb-2 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between text-xs">
+            <span className="text-[11px] text-gray-400 dark:text-gray-500 font-medium">Khoảng ngày:</span>
+            {startDate && endDate ? (
+              <span className="font-bold text-emerald-700 dark:text-emerald-300 text-xs">
+                {formatDate(startDate)} ➔ {formatDate(endDate)}
+              </span>
+            ) : tempStart ? (
+              <span className="font-semibold text-amber-600 dark:text-amber-400 text-[11px]">
+                {formatDate(tempStart)} ➔ Chọn ngày kết thúc
+              </span>
+            ) : (
+              <span className="text-gray-400 dark:text-gray-500 text-[11px]">
+                Chọn 2 mốc thời gian
+              </span>
+            )}
+          </div>
+
+          {/* Điều hướng Tháng / Năm */}
+          <div className="flex items-center justify-between pb-2 mb-2">
+            <button
+              type="button"
+              onClick={prevMonth}
+              className="p-1 text-gray-500 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors cursor-pointer"
+              title="Tháng trước"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="font-bold text-xs sm:text-sm text-gray-800 dark:text-gray-100">
+              Tháng {viewMonth + 1}, {viewYear}
+            </span>
+            <button
+              type="button"
+              onClick={nextMonth}
+              className="p-1 text-gray-500 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors cursor-pointer"
+              title="Tháng sau"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Tiêu đề Thứ trong tuần */}
+          <div className="grid grid-cols-7 gap-y-1 text-center mb-1">
+            {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((d, i) => (
+              <span key={i} className="text-[11px] font-semibold text-gray-400 dark:text-gray-500">
+                {d}
+              </span>
+            ))}
+          </div>
+
+          {/* Lưới các ô ngày trong tháng (Tô đậm khoảng ngày liền mạch) */}
+          <div className="grid grid-cols-7 gap-y-1 text-center">
+            {/* Ô trống trước ngày mùng 1 */}
+            {Array.from({ length: startOffset }).map((_, i) => (
+              <div key={`empty-${i}`} className="h-8" />
+            ))}
+
+            {/* Các ngày trong tháng */}
+            {Array.from({ length: daysInMonth }).map((_, i) => {
+              const day = i + 1;
+              const monthStr = String(viewMonth + 1).padStart(2, '0');
+              const dayStr = String(day).padStart(2, '0');
+              const dateStr = `${viewYear}-${monthStr}-${dayStr}`;
+
+              const currentStart = startDate || tempStart;
+              const isStart = dateStr === currentStart;
+              const isEnd = dateStr === endDate;
+              const hasFullRange = Boolean(currentStart && endDate);
+
+              // Khoảng ngày đã chọn chốt
+              const inRange = Boolean(hasFullRange && currentStart && endDate && dateStr > currentStart && dateStr < endDate);
+
+              // Xem trước khoảng hover khi đang chọn ngày thứ 2
+              let isHoverRange = false;
+              let isHoverStart = false;
+              let isHoverEnd = false;
+              if (!endDate && currentStart && hoverDate && currentStart !== hoverDate) {
+                const min = currentStart < hoverDate ? currentStart : hoverDate;
+                const max = currentStart < hoverDate ? hoverDate : currentStart;
+                isHoverRange = dateStr > min && dateStr < max;
+                isHoverStart = dateStr === min;
+                isHoverEnd = dateStr === max;
+              }
+
+              return (
+                <div
+                  key={day}
+                  onMouseEnter={() => setHoverDate(dateStr)}
+                  onMouseLeave={() => setHoverDate(null)}
+                  className="h-8 flex items-center justify-center relative"
+                >
+                  {/* Dải màu tô đậm giữa 2 ngày (Range Highlight Bar) */}
+                  {inRange && (
+                    <div className="absolute inset-y-0 inset-x-0 bg-emerald-100 dark:bg-emerald-950/60" />
+                  )}
+                  {isStart && hasFullRange && !isEnd && (
+                    <div className="absolute inset-y-0 right-0 left-1/2 bg-emerald-100 dark:bg-emerald-950/60" />
+                  )}
+                  {isEnd && hasFullRange && !isStart && (
+                    <div className="absolute inset-y-0 left-0 right-1/2 bg-emerald-100 dark:bg-emerald-950/60" />
+                  )}
+
+                  {/* Dải màu xem trước khi rê chuột (Hover Range Preview) */}
+                  {isHoverRange && (
+                    <div className="absolute inset-y-0 inset-x-0 bg-emerald-50 dark:bg-emerald-950/30" />
+                  )}
+                  {isHoverStart && (
+                    <div className="absolute inset-y-0 right-0 left-1/2 bg-emerald-50 dark:bg-emerald-950/30" />
+                  )}
+                  {isHoverEnd && (
+                    <div className="absolute inset-y-0 left-0 right-1/2 bg-emerald-50 dark:bg-emerald-950/30" />
+                  )}
+
+                  {/* Nút bấm ngày */}
+                  <button
+                    type="button"
+                    onClick={() => handleSelectDay(day)}
+                    className={`relative z-10 w-7 h-7 text-xs font-semibold rounded-lg flex items-center justify-center transition-all cursor-pointer ${
+                      isStart || isEnd
+                        ? 'bg-emerald-600 text-white shadow-xs font-bold'
+                        : inRange
+                        ? 'text-emerald-900 dark:text-emerald-200 font-bold'
+                        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    {day}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Phím tắt chọn nhanh & Xóa */}
+          <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex flex-wrap items-center justify-between gap-1.5 text-[11px]">
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={(e) => setPreset('today', e)}
+                className="px-2 py-1 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-700 dark:hover:text-emerald-300 rounded font-medium transition-colors cursor-pointer"
+              >
+                Hôm nay
+              </button>
+              <button
+                type="button"
+                onClick={(e) => setPreset('last7', e)}
+                className="px-2 py-1 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-700 dark:hover:text-emerald-300 rounded font-medium transition-colors cursor-pointer"
+              >
+                7 ngày qua
+              </button>
+              <button
+                type="button"
+                onClick={(e) => setPreset('thisMonth', e)}
+                className="px-2 py-1 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-700 dark:hover:text-emerald-300 rounded font-medium transition-colors cursor-pointer"
+              >
+                Tháng này
+              </button>
+            </div>
+            {hasRange && (
+              <button
+                type="button"
+                onClick={(e) => setPreset('clear', e)}
+                className="text-rose-600 dark:text-rose-400 hover:underline font-medium cursor-pointer"
+              >
+                Xóa chọn
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('spend'); // 'spend' | 'meal' | 'shop'
   
@@ -267,6 +602,10 @@ export default function App() {
     calories: '',
     ingredientsStr: '',
   });
+
+  // State: Kéo thả sắp xếp bữa ăn
+  const [draggedMealIdx, setDraggedMealIdx] = useState(null);
+  const [dragOverMealIdx, setDragOverMealIdx] = useState(null);
 
   // State: Đi Chợ
   const [shoppingList, setShoppingList] = useState(INITIAL_SHOPPING_ITEMS);
@@ -679,6 +1018,37 @@ export default function App() {
       });
     } catch (err) {
       console.warn('API sync:', err);
+    }
+  };
+
+  // Sắp xếp lại thứ tự bữa ăn (Drag & Drop Reorder)
+  const handleReorderMeal = async (fromIndex, toIndex) => {
+    if (fromIndex === null || toIndex === null || fromIndex === toIndex) return;
+    const currentMeals = mealData[selectedDay] ? [...mealData[selectedDay]] : [];
+    if (!currentMeals[fromIndex] || !currentMeals[toIndex]) return;
+
+    const [movedMeal] = currentMeals.splice(fromIndex, 1);
+    currentMeals.splice(toIndex, 0, movedMeal);
+
+    setMealData((prev) => ({
+      ...prev,
+      [selectedDay]: currentMeals,
+    }));
+    setDraggedMealIdx(null);
+    setDragOverMealIdx(null);
+    showToast(`Đã chuyển "${movedMeal.meal_name}" ${toIndex < fromIndex ? 'lên trước' : 'xuống sau'}!`);
+
+    try {
+      await fetch('/api/meals/reorder', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan_date: selectedDay,
+          meals: currentMeals,
+        }),
+      });
+    } catch (err) {
+      console.warn('API sync reorder error:', err);
     }
   };
 
@@ -1152,9 +1522,11 @@ export default function App() {
       <header className="sticky top-0 z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 shadow-xs transition-colors duration-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3 sm:gap-4">
           <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-            <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-600/20 shrink-0">
-              <Sparkles className="w-5 h-5" />
-            </div>
+            <img
+              src="/Logo.png?v=2"
+              alt="SmartSpend & Meal Logo"
+              className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl object-contain bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700/80 p-0.5 shrink-0"
+            />
             <div className="shrink-0">
               <h1 className="font-bold text-base sm:text-lg leading-none text-gray-900 dark:text-white tracking-tight flex items-center gap-1.5 whitespace-nowrap">
                 SmartSpend <span className="text-emerald-600 dark:text-emerald-400">&</span> Meal
@@ -1167,27 +1539,39 @@ export default function App() {
 
           {/* Database Connection Indicator, Quick Dark Mode Toggle & Navigation */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {/* Compact Server Online Status Dot with Tooltip on Hover */}
             <div
-              className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-semibold border transition-all whitespace-nowrap ${
-                dbStatus.connected
-                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
-                  : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800'
-              }`}
-              title={
-                dbStatus.connected
-                  ? `Đã kết nối CSDL: ${dbStatus.database}`
-                  : `Chạy 'npm run server' để kết nối backend PostgreSQL`
-              }
+              className="relative group shrink-0 flex items-center justify-center p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer shadow-2xs"
+              title={dbStatus.connected ? 'Đã kết nối' : 'Không thể kết nối'}
             >
-              <Database className="w-3.5 h-3.5 text-current shrink-0" />
-              <span
-                className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                  dbStatus.connected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
-                }`}
-              />
-              <span className="hidden sm:inline whitespace-nowrap">
-                {dbStatus.connected ? 'PostgreSQL: Đã kết nối' : 'PostgreSQL: Sẵn sàng'}
+              <span className="relative flex h-2.5 w-2.5">
+                <span
+                  className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                    dbStatus.connected ? 'bg-emerald-400' : 'bg-rose-400'
+                  }`}
+                />
+                <span
+                  className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
+                    dbStatus.connected
+                      ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]'
+                      : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]'
+                  }`}
+                />
               </span>
+
+              {/* Floating Tooltip on Hover */}
+              <div className="absolute top-full right-0 mt-2 z-50 pointer-events-none opacity-0 translate-y-1 scale-95 group-hover:opacity-100 group-hover:translate-y-0 group-hover:scale-100 transition-all duration-150 ease-out whitespace-nowrap">
+                <div className="bg-gray-900/95 dark:bg-gray-800 text-white text-[11px] font-medium py-1.5 px-3 rounded-lg shadow-xl border border-gray-700/50 flex items-center gap-2">
+                  <span
+                    className={`w-2 h-2 rounded-full shrink-0 ${
+                      dbStatus.connected ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'
+                    }`}
+                  />
+                  <span>
+                    {dbStatus.connected ? 'Đã kết nối' : 'Không thể kết nối'}
+                  </span>
+                </div>
+              </div>
             </div>
 
             {/* Quick Dark Mode Toggle Button */}
@@ -1204,55 +1588,67 @@ export default function App() {
             </button>
 
             {/* Desktop Navigation Tabs */}
-            <nav className="hidden md:flex items-center gap-0.5 lg:gap-1 bg-gray-100/90 dark:bg-gray-800/90 p-1 rounded-xl border border-gray-200/60 dark:border-gray-700/60 shrink-0">
+            <nav className="hidden md:flex items-center gap-1 bg-gray-100/90 dark:bg-gray-800/90 p-1 rounded-xl border border-gray-200/70 dark:border-gray-700/70 shrink-0">
               <button
                 onClick={() => setActiveTab('spend')}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 lg:px-3.5 lg:py-2 rounded-lg text-xs lg:text-sm font-semibold whitespace-nowrap transition-all ${
+                className={`relative flex items-center gap-1.5 px-3 py-2 lg:px-4 lg:py-2 rounded-lg text-xs lg:text-sm whitespace-nowrap transition-all ${
                   activeTab === 'spend'
-                    ? 'bg-white dark:bg-gray-700 text-emerald-700 dark:text-emerald-300 shadow-xs'
-                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
+                    ? 'font-bold text-emerald-800 dark:text-emerald-300 bg-white dark:bg-gray-700 shadow-sm border border-emerald-500/25 dark:border-emerald-500/30'
+                    : 'font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
                 }`}
               >
-                <Wallet className="w-4 h-4 shrink-0" />
+                <Wallet className={`w-4 h-4 shrink-0 ${activeTab === 'spend' ? 'text-emerald-600 dark:text-emerald-400 stroke-[2.25]' : ''}`} />
                 <span className="whitespace-nowrap">Sổ Thu Chi</span>
+                {activeTab === 'spend' && (
+                  <span className="absolute bottom-0.5 left-2.5 right-2.5 h-[3px] bg-emerald-600 dark:bg-emerald-400 rounded-full shadow-[0_1px_3px_rgba(16,185,129,0.5)]" />
+                )}
               </button>
               <button
                 onClick={() => setActiveTab('meal')}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 lg:px-3.5 lg:py-2 rounded-lg text-xs lg:text-sm font-semibold whitespace-nowrap transition-all ${
+                className={`relative flex items-center gap-1.5 px-3 py-2 lg:px-4 lg:py-2 rounded-lg text-xs lg:text-sm whitespace-nowrap transition-all ${
                   activeTab === 'meal'
-                    ? 'bg-white dark:bg-gray-700 text-emerald-700 dark:text-emerald-300 shadow-xs'
-                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
+                    ? 'font-bold text-emerald-800 dark:text-emerald-300 bg-white dark:bg-gray-700 shadow-sm border border-emerald-500/25 dark:border-emerald-500/30'
+                    : 'font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
                 }`}
               >
-                <Utensils className="w-4 h-4 shrink-0" />
+                <Utensils className={`w-4 h-4 shrink-0 ${activeTab === 'meal' ? 'text-emerald-600 dark:text-emerald-400 stroke-[2.25]' : ''}`} />
                 <span className="whitespace-nowrap">Thực Đơn Tuần</span>
+                {activeTab === 'meal' && (
+                  <span className="absolute bottom-0.5 left-2.5 right-2.5 h-[3px] bg-emerald-600 dark:bg-emerald-400 rounded-full shadow-[0_1px_3px_rgba(16,185,129,0.5)]" />
+                )}
               </button>
               <button
                 onClick={() => setActiveTab('shop')}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 lg:px-3.5 lg:py-2 rounded-lg text-xs lg:text-sm font-semibold whitespace-nowrap transition-all relative ${
+                className={`relative flex items-center gap-1.5 px-3 py-2 lg:px-4 lg:py-2 rounded-lg text-xs lg:text-sm whitespace-nowrap transition-all ${
                   activeTab === 'shop'
-                    ? 'bg-white dark:bg-gray-700 text-emerald-700 dark:text-emerald-300 shadow-xs'
-                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
+                    ? 'font-bold text-emerald-800 dark:text-emerald-300 bg-white dark:bg-gray-700 shadow-sm border border-emerald-500/25 dark:border-emerald-500/30'
+                    : 'font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
                 }`}
               >
-                <ShoppingCart className="w-4 h-4 shrink-0" />
+                <ShoppingCart className={`w-4 h-4 shrink-0 ${activeTab === 'shop' ? 'text-emerald-600 dark:text-emerald-400 stroke-[2.25]' : ''}`} />
                 <span className="whitespace-nowrap">Đi Chợ</span>
                 {activeShoppingList.length > 0 && (
                   <span className="bg-emerald-600 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold ml-0.5">
                     {activeShoppingList.length}
                   </span>
                 )}
+                {activeTab === 'shop' && (
+                  <span className="absolute bottom-0.5 left-2.5 right-2.5 h-[3px] bg-emerald-600 dark:bg-emerald-400 rounded-full shadow-[0_1px_3px_rgba(16,185,129,0.5)]" />
+                )}
               </button>
               <button
                 onClick={() => setActiveTab('settings')}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 lg:px-3.5 lg:py-2 rounded-lg text-xs lg:text-sm font-semibold whitespace-nowrap transition-all ${
+                className={`relative flex items-center gap-1.5 px-3 py-2 lg:px-4 lg:py-2 rounded-lg text-xs lg:text-sm whitespace-nowrap transition-all ${
                   activeTab === 'settings'
-                    ? 'bg-white dark:bg-gray-700 text-emerald-700 dark:text-emerald-300 shadow-xs'
-                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
+                    ? 'font-bold text-emerald-800 dark:text-emerald-300 bg-white dark:bg-gray-700 shadow-sm border border-emerald-500/25 dark:border-emerald-500/30'
+                    : 'font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
                 }`}
               >
-                <Settings className="w-4 h-4 shrink-0" />
+                <Settings className={`w-4 h-4 shrink-0 ${activeTab === 'settings' ? 'text-emerald-600 dark:text-emerald-400 stroke-[2.25]' : ''}`} />
                 <span className="whitespace-nowrap">Cài Đặt</span>
+                {activeTab === 'settings' && (
+                  <span className="absolute bottom-0.5 left-2.5 right-2.5 h-[3px] bg-emerald-600 dark:bg-emerald-400 rounded-full shadow-[0_1px_3px_rgba(16,185,129,0.5)]" />
+                )}
               </button>
             </nav>
           </div>
@@ -1266,11 +1662,11 @@ export default function App() {
         {/* ========================================================================= */}
         {activeTab === 'spend' && (
           <div className="space-y-6">
-            {/* 3 Summary Statistics Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+            {/* 3 Summary Statistics Cards with Soft Drop-Shadow & Depth */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 sm:gap-5">
               {/* Card 1: Tổng Thu */}
-              <div className="bg-white dark:bg-gray-800 p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs hover:shadow-md transition-shadow relative overflow-hidden">
-                <div className="flex items-center justify-between">
+              <div className="bg-white dark:bg-gray-800 p-4 sm:p-5 rounded-2xl border border-gray-100 dark:border-gray-700/80 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.25)] hover:shadow-[0_14px_36px_rgb(0,0,0,0.09)] hover:-translate-y-0.5 transition-all duration-300 relative overflow-hidden">
+                <div className="flex items-center justify-between relative z-10">
                   <span className="text-[10px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Tổng Thu
                   </span>
@@ -1278,18 +1674,42 @@ export default function App() {
                     <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
                 </div>
-                <div className="mt-2 sm:mt-3 text-lg sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
+                <div className="mt-2 sm:mt-3 text-lg sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight relative z-10">
                   {formatVND(totalIncome)}
                 </div>
-                <p className="text-[10px] sm:text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1 truncate">
+                <p className="text-[10px] sm:text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1 truncate relative z-10">
                   Đã cộng dồn thu nhập
                 </p>
-                <div className="absolute -right-4 -bottom-4 w-16 h-16 sm:w-20 sm:h-20 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-full pointer-events-none" />
+
+                {/* Biểu đồ Sparkline mờ làm nền (Income Upward Trend) */}
+                <div className="absolute right-0 bottom-0 w-36 sm:w-48 h-14 sm:h-18 pointer-events-none opacity-45 dark:opacity-30">
+                  <svg viewBox="0 0 160 60" preserveAspectRatio="none" className="w-full h-full">
+                    <defs>
+                      <linearGradient id="incomeSparkGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#10b981" stopOpacity="0.35" />
+                        <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
+                      </linearGradient>
+                    </defs>
+                    <path
+                      d="M 0 48 C 25 48, 40 40, 65 38 C 90 36, 105 42, 125 22 C 140 10, 150 14, 160 6 L 160 60 L 0 60 Z"
+                      fill="url(#incomeSparkGrad)"
+                    />
+                    <path
+                      d="M 0 48 C 25 48, 40 40, 65 38 C 90 36, 105 42, 125 22 C 140 10, 150 14, 160 6"
+                      fill="none"
+                      stroke="#10b981"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <circle cx="160" cy="6" r="3" fill="#10b981" />
+                  </svg>
+                </div>
               </div>
 
               {/* Card 2: Tổng Chi Tiêu */}
-              <div className="bg-white dark:bg-gray-800 p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs hover:shadow-md transition-shadow relative overflow-hidden">
-                <div className="flex items-center justify-between">
+              <div className="bg-white dark:bg-gray-800 p-4 sm:p-5 rounded-2xl border border-gray-100 dark:border-gray-700/80 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.25)] hover:shadow-[0_14px_36px_rgb(0,0,0,0.09)] hover:-translate-y-0.5 transition-all duration-300 relative overflow-hidden">
+                <div className="flex items-center justify-between relative z-10">
                   <span className="text-[10px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Tổng Chi
                   </span>
@@ -1297,32 +1717,57 @@ export default function App() {
                     <TrendingDown className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
                 </div>
-                <div className="mt-2 sm:mt-3 text-lg sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
+                <div className="mt-2 sm:mt-3 text-lg sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight relative z-10">
                   {formatVND(totalExpense)}
                 </div>
-                <p className="text-[10px] sm:text-xs text-rose-500 dark:text-rose-400 font-medium mt-1 truncate">
+                <p className="text-[10px] sm:text-xs text-rose-500 dark:text-rose-400 font-medium mt-1 truncate relative z-10">
                   Sinh hoạt & đi chợ
                 </p>
-                <div className="absolute -right-4 -bottom-4 w-16 h-16 sm:w-20 sm:h-20 bg-rose-50/40 dark:bg-rose-900/10 rounded-full pointer-events-none" />
+
+                {/* Biểu đồ Sparkline mờ làm nền (Expense Fluctuating Trend) */}
+                <div className="absolute right-0 bottom-0 w-36 sm:w-48 h-14 sm:h-18 pointer-events-none opacity-45 dark:opacity-30">
+                  <svg viewBox="0 0 160 60" preserveAspectRatio="none" className="w-full h-full">
+                    <defs>
+                      <linearGradient id="expenseSparkGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.32" />
+                        <stop offset="100%" stopColor="#f43f5e" stopOpacity="0.0" />
+                      </linearGradient>
+                    </defs>
+                    <path
+                      d="M 0 38 C 25 38, 35 18, 60 25 C 85 32, 95 14, 120 30 C 135 40, 148 24, 160 16 L 160 60 L 0 60 Z"
+                      fill="url(#expenseSparkGrad)"
+                    />
+                    <path
+                      d="M 0 38 C 25 38, 35 18, 60 25 C 85 32, 95 14, 120 30 C 135 40, 148 24, 160 16"
+                      fill="none"
+                      stroke="#f43f5e"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <circle cx="160" cy="16" r="3" fill="#f43f5e" />
+                  </svg>
+                </div>
               </div>
 
-              {/* Card 3: Số Dư Hiện Tại */}
-              <div className="col-span-2 sm:col-span-1 bg-emerald-800 dark:bg-emerald-900 text-white p-4 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden border border-emerald-700 dark:border-emerald-800">
+              {/* Card 3: Số Dư Hiện Tại (Dải màu chuyển từ Xanh Ngọc Teal sang Xanh Lá Cây Thẫm) */}
+              <div className="col-span-2 sm:col-span-1 bg-gradient-to-br from-teal-600 via-emerald-700 to-emerald-950 dark:from-teal-700 dark:via-emerald-900 dark:to-gray-950 text-white p-4 sm:p-5 rounded-2xl shadow-[0_8px_30px_rgba(13,148,136,0.25)] hover:shadow-[0_14px_36px_rgba(13,148,136,0.35)] hover:-translate-y-0.5 transition-all duration-300 relative overflow-hidden border border-teal-400/25 dark:border-teal-700/30">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] sm:text-xs font-semibold text-emerald-200 uppercase tracking-wider">
+                  <span className="text-[10px] sm:text-xs font-semibold text-teal-100 uppercase tracking-wider">
                     Số Dư Hiện Tại
                   </span>
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/10 text-white flex items-center justify-center">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/15 backdrop-blur-xs text-teal-100 flex items-center justify-center border border-white/20 shadow-xs">
                     <Wallet className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
                 </div>
-                <div className="mt-2 sm:mt-3 text-xl sm:text-2xl font-bold tracking-tight">
+                <div className="mt-2 sm:mt-3 text-xl sm:text-2xl font-bold tracking-tight text-white drop-shadow-xs">
                   {formatVND(balance)}
                 </div>
-                <p className="text-[10px] sm:text-xs text-emerald-200 mt-1 truncate">
+                <p className="text-[10px] sm:text-xs text-teal-200 mt-1 truncate">
                   {balance >= 0 ? 'Tài chính ổn định' : 'Cần tối ưu ngân sách'}
                 </p>
-                <div className="absolute -right-6 -bottom-6 w-20 h-20 sm:w-24 sm:h-24 bg-white/5 rounded-full pointer-events-none" />
+                <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-white/10 rounded-full pointer-events-none blur-sm" />
+                <div className="absolute -left-6 -top-6 w-20 h-20 bg-teal-300/10 rounded-full pointer-events-none blur-sm" />
               </div>
             </div>
 
@@ -1359,23 +1804,12 @@ export default function App() {
                 >
                   Khoản Thu
                 </button>
-                <div className="flex items-center gap-1.5 sm:ml-1">
-                  <input
-                    type="date"
-                    className="text-xs px-2.5 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-600 dark:text-gray-200 bg-white dark:bg-gray-800 outline-none focus:border-emerald-500"
-                    value={dateRange.start}
-                    onChange={(e) => setDateRange((prev) => ({ ...prev, start: e.target.value }))}
-                    title="Từ ngày"
-                  />
-                  <span className="text-gray-400 text-xs">-</span>
-                  <input
-                    type="date"
-                    className="text-xs px-2.5 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-600 dark:text-gray-200 bg-white dark:bg-gray-800 outline-none focus:border-emerald-500"
-                    value={dateRange.end}
-                    onChange={(e) => setDateRange((prev) => ({ ...prev, end: e.target.value }))}
-                    title="Đến ngày"
-                  />
-                </div>
+                {/* 1 nút duy nhất chọn khoảng ngày có tô đậm */}
+                <DateRangePicker
+                  startDate={dateRange.start}
+                  endDate={dateRange.end}
+                  onChange={(range) => setDateRange(range)}
+                />
 
                 {/* Sắp xếp danh sách */}
                 <div className="flex items-center gap-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-gray-600 dark:text-gray-300 shadow-xs">
@@ -1393,19 +1827,17 @@ export default function App() {
                   </select>
                 </div>
 
-                {/* Nút Reset / Đặt lại về bình thường */}
-                <button
-                  onClick={handleResetFilters}
-                  title="Đặt lại bộ lọc và sắp xếp về bình thường"
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all group ${
-                    isFilterOrSortActive
-                      ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/40 shadow-xs cursor-pointer'
-                      : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200'
-                  }`}
-                >
-                  <RotateCcw className={`w-3.5 h-3.5 transition-transform duration-300 ${isFilterOrSortActive ? 'group-hover:-rotate-90 text-amber-600 dark:text-amber-400' : 'group-hover:-rotate-90'}`} />
-                  <span>{isFilterOrSortActive ? 'Đặt lại bộ lọc' : 'Mặc định'}</span>
-                </button>
+                {/* Nút Đặt lại bộ lọc (chỉ hiển thị khi đang lọc để xóa/đặt lại, không có nút mặc định dư thừa) */}
+                {isFilterOrSortActive && (
+                  <button
+                    onClick={handleResetFilters}
+                    title="Đặt lại toàn bộ bộ lọc và sắp xếp về ban đầu"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-all shadow-xs cursor-pointer animate-in fade-in"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                    <span>Đặt lại bộ lọc</span>
+                  </button>
+                )}
               </div>
 
               <button
@@ -1433,16 +1865,6 @@ export default function App() {
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
                   <span>{filteredTransactions.length} giao dịch</span>
-                  {isFilterOrSortActive && (
-                    <button
-                      onClick={handleResetFilters}
-                      className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:underline flex items-center gap-1 font-medium cursor-pointer"
-                      title="Đặt lại về bình thường"
-                    >
-                      <RotateCcw className="w-3 h-3" />
-                      Về mặc định
-                    </button>
-                  )}
                 </div>
               </div>
 
@@ -1626,16 +2048,54 @@ export default function App() {
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                       {currentMeals.map((meal, idx) => (
-                        <div key={idx} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow">
+                        <div
+                          key={meal.meal_name || idx}
+                          draggable={!isPast && currentMeals.length > 1}
+                          onDragStart={(e) => {
+                            setDraggedMealIdx(idx);
+                            e.dataTransfer.effectAllowed = 'move';
+                            e.dataTransfer.setData('text/plain', idx.toString());
+                          }}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = 'move';
+                            if (dragOverMealIdx !== idx) {
+                              setDragOverMealIdx(idx);
+                            }
+                          }}
+                          onDragLeave={(e) => {
+                            if (e.currentTarget.contains(e.relatedTarget)) return;
+                            if (dragOverMealIdx === idx) {
+                              setDragOverMealIdx(null);
+                            }
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            handleReorderMeal(draggedMealIdx, idx);
+                          }}
+                          onDragEnd={() => {
+                            setDraggedMealIdx(null);
+                            setDragOverMealIdx(null);
+                          }}
+                          className={`bg-white dark:bg-gray-800 rounded-2xl border shadow-xs overflow-hidden flex flex-col justify-between transition-all duration-200 ${
+                            !isPast && currentMeals.length > 1 ? 'cursor-grab active:cursor-grabbing' : ''
+                          } ${
+                            draggedMealIdx === idx
+                              ? 'opacity-40 scale-95 border-dashed border-emerald-500 shadow-none'
+                              : dragOverMealIdx === idx
+                              ? 'border-emerald-500 ring-2 ring-emerald-500/40 shadow-lg scale-[1.02]'
+                              : 'border-gray-100 dark:border-gray-700 hover:shadow-md'
+                          }`}
+                        >
                           <div className="p-5">
                             <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-700">
                               <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                                <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                                   <Utensils className="w-4 h-4" />
                                 </div>
                                 <h4 className="font-bold text-gray-900 dark:text-white text-sm">{meal.meal_name}</h4>
                               </div>
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex items-center gap-1 sm:gap-1.5">
                                 {meal.calories && (
                                   <span className="text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full">
                                     {meal.calories}
@@ -1662,13 +2122,50 @@ export default function App() {
                               </div>
                             </div>
 
-                            <div className="mt-4">
-                              <h5 className={`font-bold text-base ${meal.main ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500 italic font-normal'}`}>
-                                {meal.main || 'Chưa lên thực đơn'}
-                              </h5>
-                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                                {meal.side ? `Kèm: ${meal.side}` : 'Chưa có món phụ'}
-                              </p>
+                            <div className="mt-4 space-y-1.5">
+                              {meal.main ? (
+                                <div className="space-y-1">
+                                  {meal.main.split('\n').map((dish, dIdx) => {
+                                    const cleanDish = dish.trim();
+                                    if (!cleanDish) return null;
+                                    return (
+                                      <h5
+                                        key={dIdx}
+                                        className="font-bold text-base text-gray-900 dark:text-white leading-snug"
+                                      >
+                                        {cleanDish}
+                                      </h5>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <h5 className="font-normal text-base text-gray-400 dark:text-gray-500 italic">
+                                  Chưa lên thực đơn
+                                </h5>
+                              )}
+
+                              {meal.side ? (
+                                <div className="text-xs text-gray-500 dark:text-gray-400 space-y-0.5">
+                                  {meal.side.split('\n').map((sDish, sIdx) => {
+                                    const cleanSide = sDish.trim();
+                                    if (!cleanSide) return null;
+                                    return (
+                                      <p key={sIdx} className="leading-relaxed">
+                                        {sIdx === 0 && (
+                                          <span className="font-medium text-emerald-600 dark:text-emerald-400 mr-1.5">
+                                            Kèm:
+                                          </span>
+                                        )}
+                                        <span>{cleanSide}</span>
+                                      </p>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <p className="text-xs text-gray-400 dark:text-gray-500 italic">
+                                  Chưa có món phụ
+                                </p>
+                              )}
                             </div>
 
                             <div className="mt-4 pt-3 border-t border-gray-50 dark:border-gray-700">
@@ -1955,6 +2452,107 @@ export default function App() {
             </div>
           </div>
         )}
+
+        {/* ========================================================================= */}
+        {/* TAB 4: CÀI ĐẶT (SETTINGS)                                                 */}
+        {/* ========================================================================= */}
+        {activeTab === 'settings' && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Cột trái: 2 Khối Xuất dữ liệu */}
+              <div className="space-y-6">
+                {/* Export 1: Lịch sử Giao dịch */}
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
+                  <h2 className="text-lg font-bold flex items-center gap-2 mb-2 dark:text-gray-100">
+                    <Database className="w-5 h-5 text-blue-500" /> Xuất dữ liệu
+                  </h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                    Tải về toàn bộ lịch sử giao dịch dưới dạng file CSV để dễ dàng xem và chỉnh sửa trên Excel/Google Sheets.
+                  </p>
+                  <button onClick={handleExportCSV} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all shadow-sm cursor-pointer">
+                    <Download className="w-4 h-4" />
+                    <span>Xuất Lịch Sử Giao Dịch (CSV)</span>
+                  </button>
+                </div>
+
+                {/* Export 2: Nhật ký hệ thống (Logs) */}
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
+                  <h2 className="text-lg font-bold flex items-center gap-2 mb-2 dark:text-gray-100">
+                    <Clock className="w-5 h-5 text-emerald-500" /> Nhật ký hệ thống (Logs)
+                  </h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                    Tải về toàn bộ nhật ký thao tác hệ thống (thêm, sửa, xóa, sắp xếp) dưới dạng file CSV để theo dõi và lưu trữ.
+                  </p>
+                  <button
+                    onClick={handleExportLogsCSV}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium transition-all shadow-sm cursor-pointer"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Xuất Nhật Ký Hệ Thống (CSV)</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Cột phải: Quản lý danh mục */}
+              <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-between">
+                <div>
+                  <h2 className="text-lg font-bold flex items-center gap-2 mb-4 dark:text-gray-100">
+                    <Tag className="w-5 h-5 text-purple-500" /> Quản lý danh mục
+                  </h2>
+                  <form 
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const form = e.target;
+                      handleAddCategory(form.type.value, form.name.value);
+                      form.reset();
+                    }}
+                    className="flex gap-2 mb-4"
+                  >
+                    <select name="type" className="p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-800 dark:text-white" required>
+                      <option value="expense" className="dark:bg-gray-800">Khoản Chi</option>
+                      <option value="income" className="dark:bg-gray-800">Khoản Thu</option>
+                    </select>
+                    <input name="name" placeholder="Tên danh mục mới" className="flex-1 p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500" required />
+                    <button type="submit" className="px-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 cursor-pointer">
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </form>
+                </div>
+                <div className="max-h-64 overflow-y-auto pr-2 space-y-2 custom-scrollbar flex-1">
+                  {categories.filter(c => c.type === 'expense' || c.type === 'income').map(c => (
+                    <div key={c.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium dark:text-gray-200">{c.name}</span>
+                        <span className="text-[10px] text-gray-400 uppercase tracking-wider">{c.type}</span>
+                      </div>
+                      <button onClick={() => handleDeleteCategory(c.id, c.name)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg cursor-pointer">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Thông tin thương hiệu ứng dụng */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+              <img
+                src="/Logo.png?v=2"
+                alt="SmartSpend & Meal Logo"
+                className="w-16 h-16 rounded-2xl object-contain bg-white dark:bg-gray-700 p-1 border border-gray-100 dark:border-gray-600 shadow-xs shrink-0"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                  <h3 className="font-bold text-gray-900 dark:text-white text-base">SmartSpend & Meal</h3>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">v1.0.0</span>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Hệ thống quản lý chi tiêu thông minh kết hợp lập kế hoạch thực đơn dinh dưỡng và đi chợ tuần cho gia đình.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
 
       {/* ========================================================================= */}
@@ -2136,47 +2734,18 @@ export default function App() {
             </div>
 
             <form onSubmit={handleSaveMeal} className="p-5 space-y-4">
-              {/* Tên bữa ăn */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
-                  Tên bữa ăn
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="VD: Bữa Sáng, Bữa Xế..."
-                  value={mealForm.mealName}
-                  onChange={(e) => setMealForm({ ...mealForm, mealName: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
-                />
-              </div>
-
-              {/* Main Dish */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
-                  Món chính
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="VD: Cơm sườn nướng, Phở bò..."
-                  value={mealForm.main}
-                  onChange={(e) => setMealForm({ ...mealForm, main: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
-                />
-              </div>
-
-              {/* Side Dish & Calories */}
+              {/* Tên bữa ăn & Calo ước tính */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
-                    Món phụ / Canh kèm
+                    Tên bữa ăn
                   </label>
                   <input
                     type="text"
-                    placeholder="VD: Canh rau ngót..."
-                    value={mealForm.side}
-                    onChange={(e) => setMealForm({ ...mealForm, side: e.target.value })}
+                    required
+                    placeholder="VD: Bữa Sáng, Bữa Trưa..."
+                    value={mealForm.mealName}
+                    onChange={(e) => setMealForm({ ...mealForm, mealName: e.target.value })}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
                   />
                 </div>
@@ -2194,17 +2763,49 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Ingredients Textarea */}
+              {/* Main Dish Textarea (Có chỗ xuống dòng thêm nhiều món) */}
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
-                  Nguyên liệu chuẩn bị (mỗi dòng 1 nguyên liệu)
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1 flex items-center justify-between">
+                  <span>Món chính</span>
+                  <span className="text-[11px] font-normal text-emerald-600 dark:text-emerald-400 lowercase">(mỗi dòng 1 món)</span>
                 </label>
                 <textarea
-                  rows={4}
-                  placeholder="Thịt heo 300g&#10;Hành hoa&#10;Gia vị nấu"
+                  rows={2}
+                  required
+                  placeholder="VD: Cơm chiên hải sản&#10;Thịt kho trứng cút..."
+                  value={mealForm.main}
+                  onChange={(e) => setMealForm({ ...mealForm, main: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 custom-scrollbar"
+                />
+              </div>
+
+              {/* Side Dish Textarea (Có chỗ xuống dòng thêm nhiều món) */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1 flex items-center justify-between">
+                  <span>Món phụ / Canh ăn kèm</span>
+                  <span className="text-[11px] font-normal text-emerald-600 dark:text-emerald-400 lowercase">(mỗi dòng 1 món)</span>
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="VD: Canh rau ngót thịt băm&#10;Dưa leo, cà chua..."
+                  value={mealForm.side}
+                  onChange={(e) => setMealForm({ ...mealForm, side: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 custom-scrollbar"
+                />
+              </div>
+
+              {/* Ingredients Textarea */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1 flex items-center justify-between">
+                  <span>Nguyên liệu chuẩn bị</span>
+                  <span className="text-[11px] font-normal text-gray-400 dark:text-gray-500 lowercase">(mỗi dòng 1 nguyên liệu)</span>
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="Thịt heo 300g&#10;Hành hoa&#10;Gia vị nấu..."
                   value={mealForm.ingredientsStr}
                   onChange={(e) => setMealForm({ ...mealForm, ingredientsStr: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 custom-scrollbar"
                 />
               </div>
 
@@ -2309,190 +2910,48 @@ export default function App() {
         </div>
       )}
 
-        {/* ========================================================================= */}
-        {/* TAB 4: CÀI ĐẶT (SETTINGS)                                                 */}
-        {/* ========================================================================= */}
-        {activeTab === 'settings' && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            {/* Tùy chỉnh Giao Diện */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 md:p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-              <h2 className="text-lg font-bold flex items-center gap-2 mb-4 dark:text-gray-100">
-                <Sun className="w-5 h-5 text-amber-500" /> Tùy chỉnh Giao diện
-              </h2>
-              <div className="flex flex-wrap gap-4">
-                <button
-                  onClick={() => setTheme('light')}
-                  className={`flex items-center gap-2 px-4 py-2 border rounded-xl font-medium transition-all cursor-pointer ${
-                    theme === 'light'
-                      ? 'bg-amber-50 border-amber-300 text-amber-800 dark:bg-amber-950/40 dark:border-amber-700 dark:text-amber-300 shadow-xs'
-                      : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  <Sun className="w-4 h-4 text-amber-500" /> Sáng
-                </button>
-                <button
-                  onClick={() => setTheme('dark')}
-                  className={`flex items-center gap-2 px-4 py-2 border rounded-xl font-medium transition-all cursor-pointer ${
-                    theme === 'dark'
-                      ? 'bg-indigo-50 border-indigo-300 text-indigo-800 dark:bg-indigo-950/40 dark:border-indigo-700 dark:text-indigo-300 shadow-xs'
-                      : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  <Moon className="w-4 h-4 text-indigo-500 dark:text-indigo-400" /> Tối
-                </button>
-                <button
-                  onClick={() => setTheme('system')}
-                  className={`flex items-center gap-2 px-4 py-2 border rounded-xl font-medium transition-all cursor-pointer ${
-                    theme === 'system'
-                      ? 'bg-emerald-50 border-emerald-300 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-700 dark:text-emerald-300 shadow-xs'
-                      : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  <Settings className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Hệ thống
-                </button>
-              </div>
-            </div>
-
-            {/* Quản lý danh mục & Export */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Export */}
-              <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
-                <h2 className="text-lg font-bold flex items-center gap-2 mb-4 dark:text-gray-100">
-                  <Database className="w-5 h-5 text-blue-500" /> Xuất dữ liệu
-                </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Tải về toàn bộ lịch sử giao dịch dưới dạng file CSV để dễ dàng xem và chỉnh sửa trên Excel/Google Sheets.</p>
-                <button onClick={handleExportCSV} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all shadow-sm cursor-pointer">
-                  Xuất Lịch Sử Giao Dịch (CSV)
-                </button>
-              </div>
-
-              {/* Categories */}
-              <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
-                <h2 className="text-lg font-bold flex items-center gap-2 mb-4 dark:text-gray-100">
-                  <Tag className="w-5 h-5 text-purple-500" /> Quản lý danh mục
-                </h2>
-                <form 
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const form = e.target;
-                    handleAddCategory(form.type.value, form.name.value);
-                    form.reset();
-                  }}
-                  className="flex gap-2 mb-4"
-                >
-                  <select name="type" className="p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-800 dark:text-white" required>
-                    <option value="expense" className="dark:bg-gray-800">Khoản Chi</option>
-                    <option value="income" className="dark:bg-gray-800">Khoản Thu</option>
-                  </select>
-                  <input name="name" placeholder="Tên danh mục mới" className="flex-1 p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500" required />
-                  <button type="submit" className="px-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 cursor-pointer">
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </form>
-                <div className="max-h-48 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
-                  {categories.filter(c => c.type === 'expense' || c.type === 'income').map(c => (
-                    <div key={c.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium dark:text-gray-200">{c.name}</span>
-                        <span className="text-[10px] text-gray-400 uppercase tracking-wider">{c.type}</span>
-                      </div>
-                      <button onClick={() => handleDeleteCategory(c.id, c.name)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg cursor-pointer">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* System Logs */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 md:p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-              <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                  <h2 className="text-lg font-bold dark:text-gray-100">
-                    Nhật ký hệ thống (Logs)
-                  </h2>
-                  <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium px-2.5 py-0.5 rounded-full">
-                    {Math.min(10, systemLogs.length)} / {systemLogs.length} mới nhất
-                  </span>
-                </div>
-                <button
-                  onClick={handleExportLogsCSV}
-                  className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-all cursor-pointer"
-                  title="Xuất toàn bộ nhật ký hệ thống ra file CSV"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Xuất Nhật Ký (CSV)</span>
-                </button>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-gray-100 dark:border-gray-700 text-xs text-gray-400 uppercase tracking-wider">
-                      <th className="py-3 pr-4 font-semibold">Thời gian (dd/mm/yyyy)</th>
-                      <th className="py-3 px-4 font-semibold">Hành động</th>
-                      <th className="py-3 px-4 font-semibold">Loại</th>
-                      <th className="py-3 pl-4 font-semibold">Chi tiết</th>
-                    </tr>
-                  </thead>
-                  <tbody className="text-sm">
-                    {systemLogs.length === 0 ? (
-                      <tr><td colSpan="4" className="py-4 text-center text-gray-500 dark:text-gray-400">Chưa có bản ghi nào</td></tr>
-                    ) : (
-                      systemLogs.slice(0, 10).map(log => (
-                        <tr key={log.id} className="border-b border-gray-50 dark:border-gray-700/50 hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors">
-                          <td className="py-3 pr-4 text-gray-500 dark:text-gray-400 tabular-nums text-xs whitespace-nowrap">
-                            {formatLogTime(log.time)}
-                          </td>
-                          <td className="py-3 px-4 font-medium dark:text-gray-200">{log.action}</td>
-                          <td className="py-3 px-4 text-emerald-600 dark:text-emerald-400">{log.entity_type}</td>
-                          <td className="py-3 pl-4 text-gray-600 dark:text-gray-300">{log.entity_name}</td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-              {systemLogs.length > 10 && (
-                <div className="mt-3.5 pt-3 border-t border-gray-100 dark:border-gray-700 text-xs text-center text-gray-400 dark:text-gray-500">
-                  Đang hiển thị 10 bản ghi mới nhất. Để xem toàn bộ lịch sử, vui lòng bấm nút <strong>"Xuất Nhật Ký (CSV)"</strong> ở trên.
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
       {/* ========================================================================= */}
       {/* MOBILE BOTTOM NAVIGATION BAR                                              */}
       {/* ========================================================================= */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-200/80 dark:border-gray-800 px-6 py-2 flex items-center justify-around shadow-lg transition-colors">
         <button
           onClick={() => setActiveTab('spend')}
-          className={`flex flex-col items-center py-1 gap-1 text-xs font-semibold transition-colors ${
-            activeTab === 'spend' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+          className={`relative flex flex-col items-center py-1 gap-1 text-xs transition-colors ${
+            activeTab === 'spend'
+              ? 'font-bold text-emerald-700 dark:text-emerald-400'
+              : 'font-medium text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
           }`}
         >
-          <Wallet className="w-5 h-5" />
+          <Wallet className={`w-5 h-5 ${activeTab === 'spend' ? 'stroke-[2.25]' : ''}`} />
           <span>Thu Chi</span>
+          {activeTab === 'spend' && (
+            <span className="w-5 h-[2.5px] bg-emerald-600 dark:bg-emerald-400 rounded-full mt-0.5 shadow-[0_1px_3px_rgba(16,185,129,0.5)]" />
+          )}
         </button>
         <button
           onClick={() => setActiveTab('meal')}
-          className={`flex flex-col items-center py-1 gap-1 text-xs font-semibold transition-colors ${
-            activeTab === 'meal' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+          className={`relative flex flex-col items-center py-1 gap-1 text-xs transition-colors ${
+            activeTab === 'meal'
+              ? 'font-bold text-emerald-700 dark:text-emerald-400'
+              : 'font-medium text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
           }`}
         >
-          <Utensils className="w-5 h-5" />
+          <Utensils className={`w-5 h-5 ${activeTab === 'meal' ? 'stroke-[2.25]' : ''}`} />
           <span>Thực Đơn</span>
+          {activeTab === 'meal' && (
+            <span className="w-5 h-[2.5px] bg-emerald-600 dark:bg-emerald-400 rounded-full mt-0.5 shadow-[0_1px_3px_rgba(16,185,129,0.5)]" />
+          )}
         </button>
         <button
           onClick={() => setActiveTab('shop')}
-          className={`flex flex-col items-center py-1 gap-1 text-xs font-semibold transition-colors relative ${
-            activeTab === 'shop' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+          className={`relative flex flex-col items-center py-1 gap-1 text-xs transition-colors ${
+            activeTab === 'shop'
+              ? 'font-bold text-emerald-700 dark:text-emerald-400'
+              : 'font-medium text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
           }`}
         >
           <div className="relative">
-            <ShoppingCart className="w-5 h-5" />
+            <ShoppingCart className={`w-5 h-5 ${activeTab === 'shop' ? 'stroke-[2.25]' : ''}`} />
             {activeShoppingList.length > 0 && (
               <span className="absolute -top-1.5 -right-2 bg-emerald-600 text-white text-[9px] px-1 py-0.2 rounded-full font-bold">
                 {activeShoppingList.length}
@@ -2500,15 +2959,23 @@ export default function App() {
             )}
           </div>
           <span>Đi Chợ</span>
+          {activeTab === 'shop' && (
+            <span className="w-5 h-[2.5px] bg-emerald-600 dark:bg-emerald-400 rounded-full mt-0.5 shadow-[0_1px_3px_rgba(16,185,129,0.5)]" />
+          )}
         </button>
         <button
           onClick={() => setActiveTab('settings')}
-          className={`flex flex-col items-center py-1 gap-1 text-xs font-semibold transition-colors ${
-            activeTab === 'settings' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+          className={`relative flex flex-col items-center py-1 gap-1 text-xs transition-colors ${
+            activeTab === 'settings'
+              ? 'font-bold text-emerald-700 dark:text-emerald-400'
+              : 'font-medium text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
           }`}
         >
-          <Settings className="w-5 h-5" />
+          <Settings className={`w-5 h-5 ${activeTab === 'settings' ? 'stroke-[2.25]' : ''}`} />
           <span>Cài Đặt</span>
+          {activeTab === 'settings' && (
+            <span className="w-5 h-[2.5px] bg-emerald-600 dark:bg-emerald-400 rounded-full mt-0.5 shadow-[0_1px_3px_rgba(16,185,129,0.5)]" />
+          )}
         </button>
       </nav>
     </div>

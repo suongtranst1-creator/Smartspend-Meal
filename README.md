@@ -42,9 +42,15 @@
   - Cơ chế xử lý 2 chiều: Tự động chuẩn hóa thành số nguyên an toàn khi lưu trữ vào CSDL PostgreSQL, đảm bảo các phép tính thu, chi, số dư luôn chính xác tuyệt đối.
 * **Bộ Lọc Đa Chiều & Sắp Xếp Nâng Cao (Filter & Sort)**:
   - Lọc danh sách giao dịch theo: *Tất cả*, *Khoản Chi*, *Khoản Thu*.
-  - Lọc theo **Khoảng thời gian (Từ ngày ➔ Đến ngày)**.
+  - **Bộ Chọn Khoảng Ngày Tinh Gọn 1 Ô Duy Nhất (Unified DateRangePicker)**:
+    - Gom 2 ô nhập ngày riêng biệt thành **1 nút bấm duy nhất** cho phép chọn 2 mốc thời gian: *Từ ngày ➔ Đến ngày*.
+    - Sau khi chọn 2 ngày, hiển thị gộp theo định dạng chuẩn: `19/09/2026 - 22/09/2026`.
+    - **Tô đậm dải ngày liền mạch (Range Highlight Bar)**: Trên lịch tháng, khoảng ngày giữa 2 mốc được tô đậm màu xanh ngọc nối liền mượt mà, giúp người dùng nhận diện ngay phạm vi thời gian đang lọc.
+    - Hỗ trợ xem trước khoảng chọn khi rê chuột (Hover Range Preview), các nút chọn nhanh (*Hôm nay*, *7 ngày qua*, *Tháng này*) và nút xóa nhanh `X`.
   - **Sắp xếp linh hoạt (Sort)**: Hỗ trợ 4 chế độ: *Mới nhất (Mặc định)*, *Cũ nhất*, *Số tiền: Cao ➔ Thấp*, *Số tiền: Thấp ➔ Cao*.
-  - **Nút Đặt lại / Reset (Icon mũi tên xoay tròn `RotateCcw`)**: Khôi phục nhanh chóng toàn bộ bộ lọc và chế độ sắp xếp về trạng thái mặc định ban đầu chỉ với 1 cú click, đi kèm chỉ báo nhãn *"Đang tùy chỉnh"*.
+  - **Đặt Lại Bộ Lọc Tự Động (Dynamic Reset Filters)**:
+    - Loại bỏ nút *"Mặc định"* dư thừa khi ở trạng thái ban đầu, giữ thanh công cụ luôn sạch sẽ, thoáng mắt.
+    - Nút **"Đặt lại bộ lọc"** (kèm biểu tượng `RotateCcw`) chỉ tự động xuất hiện khi người dùng đang kích hoạt bộ lọc hoặc sắp xếp khác mặc định, khôi phục mọi thông số về ban đầu chỉ với 1 cú click.
   - Tích hợp tính năng **Phân trang (Xem thêm)** tối ưu tốc độ tải và hiệu năng hiển thị.
 * **Xuất Báo Cáo CSV (Export Data)**:
   - Xuất toàn bộ lịch sử giao dịch ra tệp CSV định dạng chuẩn UTF-8 (hỗ trợ BOM), mở trực tiếp trên Microsoft Excel hoặc Google Sheets không bị lỗi font tiếng Việt.
@@ -57,6 +63,10 @@
   - **Chỉ báo trực quan (Visual Dots)**: Chấm xanh hiển thị trên thanh ngày giúp nhận biết ngay ngày nào đã có kế hoạch bữa ăn.
   - **Khóa bảo vệ dữ liệu quá khứ**: Các ngày đã qua được khóa an toàn (chế độ chỉ xem), ngăn chặn vô tình chỉnh sửa thực đơn cũ.
   - **Tự do đặt tên bữa ăn**: Không giới hạn cố định, người dùng có thể thêm bất kỳ bữa ăn nào (Bữa Sáng, Bữa Trưa, Bữa Tối, Bữa Xế, Ăn Vặt...) kèm lượng calo, món chính, món phụ và danh sách nguyên liệu.
+* **Kéo Thả Sắp Xếp Thứ Tự Bữa Ăn Trong Ngày (Drag & Drop Reordering)**:
+  - **Kéo thả trực tiếp trên thẻ (Direct Card Drag & Drop)**: Người dùng có thể nhấp chuột giữ và kéo thả trực tiếp thẻ bữa ăn để đổi thứ tự linh hoạt (ví dụ: đưa Bữa Trưa lên trước Bữa Tối dù được thêm vào sau).
+  - **Hiệu ứng phản hồi mượt mà**: Thẻ đang kéo trở nên trong suốt nhẹ với viền đứt nét; vị trí thả hiển thị vòng viền xanh ngọc (`ring-2 ring-emerald-500`) phóng to nhẹ trực quan.
+  - **Tự động lưu thứ tự vào PostgreSQL**: Thứ tự sắp xếp mới được đồng bộ tức thì qua API `PUT /api/meals/reorder` và lưu vào cột `order_index` trong CSDL, đảm bảo thứ tự luôn chuẩn xác khi tải lại trang.
 * **Đồng Bộ Nguyên Liệu Giữa Thực Đơn & Giỏ Đi Chợ (Thông Minh & Thực Tế)**:
   - **Tự động loại bỏ món đã có sẵn ra khỏi Giỏ Đi Chợ**: Khi người dùng đánh dấu nguyên liệu đã có sẵn / đã chuẩn bị ở Thực Đơn Tuần (Tab 2), hệ thống sẽ **tự động loại bỏ hoàn toàn món đó ra khỏi giỏ hàng Đi Chợ (Tab 3)** (xóa khỏi danh sách và CSDL thay vì để gạch ngang), đảm bảo giỏ hàng chỉ tập trung vào những thứ cần đi mua và số lượng đếm trên huy hiệu menu luôn chuẩn xác. Nếu bỏ tick ở Thực Đơn, nguyên liệu sẽ tự động được thêm lại vào giỏ.
   - **Theo dõi nguyên liệu 2 chiều**: Đánh dấu mua sắm tại Tab Đi Chợ cũng tự động liên thông đồng bộ với trạng thái nguyên liệu trên thẻ Thực Đơn.
@@ -88,22 +98,22 @@
   - **Chống nhấp nháy sáng (FOUC Prevention)**: Nhận diện theme bằng script inline trong `<head>` trước khi nạp DOM, đảm bảo trải nghiệm êm dịu mắt khi tải lại trang.
 * **Quản Lý Danh Mục Tùy Biến (Categories)**:
   - Hỗ trợ thêm và xóa các danh mục thu, chi theo thói quen cá nhân. Danh mục cập nhật tức thì vào các menu thả xuống trong toàn bộ ứng dụng.
-* **Nhật Ký Hoạt Động Hệ Thống (Audit Logs)**:
+* **Nhật Ký Hoạt Động Hệ Thống (Audit Logs Export)**:
   - Tự động ghi nhận mọi thao tác quan trọng (Thêm, Sửa, Xóa giao dịch, thực đơn, đi chợ, danh mục) kèm thời gian chi tiết chuẩn định dạng **`dd/mm/yyyy HH:mm:ss`**.
-  - **Tối ưu hiển thị 10 bản ghi mới nhất**: Bảng nhật ký được tinh gọn chỉ hiển thị 10 hành động gần nhất giúp giao diện gọn gàng, tải siêu nhanh.
-  - **Xuất file nhật ký (Export Logs CSV)**: Tích hợp nút *"Xuất Nhật Ký (CSV)"* cho phép tải về toàn bộ lịch sử thao tác hệ thống ra tệp CSV định dạng chuẩn UTF-8 để lưu trữ hoặc đối soát kiểm toán.
-* **Chỉ Báo Trạng Thái Kết Nối CSDL (DB Health Indicator)**:
-  - Hiển thị trực quan trạng thái kết nối PostgreSQL (`PostgreSQL: Đã kết nối` / `Sẵn sàng`) ngay trên thanh Header.
-* **Tự Động Khởi Tạo & Di Trú Cấu Trúc (Auto-migration)**:
-  - Máy chủ tự động kiểm tra, khởi tạo bảng và nâng cấp các cột CSDL mới (`plan_date`, cấu trúc `system_logs` chuẩn hóa...) mà không cần can thiệp thủ công.
+  - **Giao diện tinh gọn đồng bộ**: Tinh giản bảng dữ liệu dài thành khối thẻ chức năng có nút *"Xuất Toàn Bộ Nhật Ký (CSV)"* đồng bộ phong cách với khối Xuất dữ liệu giao dịch, tải về toàn bộ lịch sử thao tác hệ thống ra tệp CSV định dạng chuẩn UTF-8 để lưu trữ hoặc đối soát kiểm toán.
+* **Chỉ Báo Trạng Thái Kết Nối Tinh Gọn (Online Status Dot)**:
+  - Hiển thị chấm tròn phát sáng siêu nhỏ gọn trên thanh Header. Khi rê chuột (hover), tooltip hiển thị trực quan và tối giản đúng 2 trạng thái: **`Đã kết nối`** hoặc **`Không thể kết nối`**, không gây rối mắt hay chiếm dụng không gian.
 
 ---
 
-## 🎨 4. Phong Cách Thiết Kế UI/UX
+## 🎨 4. Phong Cách Thiết Kế UI/UX Cao Cấp
 
 - **Tone màu chủ đạo**: Xanh ngọc / Emerald (`emerald-600`) đại diện cho sự tươi mát của thực phẩm sạch và sự an tâm trong tài chính; kết hợp nền xám dịu (`bg-gray-50`) giảm mỏi mắt.
-- **Phong cách**: Clean & Modern, card bo góc mềm mại (`rounded-2xl`), đường viền siêu mỏng (`border-gray-100`), đổ bóng nhẹ nhàng (`shadow-xs` ➔ `shadow-md`).
-- **Typography**: Phông chữ quốc tế **Plus Jakarta Sans**, hiển thị các con số tiền tệ và tiếng Việt rõ ràng, sắc nét.
+- **Thẻ Số Dư Hiện Tại Gradient Sang Trọng**: Sử dụng dải màu chuyển từ Xanh ngọc (Teal) sang Xanh lá cây thẫm (`from-teal-600 via-emerald-700 to-emerald-950`), kết hợp viền sáng phản chiếu mỏng tạo vẻ ngoài cao cấp và đẳng cấp cho thẻ tài chính trung tâm.
+- **Biểu Đồ Đường Kẻ Mờ (Sparklines)**: Tích hợp đồ thị xu hướng SVG dạng đường kẻ uốn lượn mờ phía sau các con số ở thẻ Tổng Thu (xu hướng tăng trưởng) và thẻ Tổng Chi (xu hướng biến thiên), tạo cảm giác phân tích dữ liệu chuyên nghiệp.
+- **Định Vị Tab Rõ Nét (Active Tab Indicator)**: Tab đang kích hoạt được làm nổi bật với chữ in đậm (`font-bold text-emerald-800 dark:text-emerald-300`) kết hợp đường gạch chân màu xanh ngọc rõ nét (`h-[3px] bg-emerald-600 dark:bg-emerald-400 rounded-full`), giúp người dùng nhận biết ngay lập tức trang mình đang xem.
+- **Đổ Bóng Mềm Mại & Chiều Sâu (Soft Diffused Drop-Shadow)**: Áp dụng hiệu ứng bề mặt nổi êm dịu (`shadow-[0_8px_30px_rgb(0,0,0,0.06)]`) kết hợp hiệu ứng vi dịch chuyển khi rê chuột (`hover:-translate-y-0.5`).
+- **Typography & Nhận Diện Thương Hiệu**: Phông chữ quốc tế **Plus Jakarta Sans** đồng bộ logo thương hiệu sắc nét (`Logo.png`) tại Favicon trình duyệt và Header ứng dụng.
 - **Tối ưu Mobile-First**:
   - **Trên Desktop**: Menu điều hướng đặt ở Header trên cùng, hiển thị đầy đủ các cột và bảng phân tích.
   - **Trên Mobile / Tablet**: Tự động chuyển thành **Bottom Navigation Bar** cố định ở chân màn hình kèm huy hiệu đếm giỏ hàng tiện lợi khi thao tác bằng 1 tay trong lúc đi chợ.
@@ -186,7 +196,10 @@ psql -U <username> -d <database_name> -f schema.sql
 
 ```text
 SmartSpend & Meal/
-├── index.html              # Tệp HTML chính tích hợp Plus Jakarta Sans & theme loader
+├── Logo.png                # Logo thương hiệu gốc độ phân giải cao
+├── public/
+│   └── Logo.png            # Logo phục vụ tĩnh cho Header, Favicon & bản build Vite
+├── index.html              # Tệp HTML chính tích hợp Plus Jakarta Sans, Favicon & theme loader
 ├── package.json            # Khai báo phụ thuộc (React 19, Express, pg, Lucide React, Vite)
 ├── vite.config.js          # Cấu hình Vite dev server & proxy API (/api -> localhost:5000)
 ├── schema.sql              # Cấu trúc CSDL PostgreSQL chuẩn hóa & các chỉ mục (Indexes)

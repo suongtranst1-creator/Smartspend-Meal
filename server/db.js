@@ -80,10 +80,13 @@ export async function initializeDatabase() {
         side_dish VARCHAR(255),
         calories VARCHAR(50),
         ingredients JSONB DEFAULT '[]'::jsonb,
+        order_index INT DEFAULT 0,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         CONSTRAINT uq_date_meal UNIQUE (plan_date, meal_name)
     );
     CREATE INDEX IF NOT EXISTS idx_meal_plans_date ON meal_plans (plan_date);
+    ALTER TABLE meal_plans ADD COLUMN IF NOT EXISTS order_index INT DEFAULT 0;
+    CREATE INDEX IF NOT EXISTS idx_meal_plans_order ON meal_plans (plan_date, order_index);
 
     -- 3. Bảng grocery_items
     CREATE TABLE IF NOT EXISTS grocery_items (

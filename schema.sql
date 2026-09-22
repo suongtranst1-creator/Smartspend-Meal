@@ -43,12 +43,14 @@ CREATE TABLE IF NOT EXISTS meal_plans (
     side_dish VARCHAR(255),
     calories VARCHAR(50),
     ingredients TEXT[] DEFAULT '{}',
+    order_index INT DEFAULT 0,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_day_meal UNIQUE (day_of_week, meal_type)
 );
 
--- Đánh chỉ mục tăng tốc lọc theo ngày trong tuần
+-- Đánh chỉ mục tăng tốc lọc theo ngày trong tuần và thứ tự
 CREATE INDEX IF NOT EXISTS idx_meal_plans_day ON meal_plans (day_of_week);
+CREATE INDEX IF NOT EXISTS idx_meal_plans_order ON meal_plans (day_of_week, order_index);
 
 COMMENT ON TABLE meal_plans IS 'Bảng lưu trữ kế hoạch thực đơn dinh dưỡng 7 ngày trong tuần';
 COMMENT ON COLUMN meal_plans.day_of_week IS 'Thứ trong tuần: t2, t3, t4, t5, t6, t7, cn';
