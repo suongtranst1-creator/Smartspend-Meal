@@ -31,7 +31,8 @@ import {
   ArrowUpDown,
   Download,
   RotateCcw,
-  Lightbulb
+  Lightbulb,
+  FileSpreadsheet
 } from 'lucide-react';
 
 // Currency Formatter
@@ -1468,10 +1469,41 @@ export default function App() {
   };
 
 
-  // Danh sách đi chợ hợp lệ (tự động bỏ qua các món chưa mua của ngày đã qua)
+  // Danh sách đi chợ hợp lệ, tự động sắp xếp theo thứ tự bữa ăn từ gần nhất tới xa nhất
   const activeShoppingList = useMemo(() => {
-    return filterExpiredUnboughtGroceries(shoppingList);
-  }, [shoppingList]);
+    const list = filterExpiredUnboughtGroceries(shoppingList);
+
+    const getMealRank = (str = '') => {
+      const s = (str || '').toLowerCase();
+      if (s.includes('sáng')) return 1;
+      if (s.includes('trưa')) return 2;
+      if (s.includes('chiều') || s.includes('xế')) return 3;
+      if (s.includes('tối')) return 4;
+      return 5;
+    };
+
+    return [...list].sort((a, b) => {
+      // 1. Món chưa mua hiển thị trước, món đã tick mua hiển thị sau
+      if (a.checked !== b.checked) return a.checked ? 1 : -1;
+
+      // 2. Ngày thực đơn: gần nhất tới xa nhất (YYYY-MM-DD tăng dần)
+      // Các món thêm tự do không gắn ngày sẽ xếp cùng ngày hôm nay (todayKey) để ưu tiên mua
+      const dateA = a.plan_date || todayKey;
+      const dateB = b.plan_date || todayKey;
+      if (dateA !== dateB) return dateA.localeCompare(dateB);
+
+      // 3. Thứ tự bữa trong ngày: Sáng (1) -> Trưa (2) -> Chiều (3) -> Tối (4)
+      const rankA = getMealRank(a.quantity);
+      const rankB = getMealRank(b.quantity);
+      if (rankA !== rankB) return rankA - rankB;
+
+      // 4. Theo thời gian tạo hoặc theo tên
+      if (a.created_at && b.created_at) {
+        return a.created_at.localeCompare(b.created_at);
+      }
+      return (a.name || '').localeCompare(b.name || '');
+    });
+  }, [shoppingList, todayKey]);
 
   const checkedShoppingCount = useMemo(() => {
     return activeShoppingList.filter((i) => i.checked).length;
@@ -2531,46 +2563,85 @@ export default function App() {
         {activeTab === 'settings' && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Cột trái: 2 Khối Xuất dữ liệu */}
-              <div className="space-y-6">
-                {/* Export 1: Lịch sử Giao dịch */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
-                  <h2 className="text-lg font-bold flex items-center gap-2 mb-2 dark:text-gray-100">
-                    <Database className="w-5 h-5 text-blue-500" /> Xuất dữ liệu
-                  </h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                    Tải về toàn bộ lịch sử giao dịch dưới dạng file CSV để dễ dàng xem và chỉnh sửa trên Excel/Google Sheets.
-                  </p>
-                  <button onClick={handleExportCSV} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all shadow-sm cursor-pointer">
-                    <Download className="w-4 h-4" />
-                    <span>Xuất Lịch Sử Giao Dịch (CSV)</span>
-                  </button>
+              {/* Cột trái: Khối Dữ liệu & Hệ thống gộp 2 chức năng gọn gàng */}
+              <div className="bg-white dark:bg-gray-800 rounded-3xl p-5 sm:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.25)] border border-gray-100 dark:border-gray-700/80 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-2.5 mb-5 pb-3 border-b border-gray-100 dark:border-gray-700/60">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                      <Database className="w-4 h-4 stroke-[2.25]" />
+                    </div>
+                    <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
+                      Dữ liệu & Hệ thống
+                    </h2>
+                  </div>
+
+                  <div className="space-y-3.5">
+                    {/* Hàng 1: Xuất lịch sử giao dịch (CSV) - Outlined Button với tone xanh ngọc */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-gray-50/80 dark:bg-gray-700/40 border border-gray-100 dark:border-gray-700/60 transition-all hover:border-emerald-200 dark:hover:border-emerald-800/60">
+                      <div className="space-y-1 min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">
+                            Xuất Lịch Sử Giao Dịch
+                          </h3>
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed pr-2">
+                          Tải về file CSV toàn bộ thu chi để mở trên Excel hoặc Google Sheets.
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleExportCSV}
+                        className="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-emerald-700 dark:text-emerald-300 bg-white dark:bg-gray-800 border border-emerald-600/70 dark:border-emerald-500/70 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:border-emerald-600 dark:hover:border-emerald-400 shadow-2xs hover:shadow-xs active:scale-98 transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+                        title="Tải về file CSV lịch sử thu chi"
+                      >
+                        <Download className="w-4 h-4 stroke-[2.25]" />
+                        <span>Tải CSV</span>
+                      </button>
+                    </div>
+
+                    {/* Hàng 2: Nhật ký hệ thống (Logs) - Outlined Button */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-gray-50/80 dark:bg-gray-700/40 border border-gray-100 dark:border-gray-700/60 transition-all hover:border-emerald-200 dark:hover:border-emerald-800/60">
+                      <div className="space-y-1 min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">
+                            Nhật Ký Hệ Thống (Logs)
+                          </h3>
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed pr-2">
+                          Tải về nhật ký ghi lại các thao tác thêm, sửa, xóa để theo dõi và đối soát.
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleExportLogsCSV}
+                        className="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-emerald-700 dark:text-emerald-300 bg-white dark:bg-gray-800 border border-emerald-600/70 dark:border-emerald-500/70 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:border-emerald-600 dark:hover:border-emerald-400 shadow-2xs hover:shadow-xs active:scale-98 transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+                        title="Tải về file CSV nhật ký hệ thống"
+                      >
+                        <Download className="w-4 h-4 stroke-[2.25]" />
+                        <span>Tải Logs CSV</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Export 2: Nhật ký hệ thống (Logs) */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
-                  <h2 className="text-lg font-bold flex items-center gap-2 mb-2 dark:text-gray-100">
-                    <Clock className="w-5 h-5 text-emerald-500" /> Nhật ký hệ thống (Logs)
-                  </h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                    Tải về toàn bộ nhật ký thao tác hệ thống (thêm, sửa, xóa, sắp xếp) dưới dạng file CSV để theo dõi và lưu trữ.
-                  </p>
-                  <button
-                    onClick={handleExportLogsCSV}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium transition-all shadow-sm cursor-pointer"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span>Xuất Nhật Ký Hệ Thống (CSV)</span>
-                  </button>
+                <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700/60 text-[11px] text-gray-400 dark:text-gray-500 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                  <span>Dữ liệu CSV được định dạng UTF-8 tương thích tiếng Việt có dấu.</span>
                 </div>
               </div>
 
-              {/* Cột phải: Quản lý danh mục */}
-              <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-between">
+              {/* Cột phải: Quản lý danh mục (Phân cấp nút bấm & Phân loại màu sắc) */}
+              <div className="bg-white dark:bg-gray-800 rounded-3xl p-5 sm:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.25)] border border-gray-100 dark:border-gray-700/80 flex flex-col justify-between">
                 <div>
-                  <h2 className="text-lg font-bold flex items-center gap-2 mb-4 dark:text-gray-100">
-                    <Tag className="w-5 h-5 text-purple-500" /> Quản lý danh mục
-                  </h2>
+                  <div className="flex items-center gap-2.5 mb-5 pb-3 border-b border-gray-100 dark:border-gray-700/60">
+                    <div className="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                      <Tag className="w-4 h-4 stroke-[2.25]" />
+                    </div>
+                    <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
+                      Quản lý danh mục
+                    </h2>
+                  </div>
+
                   <form 
                     onSubmit={(e) => {
                       e.preventDefault();
@@ -2578,26 +2649,64 @@ export default function App() {
                       handleAddCategory(form.type.value, form.name.value);
                       form.reset();
                     }}
-                    className="flex gap-2 mb-4"
+                    className="flex flex-col sm:flex-row gap-2.5 mb-4"
                   >
-                    <select name="type" className="p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-800 dark:text-white" required>
-                      <option value="expense" className="dark:bg-gray-800">Khoản Chi</option>
-                      <option value="income" className="dark:bg-gray-800">Khoản Thu</option>
+                    <select 
+                      name="type" 
+                      className="px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs sm:text-sm font-medium text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30" 
+                      required
+                    >
+                      <option value="expense" className="dark:bg-gray-800">Khoản Chi (Expense)</option>
+                      <option value="income" className="dark:bg-gray-800">Khoản Thu (Income)</option>
                     </select>
-                    <input name="name" placeholder="Tên danh mục mới" className="flex-1 p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500" required />
-                    <button type="submit" className="px-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 cursor-pointer">
-                      <Plus className="w-4 h-4" />
+                    <input 
+                      name="name" 
+                      placeholder="Tên danh mục mới..." 
+                      className="flex-1 px-3.5 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs sm:text-sm text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30" 
+                      required 
+                    />
+                    {/* Nút chính: Solid Button nổi bật */}
+                    <button 
+                      type="submit" 
+                      className="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl font-bold text-xs sm:text-sm shadow-md shadow-emerald-600/25 active:scale-98 transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+                    >
+                      <Plus className="w-4 h-4 stroke-[2.5]" />
+                      <span>Thêm</span>
                     </button>
                   </form>
                 </div>
-                <div className="max-h-64 overflow-y-auto pr-2 space-y-2 custom-scrollbar flex-1">
+
+                {/* Danh sách danh mục với Color Coding (vạch đỏ cho Expense, vạch xanh lá cho Income) */}
+                <div className="max-h-72 overflow-y-auto pr-1 space-y-2.5 custom-scrollbar flex-1">
                   {categories.filter(c => c.type === 'expense' || c.type === 'income').map(c => (
-                    <div key={c.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium dark:text-gray-200">{c.name}</span>
-                        <span className="text-[10px] text-gray-400 uppercase tracking-wider">{c.type}</span>
+                    <div 
+                      key={c.id} 
+                      className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${
+                        c.type === 'expense'
+                          ? 'border-l-4 border-l-rose-500 border-gray-100 dark:border-gray-700/80 bg-rose-50/25 dark:bg-rose-950/10'
+                          : 'border-l-4 border-l-emerald-500 border-gray-100 dark:border-gray-700/80 bg-emerald-50/25 dark:bg-emerald-950/10'
+                      }`}
+                    >
+                      <div className="flex flex-col min-w-0 pr-2">
+                        <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                          {c.name}
+                        </span>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                            c.type === 'expense' ? 'bg-rose-500' : 'bg-emerald-500'
+                          }`} />
+                          <span className={`text-[10px] font-bold uppercase tracking-wider ${
+                            c.type === 'expense' ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
+                          }`}>
+                            {c.type === 'expense' ? 'Khoản Chi (Expense)' : 'Khoản Thu (Income)'}
+                          </span>
+                        </div>
                       </div>
-                      <button onClick={() => handleDeleteCategory(c.id, c.name)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg cursor-pointer">
+                      <button 
+                        onClick={() => handleDeleteCategory(c.id, c.name)} 
+                        className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors cursor-pointer shrink-0"
+                        title="Xóa danh mục này"
+                      >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>

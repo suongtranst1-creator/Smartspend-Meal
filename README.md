@@ -86,10 +86,11 @@
   - Trên thẻ thực đơn của ngày quá khứ, các nguyên liệu chưa mua được gắn nhãn `Đã bỏ qua` màu vàng cam rõ ràng, trực quan.
   - Các món **đã mua** (`is_bought = true`) vẫn được giữ lại đầy đủ để bạn đối chiếu và thanh toán hóa đơn.
 * **Checklist Đi Chợ Tinh Gọn (Streamlined Grocery Checklist)**:
+  - **Sắp xếp thông minh từ bữa gần nhất tới xa nhất**: Các nguyên liệu trong giỏ tự động xếp theo thứ tự ngày thực đơn tăng dần (22/09 -> 23/09 -> ...), kết hợp thứ tự bữa trong ngày (Sáng -> Trưa -> Tối). Món chưa mua được xếp lên trước, món đã mua gom xuống dưới giúp người dùng theo dõi mạch lạc.
   - **Form thêm nhanh tối giản**: Chỉ gồm ô nhập *Tên nguyên liệu* và *Số lượng* (VD: 500g, 2 bó), loại bỏ các bước chọn phân loại rườm rà giúp việc ghi chép đi chợ nhanh hơn bao giờ hết.
   - **Tương tác mượt mà**: Checkbox tick chọn chuyển màu xanh ngọc kèm hiệu ứng gạch ngang (`line-through`).
   - **Thống kê tiến độ mua sắm**: Thanh trạng thái hiển thị `X / Y đã mua` kèm huy hiệu số lượng trên menu điều hướng.
-  - **Dọn dẹp nhanh**: Hỗ trợ nút *"Xóa món đã mua"* để dọn sạch các món đã hoàn thành.
+  - **Dọn dẹp nhanh**: Hỗ trợ nút *"Xóa món đã mua"* để dọn sạch các món đã hoàn thành khỏi giao diện và CSDL.
 * **Chốt Sổ Hóa Đơn 1-Click (Finalize & Sync to Wallet)**:
   - **Nút hành động nổi bật (Glow CTA Button)**: Nút "Chốt hóa đơn & Ghi sổ" tinh gọn nhãn, trang bị hiệu ứng đổ bóng mờ (Glow Shadow) màu xanh ngọc sang trọng và hiệu ứng nâng nhẹ khi rê chuột.
   - Nhập tổng số tiền thực tế trên hóa đơn đi chợ với tính năng **tự động ngắt dấu chấm hàng nghìn** (VD: `350.000`).
@@ -99,16 +100,17 @@
 ---
 
 ### ⚙️ Phần C: Cài Đặt & Quản Trị Hệ Thống (Settings & System)
+* **Khối "Dữ Liệu & Hệ Thống" Hợp Nhất**:
+  - Tích hợp 2 tính năng *Xuất Lịch Sử Giao Dịch* và *Nhật Ký Hệ Thống (Logs)* vào 1 thẻ lớn duy nhất với 2 hàng độc lập, giúp giao diện thông thoáng, ngăn nắp.
+  - **Thống nhất màu sắc**: Chuyển đổi toàn bộ nút xuất CSV sang tông màu xanh ngọc (Emerald/Teal) chủ đạo của thương hiệu.
+  - **Phân cấp nút bấm rõ ràng**: Dùng nút viền (Outlined Button) màu xanh ngọc gọn gàng cho các tác vụ tải CSV phụ, và nút đặc (Solid Gradient Button) nổi bật cho tác vụ chính "+ Thêm" danh mục.
+* **Quản Lý Danh Mục Trực Quan Với Color Coding**:
+  - Thêm vạch màu viền trái nổi bật cho mỗi dòng danh mục: **vạch đỏ (`border-l-rose-500`)** cho Khoản Chi (Expense) và **vạch xanh lá (`border-l-emerald-500`)** cho Khoản Thu (Income), giúp người dùng phân loại tức thì bằng mắt.
 * **Đồng Bộ Giao Diện Dark / Light Mode Toàn Diện**:
   - Chuyển đổi linh hoạt giữa 3 chế độ: **Sáng (Light)**, **Tối (Dark)** và **Tự động theo hệ điều hành (System default)**. Cài đặt được lưu trữ bền vững tại `localStorage`.
   - **Đồng bộ 100% diện tích ứng dụng**: Bao phủ hoàn chỉnh Header, thanh điều hướng, 4 tab chức năng, 3 popup modal và thanh điều hướng di động.
   - **Nút chuyển nhanh Dark/Light Mode ngay trên Header**: Icon Mặt Trời / Mặt Trăng đặt ngay trên thanh điều hướng chính, cho phép chuyển đổi chế độ giao diện tức thì từ bất kỳ màn hình nào chỉ với 1 cú click.
   - **Chống nhấp nháy sáng (FOUC Prevention)**: Nhận diện theme bằng script inline trong `<head>` trước khi nạp DOM, đảm bảo trải nghiệm êm dịu mắt khi tải lại trang.
-* **Quản Lý Danh Mục Tùy Biến (Categories)**:
-  - Hỗ trợ thêm và xóa các danh mục thu, chi theo thói quen cá nhân. Danh mục cập nhật tức thì vào các menu thả xuống trong toàn bộ ứng dụng.
-* **Nhật Ký Hoạt Động Hệ Thống (Audit Logs Export)**:
-  - Tự động ghi nhận mọi thao tác quan trọng (Thêm, Sửa, Xóa giao dịch, thực đơn, đi chợ, danh mục) kèm thời gian chi tiết chuẩn định dạng **`dd/mm/yyyy HH:mm:ss`**.
-  - **Giao diện tinh gọn đồng bộ**: Tinh giản bảng dữ liệu dài thành khối thẻ chức năng có nút *"Xuất Toàn Bộ Nhật Ký (CSV)"* đồng bộ phong cách với khối Xuất dữ liệu giao dịch, tải về toàn bộ lịch sử thao tác hệ thống ra tệp CSV định dạng chuẩn UTF-8 để lưu trữ hoặc đối soát kiểm toán.
 * **Chỉ Báo Trạng Thái Kết Nối Tinh Gọn (Online Status Dot)**:
   - Hiển thị chấm tròn phát sáng siêu nhỏ gọn trên thanh Header. Khi rê chuột (hover), tooltip hiển thị trực quan và tối giản đúng 2 trạng thái: **`Đã kết nối`** hoặc **`Không thể kết nối`**, không gây rối mắt hay chiếm dụng không gian.
 

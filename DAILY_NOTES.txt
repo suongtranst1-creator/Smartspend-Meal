@@ -225,6 +225,17 @@ Mục đích: Theo dõi tiến độ, ghi chép lại các tính năng đã phá
       + Khắc phục lỗi Express routing trong `server/index.js`: Route `DELETE /api/groceries/bought` trước đó bị đặt sau `DELETE /api/groceries/:id`, khiến Express nhận diện nhầm `'bought'` là một ID món và trả về lỗi 404 (`Không tìm thấy món`). Sau khi đảo vị trí route lên trước, lệnh xóa các món đã mua hoạt động chuẩn xác 100%.
       + Đồng bộ state `setShoppingList((prev) => prev.filter(i => !i.checked))` khi chốt sổ hoặc bấm xóa món đã mua, đảm bảo giỏ hàng lập tức dọn sạch các món đã mua trên cả giao diện và cơ sở dữ liệu PostgreSQL.
 
+[x] 14. Tối ưu sắp xếp giỏ đi chợ và nâng cấp toàn diện Tab Cài Đặt:
+    - Danh sách thực phẩm (Tab Đi Chợ):
+      + Tự động sắp xếp (Sort) các nguyên liệu từ bữa gần nhất tới xa nhất (theo ngày `plan_date` tăng dần, các món thêm tự do ưu tiên ngày hôm nay).
+      + Trong cùng ngày, sắp xếp theo thứ tự bữa ăn tự nhiên: Ăn Sáng (1) -> Bữa Trưa (2) -> Bữa Xế/Chiều (3) -> Bữa Tối (4).
+      + Các món chưa mua được ưu tiên hiển thị trước, các món đã tick mua gom xuống sau để người dùng dễ dàng theo dõi nguyên liệu cần mua tiếp theo.
+    - Tab Cài Đặt (Settings):
+      + Gộp thẻ "Dữ liệu & Hệ thống": Tích hợp hai khối "Xuất dữ liệu" và "Nhật ký hệ thống (Logs)" vào một thẻ lớn duy nhất gồm 2 hàng độc lập, giúp bố cục cột trái thông thoáng, ngăn nắp và hiện đại.
+      + Thống nhất màu sắc thương hiệu: Chuyển nút xuất CSV lịch sử giao dịch từ màu xanh dương sang màu xanh ngọc (Emerald/Teal) chủ đạo của ứng dụng.
+      + Phân cấp nút bấm (Button Hierarchy): Dùng nút viền (Outlined Button) màu xanh ngọc thanh thoát cho các chức năng tải CSV và nút đặc (Solid Gradient Button) nổi bật cho nút "+ Thêm" danh mục mới, tránh cảm giác bị ngợp thị giác.
+      + Phân loại bằng màu sắc (Color Coding): Bổ sung vạch màu viền trái nổi bật cho danh sách danh mục (vạch đỏ `border-l-rose-500` cho Khoản Chi - Expense, vạch xanh `border-l-emerald-500` cho Khoản Thu - Income) giúp người dùng nhận diện tức thì bằng mắt.
+
 * Kế hoạch tiếp theo (To-do):
     - [ ] Kiểm thử toàn diện các luồng nghiệp vụ trên môi trường thật.
     - [ ] Chuẩn bị bài thuyết trình / tài liệu nộp đề tài bảng Văn phòng.
