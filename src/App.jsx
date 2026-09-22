@@ -2040,10 +2040,53 @@ export default function App() {
 
               return (
                 <div className="space-y-4">
+                  {/* Selected Day Header Bar with Primary Action Button */}
+                  <div className="flex items-center justify-between px-1">
+                    <h3 className="font-bold text-gray-900 dark:text-white text-sm sm:text-base flex items-center gap-2">
+                      <span>{currentDayObj?.label}</span>
+                      <span className="text-gray-400 dark:text-gray-500 font-normal text-xs sm:text-sm">
+                        ({currentDayObj?.dateStr})
+                      </span>
+                      {isPast ? (
+                        <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800">
+                          Đã qua
+                        </span>
+                      ) : (
+                        <span className="text-[11px] font-semibold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/40 px-2 py-0.5 rounded-full border border-teal-200 dark:border-teal-800">
+                          {currentMeals.length} bữa ăn
+                        </span>
+                      )}
+                    </h3>
+
+                    {!isPast && (
+                      <button
+                        onClick={() => handleOpenEditMeal(selectedDay)}
+                        className="flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-teal-600 via-teal-700 to-emerald-700 hover:from-teal-500 hover:to-emerald-600 text-white font-bold text-xs sm:text-sm px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl border border-teal-400/50 shadow-md shadow-teal-900/20 hover:shadow-lg hover:shadow-teal-900/30 hover:-translate-y-0.5 active:scale-95 transition-all cursor-pointer"
+                      >
+                        <Plus className="w-4 h-4 stroke-[2.5]" />
+                        <span>Thêm bữa ăn</span>
+                      </button>
+                    )}
+                  </div>
+
                   {currentMeals.length === 0 ? (
                     <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs p-10 text-center flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 text-sm">
-                      <Utensils className="w-8 h-8 text-gray-200 dark:text-gray-600 mb-2" />
-                      Chưa có thực đơn nào cho ngày này.
+                      <Utensils className="w-10 h-10 text-gray-300 dark:text-gray-600 mb-2.5" />
+                      <p className="font-semibold text-gray-700 dark:text-gray-200 text-base mb-1">
+                        Chưa có thực đơn nào cho ngày này.
+                      </p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mb-5">
+                        Lên kế hoạch bữa ăn giúp bạn tiết kiệm chi phí và chuẩn bị nguyên liệu đi chợ khoa học.
+                      </p>
+                      {!isPast && (
+                        <button
+                          onClick={() => handleOpenEditMeal(selectedDay)}
+                          className="flex items-center gap-2.5 bg-gradient-to-r from-teal-600 via-teal-700 to-emerald-700 hover:from-teal-500 hover:to-emerald-600 text-white font-bold text-sm px-6 py-3 rounded-xl border border-teal-400/60 shadow-lg shadow-teal-900/25 hover:shadow-xl hover:shadow-teal-800/35 hover:-translate-y-0.5 active:scale-95 transition-all cursor-pointer"
+                        >
+                          <Plus className="w-4 h-4 stroke-[2.5]" />
+                          <span>Thêm bữa ăn ngay</span>
+                        </button>
+                      )}
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -2221,13 +2264,30 @@ export default function App() {
                     </div>
                   )}
 
-                  {!isPast && (
+                  {!isPast && currentMeals.length > 0 && (
                     <div className="flex justify-center mt-6">
                       <button 
                         onClick={() => handleOpenEditMeal(selectedDay)}
-                        className="flex items-center justify-center gap-2 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 px-6 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-sm active:scale-98"
+                        className="flex items-center justify-center gap-2.5 bg-gradient-to-r from-teal-600 via-teal-700 to-emerald-700 hover:from-teal-500 hover:to-emerald-600 text-white border-2 border-teal-400/60 hover:border-teal-300 px-8 py-3 rounded-2xl font-bold text-sm transition-all shadow-lg shadow-teal-900/25 hover:shadow-xl hover:shadow-teal-800/35 hover:-translate-y-0.5 active:scale-95 cursor-pointer"
                       >
-                        <Plus className="w-4 h-4" /> Thêm bữa ăn
+                        <Plus className="w-5 h-5 stroke-[2.5]" />
+                        <span>Thêm bữa ăn</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Floating Action Button (FAB) for Instant Meal Adding */}
+                  {!isPast && (
+                    <div className="fixed bottom-20 md:bottom-8 right-5 md:right-8 z-30">
+                      <button
+                        onClick={() => handleOpenEditMeal(selectedDay)}
+                        title={`Thêm bữa ăn cho ${currentDayObj?.label || 'ngày đã chọn'}`}
+                        className="flex items-center gap-2.5 bg-gradient-to-r from-teal-600 via-teal-700 to-emerald-700 hover:from-teal-500 hover:to-emerald-600 text-white border-2 border-teal-300/60 px-4 py-3 sm:px-5 sm:py-3.5 rounded-full shadow-2xl shadow-teal-950/50 hover:shadow-teal-800/60 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer group"
+                      >
+                        <Plus className="w-5 h-5 stroke-[2.5] transition-transform group-hover:rotate-90 duration-300" />
+                        <span className="font-bold text-xs sm:text-sm tracking-wide whitespace-nowrap">
+                          Thêm bữa ăn
+                        </span>
                       </button>
                     </div>
                   )}

@@ -192,6 +192,12 @@ Mục đích: Theo dõi tiến độ, ghi chép lại các tính năng đã phá
       + Bổ sung đường gạch chân màu xanh ngọc rõ nét (`h-[3px] bg-emerald-600 dark:bg-emerald-400 rounded-full shadow-sm`) nằm ngay mép dưới tab đang kích hoạt.
       + Đồng bộ đường gạch chân và kiểu chữ in đậm trên cả thanh điều hướng Desktop (Header) lẫn thanh điều hướng Mobile (Bottom Nav) giúp người dùng nhận biết ngay lập tức mình đang ở trang nào.
 
+[x] 11. Nâng cấp nút "Thêm bữa ăn" thành nút chính nổi bật & Nút hành động nổi (FAB):
+    - Thực Đơn Tuần (Tab 2):
+      + Thay thế nút phụ mờ nhạt bằng phong cách Nút Chính (Primary Action Button) cao cấp: Nền dải chuyển màu Xanh ngọc Teal - Emerald (`bg-gradient-to-r from-teal-600 via-teal-700 to-emerald-700`), viền màu teal rõ nét (`border-2 border-teal-400/60`), chữ trắng in đậm (`text-white font-bold`) và hiệu ứng đổ bóng phát quang êm dịu (`shadow-lg shadow-teal-900/25`).
+      + Bố trí thông minh: Đặt nút "Thêm bữa ăn" ngay trên thanh tiêu đề ngày đang chọn (Selected Day Header) và nút "Thêm bữa ăn ngay" tại trạng thái chưa có thực đơn (Empty State) để người dùng thao tác tức thì.
+      + Tích hợp Nút Hành Động Nổi (Floating Action Button - FAB): Cố định ở góc dưới bên phải (`fixed bottom-20 md:bottom-8 right-5 md:right-8 z-30`) với hiệu ứng xoay icon Plus nhẹ khi rê chuột (`group-hover:rotate-90`), cho phép người dùng mở modal thêm bữa ăn nhanh từ bất kỳ vị trí cuộn trang nào trên cả điện thoại và máy tính.
+
 * Kế hoạch tiếp theo (To-do):
     - [ ] Kiểm thử toàn diện các luồng nghiệp vụ trên môi trường thật.
     - [ ] Chuẩn bị bài thuyết trình / tài liệu nộp đề tài bảng Văn phòng.
