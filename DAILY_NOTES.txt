@@ -131,28 +131,28 @@ Mục đích: Theo dõi tiến độ, ghi chép lại các tính năng đã phá
 ================================================================================
 📅 NGÀY: 22/09/2026 (Thứ Ba) - NÂNG CẤP TRẢI NGHIỆM NGƯỜI DÙNG, BỘ LỌC THỜI GIAN & ĐỒNG BỘ THƯƠNG HIỆU
 ================================================================================
-[x] 1 (Mục 17). Tinh gọn giao diện Thu Chi & Nhật Ký Cài Đặt:
+[x] 1 Tinh gọn giao diện Thu Chi & Nhật Ký Cài Đặt:
     - Sổ Thu Chi: Gỡ bỏ nút "Mặc định" cố định gây rối mắt; chuyển sang nút "Đặt lại bộ lọc" thông minh chỉ tự động hiển thị khi có bộ lọc hoặc sắp xếp đang kích hoạt.
     - Tab Cài Đặt: Tinh giản bảng dữ liệu nhật ký hệ thống (Logs) dài dòng thành khối thẻ chức năng có nút "Xuất Toàn Bộ Nhật Ký (CSV)" đồng bộ phong cách và kích thước với khối "Xuất dữ liệu giao dịch".
 
-[x] 2 (Mục 18). Bộ chọn khoảng ngày 1 ô duy nhất & Tô đậm dải ngày (Sổ Thu Chi):
+[x] 2 Bộ chọn khoảng ngày 1 ô duy nhất & Tô đậm dải ngày (Sổ Thu Chi):
     - Thay thế 2 ô nhập ngày rời rạc thành 1 nút bấm chọn khoảng ngày duy nhất hiển thị định dạng chuẩn: `19/09/2026 - 22/09/2026`.
     - Tích hợp lịch chọn ngày popover: Tự động tô đậm toàn bộ dải ngày giữa 2 mốc đã chọn (Range Highlight Bar) với hiệu ứng kết nối liền mạch và xem trước khi rê chuột (Hover Range Preview).
     - Hỗ trợ đầy đủ phím tắt chọn nhanh (Hôm nay, 7 ngày qua, Tháng này), nút xóa nhanh [X] và nút "Đặt lại bộ lọc" (RotateCcw) tự động xuất hiện để khôi phục trạng thái mặc định.
 
-[x] 3 (Mục 19). Đồng bộ Logo thương hiệu (Logo.png) lên toàn bộ ứng dụng web:
+[x] 3 Đồng bộ Logo thương hiệu (Logo.png) lên toàn bộ ứng dụng web:
     - Sao chép tệp `Logo.png` vào thư mục `public/` để phục vụ tĩnh cho frontend và bản build Vite.
     - Cập nhật Favicon: Thêm thẻ `<link rel="icon" type="image/png" href="/Logo.png" />` vào `<head>` của `index.html` để hiển thị logo trên thanh tab trình duyệt.
     - Cập nhật Navigation Header: Thay thế biểu tượng Sparkles mặc định bằng hình ảnh `Logo.png` bo góc sang trọng, tương thích hoàn hảo ở cả 2 chế độ Sáng/Tối.
 
-[x] 4 (Mục 20). Bổ sung dữ liệu thử nghiệm Thực Đơn & Đi Chợ (23/09/2026):
+[x] 4 Bổ sung dữ liệu thử nghiệm Thực Đơn & Đi Chợ (23/09/2026):
     - Đã nạp bữa ăn vào CSDL PostgreSQL (Tab 2: Thực Đơn Tuần):
       + Ngày: Thứ Tư, 23/09/2026
       + Bữa: Ăn sáng
       + Món chính: Cơm chiên
       + Nguyên liệu: Thịt bò, Tôm, Trứng, Đậu cô ve (trạng thái: chưa mua).
 
-[x] 5 (Mục 21). Bổ sung trọn bộ dữ liệu thử nghiệm cho đôi vợ chồng mới cưới (23/09 - 27/09/2026):
+[x] 5 Bổ sung trọn bộ dữ liệu thử nghiệm cho đôi vợ chồng mới cưới (23/09 - 27/09/2026):
     - Tiêu chí: Món ăn gia đình 2 người tiết kiệm, dinh dưỡng, chi phí sinh hoạt thực tế, chi tiêu hợp lý cho gia đình trẻ.
     - Thực Đơn Tuần (Tab 2) - Bổ sung 10 bữa ăn mới phủ kín cả tuần:
       + T4 (23/09): Bữa Trưa (Thịt kho trứng cút), Bữa Tối (Cá basa sốt cà chua).
@@ -162,28 +162,28 @@ Mục đích: Theo dõi tiến độ, ghi chép lại các tính năng đã phá
       + CN (27/09): Bữa Trưa (Bò xào ớt chuông), Bữa Tối (Cháo gà hạt sen thanh đạm).
     - Giỏ Đi Chợ (Tab 3): Liên thông tự động các nguyên liệu chưa mua kèm nhãn bữa ăn rõ ràng (Bữa Trưa 24/09, Bữa Tối 24/09, Bữa Trưa 25/09...).
 
-[x] 6 (Mục 22). Hỗ trợ xuống dòng nhiều món chính/phụ & Hiệu ứng đổ bóng có chiều sâu (Soft Drop-Shadow):
+[x] 6 Hỗ trợ xuống dòng nhiều món chính/phụ & Hiệu ứng đổ bóng có chiều sâu (Soft Drop-Shadow):
     - Thực Đơn Tuần (Tab 2):
       + Chuyển đổi ô nhập "Món chính" và "Món phụ / Canh ăn kèm" từ input 1 dòng sang ô textarea nhiều dòng, cho phép người dùng thoải mái gõ phím Enter xuống dòng để thêm nhiều món ăn cùng lúc (tương tự ô Nguyên liệu).
       + Nâng cấp hiển thị thẻ bữa ăn: Tự động tách từng món ăn theo dòng và ký hiệu (+) kèm tên món phụ riêng biệt.
     - Sổ Thu Chi (Tab 1):
       + Nâng cấp hiệu ứng đổ bóng siêu mềm mại và có chiều sâu (Soft Diffused Drop-Shadow: `shadow-[0_8px_30px_rgb(0,0,0,0.06)]`) cho 3 thẻ thống kê (Tổng thu, Tổng chi, Số dư), giúp các thẻ nổi bật rõ ràng, tạo cảm giác bề mặt nổi (elevation) êm dịu trên nền xám nhạt `bg-gray-50`.
 
-[x] 7 (Mục 23). Tinh chỉnh giao diện theo phản hồi:
+[x] 7 Tinh chỉnh giao diện theo phản hồi:
     - Thực Đơn Tuần (Tab 2): Đã loại bỏ hoàn toàn dấu chấm tròn xanh trước các món chính, hiển thị danh sách món ăn một cách tự nhiên, thoáng đãng và sạch sẽ.
     - Sổ Thu Chi (Tab 1): Nâng cấp thẻ "Số Dư Hiện Tại" từ màu xanh lá cây đơn sắc sang dải màu chuyển (Gradient) sang trọng từ Xanh ngọc (Teal) sang Xanh lá cây thẫm (`from-teal-600 via-emerald-700 to-emerald-950`), kết hợp viền sáng phản chiếu mỏng và quầng sáng mềm mại giúp thẻ tài chính trung tâm toát lên vẻ cao cấp, hiện đại.
 
-[x] 8 (Mục 24). Tích hợp biểu đồ đường kẻ mờ (Sparkline) làm nền thẻ tài chính:
+[x] 8 Tích hợp biểu đồ đường kẻ mờ (Sparkline) làm nền thẻ tài chính:
     - Sổ Thu Chi (Tab 1): Thay thế các hình tròn màu nhạt đơn điệu bằng biểu đồ đường kẻ mờ (Sparkline SVG) tinh xảo làm nền phía sau các con số.
       + Thẻ Tổng Thu: Biểu đồ đường tăng trưởng uốn lượn (Upward Income Trend) màu xanh ngọc (Emerald) với dải chuyển màu mờ dần, thể hiện xu hướng tích lũy tài chính đi lên.
       + Thẻ Tổng Chi: Biểu đồ đường biến thiên dao động nhịp nhàng (Fluctuating Expense Trend) màu hồng san hô (Rose) với hiệu ứng vùng sáng mờ, thể hiện nhịp chi tiêu thực tế.
 
-[x] 9 (Mục 25). Tinh gọn chỉ báo trạng thái máy chủ (Online Status Dot):
+[x] 9 Tinh gọn chỉ báo trạng thái máy chủ (Online Status Dot):
     - Header: Thu gọn dòng chữ dài "PostgreSQL: Đã kết nối" chiếm diện tích thành một chấm tròn nhỏ phát sáng màu xanh lá (Pulsing Online Dot).
     - Tích hợp Tooltip thông minh: Chỉ khi người dùng di chuột (hover) vào dấu chấm, tooltip tối màu cao cấp mới mượt mà hiển thị thông báo.
     - Tiết kiệm hơn 160px chiều ngang trên thanh Header, giữ cho thanh điều hướng luôn thông thoáng và chuyên nghiệp.
 
-[x] 10 (Mục 26). Tối giản trạng thái kết nối & Làm rõ tab điều hướng đang mở:
+[x] 10 Tối giản trạng thái kết nối & Làm rõ tab điều hướng đang mở:
     - Trạng thái máy chủ:
       + Tối giản nội dung thông báo thành đúng 2 trạng thái ngắn gọn theo yêu cầu: "Đã kết nối" (khi trực tuyến với chấm xanh ngọc phát sáng) hoặc "Không thể kết nối" (khi mất kết nối với chấm đỏ hồng).
       + Đồng bộ cả thuộc tính `title` lẫn Tooltip di chuột nổi (Hover Tooltip), loại bỏ hoàn toàn các thông tin kỹ thuật dư thừa như tên database hay câu lệnh cài đặt.
@@ -192,11 +192,21 @@ Mục đích: Theo dõi tiến độ, ghi chép lại các tính năng đã phá
       + Bổ sung đường gạch chân màu xanh ngọc rõ nét (`h-[3px] bg-emerald-600 dark:bg-emerald-400 rounded-full shadow-sm`) nằm ngay mép dưới tab đang kích hoạt.
       + Đồng bộ đường gạch chân và kiểu chữ in đậm trên cả thanh điều hướng Desktop (Header) lẫn thanh điều hướng Mobile (Bottom Nav) giúp người dùng nhận biết ngay lập tức mình đang ở trang nào.
 
-[x] 11. Nâng cấp nút "Thêm bữa ăn" thành nút chính nổi bật & Nút hành động nổi (FAB):
-    - Thực Đơn Tuần (Tab 2):
-      + Thay thế nút phụ mờ nhạt bằng phong cách Nút Chính (Primary Action Button) cao cấp: Nền dải chuyển màu Xanh ngọc Teal - Emerald (`bg-gradient-to-r from-teal-600 via-teal-700 to-emerald-700`), viền màu teal rõ nét (`border-2 border-teal-400/60`), chữ trắng in đậm (`text-white font-bold`) và hiệu ứng đổ bóng phát quang êm dịu (`shadow-lg shadow-teal-900/25`).
-      + Bố trí thông minh: Đặt nút "Thêm bữa ăn" ngay trên thanh tiêu đề ngày đang chọn (Selected Day Header) và nút "Thêm bữa ăn ngay" tại trạng thái chưa có thực đơn (Empty State) để người dùng thao tác tức thì.
-      + Tích hợp Nút Hành Động Nổi (Floating Action Button - FAB): Cố định ở góc dưới bên phải (`fixed bottom-20 md:bottom-8 right-5 md:right-8 z-30`) với hiệu ứng xoay icon Plus nhẹ khi rê chuột (`group-hover:rotate-90`), cho phép người dùng mở modal thêm bữa ăn nhanh từ bất kỳ vị trí cuộn trang nào trên cả điện thoại và máy tính.
+[x] 11. Tối ưu trải nghiệm Thực Đơn Tuần theo phản hồi người dùng:
+    - Tinh gọn chỉ 1 nút "Thêm bữa ăn" duy nhất:
+      + Đặt duy nhất 1 nút chính (Primary Action Button) nổi bật với viền màu teal rõ nét (`border-teal-400/50`), nền dải chuyển Teal - Emerald và chữ trắng in đậm ngay tại thanh tiêu đề ngày.
+      + Loại bỏ các nút dư thừa dưới chân danh sách và nút nổi FAB, giữ giao diện thanh lịch và gọn gàng.
+    - Làm sạch Hộp Mẹo (Smart Tip Box):
+      + Nâng cấp hộp mẹo với biểu tượng bóng đèn cách điệu (`Lightbulb`) màu vàng ấm trong huy hiệu bo tròn mềm mại.
+      + Viền bo cong êm ái (`rounded-3xl`), nền chuyển màu dịu mắt tích hợp hài hòa và sang trọng vào bố cục chung.
+    - Tăng cường khoảng trắng & Chiều sâu (Whitespace & Depth):
+      + Tăng khoảng cách giữa các thẻ thực đơn (`gap-6 lg:gap-7`) và khoảng đệm bên trong thẻ (`p-6`) giúp bố cục thoáng đãng, không bị chật chội.
+      + Áp dụng hiệu ứng đổ bóng mềm mại có chiều sâu (`shadow-[0_8px_30px_rgb(0,0,0,0.06)]`), tạo cảm giác các thẻ bữa ăn đang nổi nhẹ nhàng trên bề mặt.
+    - Phân biệt trực quan 'Đã mua' vs 'Cần mua':
+      + Mục chưa mua: Hiển thị icon giỏ hàng nhỏ màu xám nhạt (`ShoppingCart`) kèm huy hiệu "Cần mua".
+      + Mục đã mua: Hiển thị nút tick màu xanh lá cây đậm (`bg-emerald-600 text-white`), tên món gạch mờ tinh tế và huy hiệu "Đã mua" rõ ràng.
+    - Tương tác "Đã mua đủ" hấp dẫn:
+      + Khi toàn bộ nguyên liệu được đánh dấu đã mua, nút bấm chuyển trạng thái sang màu xanh lá cây đậm sang trọng (`bg-emerald-600 text-white border-emerald-500`) với icon `CheckCircle2` và dòng chữ "Đã mua đủ nguyên liệu" nổi bật, trực quan.
 
 * Kế hoạch tiếp theo (To-do):
     - [ ] Kiểm thử toàn diện các luồng nghiệp vụ trên môi trường thật.

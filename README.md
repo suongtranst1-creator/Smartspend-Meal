@@ -67,10 +67,12 @@
   - **Kéo thả trực tiếp trên thẻ (Direct Card Drag & Drop)**: Người dùng có thể nhấp chuột giữ và kéo thả trực tiếp thẻ bữa ăn để đổi thứ tự linh hoạt (ví dụ: đưa Bữa Trưa lên trước Bữa Tối dù được thêm vào sau).
   - **Hiệu ứng phản hồi mượt mà**: Thẻ đang kéo trở nên trong suốt nhẹ với viền đứt nét; vị trí thả hiển thị vòng viền xanh ngọc (`ring-2 ring-emerald-500`) phóng to nhẹ trực quan.
   - **Tự động lưu thứ tự vào PostgreSQL**: Thứ tự sắp xếp mới được đồng bộ tức thì qua API `PUT /api/meals/reorder` và lưu vào cột `order_index` trong CSDL, đảm bảo thứ tự luôn chuẩn xác khi tải lại trang.
-* **Nút "Thêm Bữa Ăn" Chuẩn Nút Chính & Nút Hành Động Nổi (FAB)**:
-  - **Thiết kế Nút Chính (Primary Action Button)**: Dải màu chuyển Teal - Emerald cao cấp, viền màu teal rõ nét (`border-2 border-teal-400/60`), chữ trắng in đậm và bóng đổ phát quang êm dịu.
-  - **Bố trí tối ưu**: Xuất hiện ngay trên thanh tiêu đề ngày đang xem, bên trong thẻ khi chưa có thực đơn (Empty State) và dưới chân danh sách bữa ăn.
-  - **Nút Hành Động Nổi (Floating Action Button - FAB)**: Ghim cố định ở góc dưới bên phải màn hình (`fixed bottom-20 md:bottom-8 right-5 md:right-8 z-30`) trên cả Desktop và Mobile, hỗ trợ truy cập thêm bữa ăn tức thì 1-click từ bất kỳ vị trí cuộn trang nào.
+* **Nút "Thêm Bữa Ăn" Tinh Gọn Duy Nhất & Trải Nghiệm Thẻ Nổi Bật**:
+  - **Nút Chính Duy Nhất (Primary Action Button)**: Dải màu chuyển Teal - Emerald cao cấp, viền màu teal rõ nét (`border-teal-400/50`), chữ trắng in đậm đặt ngay tại thanh tiêu đề ngày, loại bỏ hoàn toàn các nút thừa để giữ giao diện thông thoáng.
+  - **Khoảng trắng & Chiều sâu (Whitespace & Depth)**: Tăng khoảng cách lưới thẻ (`gap-6 lg:gap-7`), đệm lót rộng rãi (`p-6`) và hiệu ứng đổ bóng mềm mại (`shadow-[0_8px_30px_rgb(0,0,0,0.06)]`) tạo cảm giác thẻ đang nổi lên êm ái.
+  - **Phân biệt 'Đã mua' vs 'Cần mua' trực quan**: Icon giỏ hàng nhỏ màu xám nhạt (`ShoppingCart`) cho món cần mua và tick xanh lá cây đậm (`bg-emerald-600`) cho món đã mua kèm gạch mờ và huy hiệu rõ ràng.
+  - **Tương tác "Đã mua đủ" hoàn tất**: Tự động chuyển đổi nút sang màu xanh lá cây đậm sang trọng với icon `CheckCircle2` khi toàn bộ nguyên liệu hoàn thành.
+  - **Hộp Mẹo Cách Điệu (Smart Tip Box)**: Nâng cấp biểu tượng bóng đèn (`Lightbulb`) vàng ấm và viền bo cong mềm mại `rounded-3xl` tích hợp hài hòa vào bố cục.
 * **Đồng Bộ Nguyên Liệu Giữa Thực Đơn & Giỏ Đi Chợ (Thông Minh & Thực Tế)**:
   - **Tự động loại bỏ món đã có sẵn ra khỏi Giỏ Đi Chợ**: Khi người dùng đánh dấu nguyên liệu đã có sẵn / đã chuẩn bị ở Thực Đơn Tuần (Tab 2), hệ thống sẽ **tự động loại bỏ hoàn toàn món đó ra khỏi giỏ hàng Đi Chợ (Tab 3)** (xóa khỏi danh sách và CSDL thay vì để gạch ngang), đảm bảo giỏ hàng chỉ tập trung vào những thứ cần đi mua và số lượng đếm trên huy hiệu menu luôn chuẩn xác. Nếu bỏ tick ở Thực Đơn, nguyên liệu sẽ tự động được thêm lại vào giỏ.
   - **Theo dõi nguyên liệu 2 chiều**: Đánh dấu mua sắm tại Tab Đi Chợ cũng tự động liên thông đồng bộ với trạng thái nguyên liệu trên thẻ Thực Đơn.

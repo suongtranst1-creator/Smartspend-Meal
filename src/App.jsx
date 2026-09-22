@@ -30,7 +30,8 @@ import {
   Settings,
   ArrowUpDown,
   Download,
-  RotateCcw
+  RotateCcw,
+  Lightbulb
 } from 'lucide-react';
 
 // Currency Formatter
@@ -2039,8 +2040,8 @@ export default function App() {
               const currentMeals = mealData[selectedDay] || [];
 
               return (
-                <div className="space-y-4">
-                  {/* Selected Day Header Bar with Primary Action Button */}
+                <div className="space-y-6 sm:space-y-7">
+                  {/* Selected Day Header Bar with the SINGLE Primary Action Button */}
                   <div className="flex items-center justify-between px-1">
                     <h3 className="font-bold text-gray-900 dark:text-white text-sm sm:text-base flex items-center gap-2">
                       <span>{currentDayObj?.label}</span>
@@ -2048,20 +2049,21 @@ export default function App() {
                         ({currentDayObj?.dateStr})
                       </span>
                       {isPast ? (
-                        <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800">
+                        <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-0.5 rounded-full border border-amber-200 dark:border-amber-800">
                           Đã qua
                         </span>
                       ) : (
-                        <span className="text-[11px] font-semibold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/40 px-2 py-0.5 rounded-full border border-teal-200 dark:border-teal-800">
+                        <span className="text-[11px] font-semibold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/40 px-2.5 py-0.5 rounded-full border border-teal-200 dark:border-teal-800">
                           {currentMeals.length} bữa ăn
                         </span>
                       )}
                     </h3>
 
+                    {/* The ONLY 1 'Thêm bữa ăn' Button */}
                     {!isPast && (
                       <button
                         onClick={() => handleOpenEditMeal(selectedDay)}
-                        className="flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-teal-600 via-teal-700 to-emerald-700 hover:from-teal-500 hover:to-emerald-600 text-white font-bold text-xs sm:text-sm px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl border border-teal-400/50 shadow-md shadow-teal-900/20 hover:shadow-lg hover:shadow-teal-900/30 hover:-translate-y-0.5 active:scale-95 transition-all cursor-pointer"
+                        className="flex items-center gap-2 bg-gradient-to-r from-teal-600 via-teal-700 to-emerald-700 hover:from-teal-500 hover:to-emerald-600 text-white font-bold text-xs sm:text-sm px-4 py-2.5 sm:px-5 sm:py-2.5 rounded-xl border border-teal-400/50 shadow-md shadow-teal-900/20 hover:shadow-lg hover:shadow-teal-900/30 hover:-translate-y-0.5 active:scale-95 transition-all cursor-pointer"
                       >
                         <Plus className="w-4 h-4 stroke-[2.5]" />
                         <span>Thêm bữa ăn</span>
@@ -2070,237 +2072,268 @@ export default function App() {
                   </div>
 
                   {currentMeals.length === 0 ? (
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs p-10 text-center flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 text-sm">
-                      <Utensils className="w-10 h-10 text-gray-300 dark:text-gray-600 mb-2.5" />
-                      <p className="font-semibold text-gray-700 dark:text-gray-200 text-base mb-1">
-                        Chưa có thực đơn nào cho ngày này.
+                    <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700/80 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.25)] p-12 text-center flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 text-sm">
+                      <div className="w-16 h-16 rounded-3xl bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400 flex items-center justify-center mb-3">
+                        <Utensils className="w-8 h-8 stroke-[1.75]" />
+                      </div>
+                      <p className="font-bold text-gray-800 dark:text-gray-100 text-base mb-1.5">
+                        Chưa có thực đơn nào cho ngày này
                       </p>
-                      <p className="text-xs text-gray-400 dark:text-gray-500 mb-5">
-                        Lên kế hoạch bữa ăn giúp bạn tiết kiệm chi phí và chuẩn bị nguyên liệu đi chợ khoa học.
+                      <p className="text-xs text-gray-400 dark:text-gray-500 max-w-sm">
+                        Lên kế hoạch ăn uống khoa học giúp bạn tiết kiệm chi phí, ăn uống lành mạnh và chủ động chuẩn bị nguyên liệu đi chợ.
                       </p>
-                      {!isPast && (
-                        <button
-                          onClick={() => handleOpenEditMeal(selectedDay)}
-                          className="flex items-center gap-2.5 bg-gradient-to-r from-teal-600 via-teal-700 to-emerald-700 hover:from-teal-500 hover:to-emerald-600 text-white font-bold text-sm px-6 py-3 rounded-xl border border-teal-400/60 shadow-lg shadow-teal-900/25 hover:shadow-xl hover:shadow-teal-800/35 hover:-translate-y-0.5 active:scale-95 transition-all cursor-pointer"
-                        >
-                          <Plus className="w-4 h-4 stroke-[2.5]" />
-                          <span>Thêm bữa ăn ngay</span>
-                        </button>
-                      )}
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                      {currentMeals.map((meal, idx) => (
-                        <div
-                          key={meal.meal_name || idx}
-                          draggable={!isPast && currentMeals.length > 1}
-                          onDragStart={(e) => {
-                            setDraggedMealIdx(idx);
-                            e.dataTransfer.effectAllowed = 'move';
-                            e.dataTransfer.setData('text/plain', idx.toString());
-                          }}
-                          onDragOver={(e) => {
-                            e.preventDefault();
-                            e.dataTransfer.dropEffect = 'move';
-                            if (dragOverMealIdx !== idx) {
-                              setDragOverMealIdx(idx);
-                            }
-                          }}
-                          onDragLeave={(e) => {
-                            if (e.currentTarget.contains(e.relatedTarget)) return;
-                            if (dragOverMealIdx === idx) {
+                    /* Enhanced Spacing & Soft Drop-Shadow for Elevated Depth */
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-7">
+                      {currentMeals.map((meal, idx) => {
+                        const hasIngredients = meal.ingredients && meal.ingredients.length > 0;
+                        const isAllBought = hasIngredients && meal.ingredients.every(i => i.isBought);
+
+                        return (
+                          <div
+                            key={meal.meal_name || idx}
+                            draggable={!isPast && currentMeals.length > 1}
+                            onDragStart={(e) => {
+                              setDraggedMealIdx(idx);
+                              e.dataTransfer.effectAllowed = 'move';
+                              e.dataTransfer.setData('text/plain', idx.toString());
+                            }}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              e.dataTransfer.dropEffect = 'move';
+                              if (dragOverMealIdx !== idx) {
+                                setDragOverMealIdx(idx);
+                              }
+                            }}
+                            onDragLeave={(e) => {
+                              if (e.currentTarget.contains(e.relatedTarget)) return;
+                              if (dragOverMealIdx === idx) {
+                                setDragOverMealIdx(null);
+                              }
+                            }}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              handleReorderMeal(draggedMealIdx, idx);
+                            }}
+                            onDragEnd={() => {
+                              setDraggedMealIdx(null);
                               setDragOverMealIdx(null);
-                            }
-                          }}
-                          onDrop={(e) => {
-                            e.preventDefault();
-                            handleReorderMeal(draggedMealIdx, idx);
-                          }}
-                          onDragEnd={() => {
-                            setDraggedMealIdx(null);
-                            setDragOverMealIdx(null);
-                          }}
-                          className={`bg-white dark:bg-gray-800 rounded-2xl border shadow-xs overflow-hidden flex flex-col justify-between transition-all duration-200 ${
-                            !isPast && currentMeals.length > 1 ? 'cursor-grab active:cursor-grabbing' : ''
-                          } ${
-                            draggedMealIdx === idx
-                              ? 'opacity-40 scale-95 border-dashed border-emerald-500 shadow-none'
-                              : dragOverMealIdx === idx
-                              ? 'border-emerald-500 ring-2 ring-emerald-500/40 shadow-lg scale-[1.02]'
-                              : 'border-gray-100 dark:border-gray-700 hover:shadow-md'
-                          }`}
-                        >
-                          <div className="p-5">
-                            <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-700">
-                              <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                                  <Utensils className="w-4 h-4" />
+                            }}
+                            className={`bg-white dark:bg-gray-800 rounded-3xl border overflow-hidden flex flex-col justify-between transition-all duration-300 relative ${
+                              !isPast && currentMeals.length > 1 ? 'cursor-grab active:cursor-grabbing' : ''
+                            } ${
+                              draggedMealIdx === idx
+                                ? 'opacity-40 scale-95 border-dashed border-emerald-500 shadow-none'
+                                : dragOverMealIdx === idx
+                                ? 'border-emerald-500 ring-4 ring-emerald-500/20 shadow-2xl scale-[1.02]'
+                                : 'border-gray-100 dark:border-gray-700/80 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.25)] hover:shadow-[0_16px_40px_rgb(0,0,0,0.1)] hover:-translate-y-1'
+                            }`}
+                          >
+                            <div className="p-6">
+                              <div className="flex items-center justify-between pb-3.5 border-b border-gray-100 dark:border-gray-700/80">
+                                <div className="flex items-center gap-2.5">
+                                  <div className="w-8 h-8 rounded-xl bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400 flex items-center justify-center shrink-0">
+                                    <Utensils className="w-4 h-4" />
+                                  </div>
+                                  <h4 className="font-bold text-gray-900 dark:text-white text-sm tracking-tight">{meal.meal_name}</h4>
                                 </div>
-                                <h4 className="font-bold text-gray-900 dark:text-white text-sm">{meal.meal_name}</h4>
-                              </div>
-                              <div className="flex items-center gap-1 sm:gap-1.5">
-                                {meal.calories && (
-                                  <span className="text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full">
-                                    {meal.calories}
-                                  </span>
-                                )}
-                                {!isPast && (
-                                  <>
-                                    <button
-                                      onClick={() => handleOpenEditMeal(selectedDay, meal)}
-                                      className="text-gray-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 p-1 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors"
-                                      title="Chỉnh sửa thực đơn"
-                                    >
-                                      <Pencil className="w-3.5 h-3.5" />
-                                    </button>
-                                    <button
-                                      onClick={() => handleDeleteMeal(selectedDay, meal.meal_name)}
-                                      className="text-gray-400 dark:text-gray-500 hover:text-rose-500 dark:hover:text-rose-400 p-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
-                                      title="Xóa thực đơn"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="mt-4 space-y-1.5">
-                              {meal.main ? (
-                                <div className="space-y-1">
-                                  {meal.main.split('\n').map((dish, dIdx) => {
-                                    const cleanDish = dish.trim();
-                                    if (!cleanDish) return null;
-                                    return (
-                                      <h5
-                                        key={dIdx}
-                                        className="font-bold text-base text-gray-900 dark:text-white leading-snug"
+                                <div className="flex items-center gap-1 sm:gap-1.5">
+                                  {meal.calories && (
+                                    <span className="text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full">
+                                      {meal.calories}
+                                    </span>
+                                  )}
+                                  {!isPast && (
+                                    <>
+                                      <button
+                                        onClick={() => handleOpenEditMeal(selectedDay, meal)}
+                                        className="text-gray-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors cursor-pointer"
+                                        title="Chỉnh sửa thực đơn"
                                       >
-                                        {cleanDish}
-                                      </h5>
-                                    );
-                                  })}
-                                </div>
-                              ) : (
-                                <h5 className="font-normal text-base text-gray-400 dark:text-gray-500 italic">
-                                  Chưa lên thực đơn
-                                </h5>
-                              )}
-
-                              {meal.side ? (
-                                <div className="text-xs text-gray-500 dark:text-gray-400 space-y-0.5">
-                                  {meal.side.split('\n').map((sDish, sIdx) => {
-                                    const cleanSide = sDish.trim();
-                                    if (!cleanSide) return null;
-                                    return (
-                                      <p key={sIdx} className="leading-relaxed">
-                                        {sIdx === 0 && (
-                                          <span className="font-medium text-emerald-600 dark:text-emerald-400 mr-1.5">
-                                            Kèm:
-                                          </span>
-                                        )}
-                                        <span>{cleanSide}</span>
-                                      </p>
-                                    );
-                                  })}
-                                </div>
-                              ) : (
-                                <p className="text-xs text-gray-400 dark:text-gray-500 italic">
-                                  Chưa có món phụ
-                                </p>
-                              )}
-                            </div>
-
-                            <div className="mt-4 pt-3 border-t border-gray-50 dark:border-gray-700">
-                              <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-                                Nguyên liệu chuẩn bị:
-                              </span>
-                              <ul className="mt-2 space-y-2">
-                                {meal.ingredients && meal.ingredients.length > 0 ? (
-                                  meal.ingredients.map((ing, iIdx) => (
-                                    <li key={iIdx} className="text-xs text-gray-600 dark:text-gray-300 flex items-start gap-2.5">
-                                      <button 
-                                        onClick={() => !isPast && handleToggleIngredientBought(selectedDay, meal.meal_name, ing.name)}
-                                        disabled={isPast}
-                                        className={`mt-0.5 w-4 h-4 shrink-0 rounded flex items-center justify-center border transition-colors ${
-                                          ing.isBought ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:border-emerald-400'
-                                        } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                        title={isPast ? "Đã qua ngày" : (ing.isBought ? "Đánh dấu chưa mua" : "Đánh dấu đã mua")}
-                                      >
-                                        {ing.isBought && <Check className="w-3 h-3" />}
+                                        <Pencil className="w-3.5 h-3.5" />
                                       </button>
-                                      <span className={ing.isBought ? 'line-through text-gray-400 dark:text-gray-500' : ''}>
-                                        {ing.name}
-                                      </span>
-                                      {isPast && !ing.isBought && (
-                                        <span className="text-[10px] text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded ml-auto font-medium">
-                                          Đã bỏ qua
-                                        </span>
-                                      )}
-                                    </li>
-                                  ))
+                                      <button
+                                        onClick={() => handleDeleteMeal(selectedDay, meal.meal_name)}
+                                        className="text-gray-400 dark:text-gray-500 hover:text-rose-500 dark:hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                                        title="Xóa thực đơn"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="mt-4 space-y-2">
+                                {meal.main ? (
+                                  <div className="space-y-1">
+                                    {meal.main.split('\n').map((dish, dIdx) => {
+                                      const cleanDish = dish.trim();
+                                      if (!cleanDish) return null;
+                                      return (
+                                        <h5
+                                          key={dIdx}
+                                          className="font-bold text-base text-gray-900 dark:text-white leading-snug"
+                                        >
+                                          {cleanDish}
+                                        </h5>
+                                      );
+                                    })}
+                                  </div>
                                 ) : (
-                                  <li className="text-xs text-gray-400 dark:text-gray-500 italic flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600 shrink-0" />
-                                    Chưa có nguyên liệu
-                                  </li>
+                                  <h5 className="font-normal text-base text-gray-400 dark:text-gray-500 italic">
+                                    Chưa lên thực đơn
+                                  </h5>
                                 )}
-                              </ul>
+
+                                {meal.side ? (
+                                  <div className="text-xs text-gray-500 dark:text-gray-400 space-y-0.5 pt-0.5">
+                                    {meal.side.split('\n').map((sDish, sIdx) => {
+                                      const cleanSide = sDish.trim();
+                                      if (!cleanSide) return null;
+                                      return (
+                                        <p key={sIdx} className="leading-relaxed">
+                                          {sIdx === 0 && (
+                                            <span className="font-semibold text-emerald-600 dark:text-emerald-400 mr-1.5">
+                                              Kèm:
+                                            </span>
+                                          )}
+                                          <span>{cleanSide}</span>
+                                        </p>
+                                      );
+                                    })}
+                                  </div>
+                                ) : (
+                                  <p className="text-xs text-gray-400 dark:text-gray-500 italic">
+                                    Chưa có món phụ
+                                  </p>
+                                )}
+                              </div>
+
+                              {/* Nguyên liệu chuẩn bị với trạng thái Đã mua vs Cần mua trực quan */}
+                              <div className="mt-5 pt-3.5 border-t border-gray-100 dark:border-gray-700/80">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                                    Nguyên liệu chuẩn bị:
+                                  </span>
+                                  {hasIngredients && (
+                                    <span className="text-[11px] font-medium text-gray-400 dark:text-gray-500">
+                                      {meal.ingredients.filter(i => i.isBought).length}/{meal.ingredients.length}
+                                    </span>
+                                  )}
+                                </div>
+                                <ul className="space-y-1.5">
+                                  {hasIngredients ? (
+                                    meal.ingredients.map((ing, iIdx) => {
+                                      const isBought = Boolean(ing.isBought);
+                                      return (
+                                        <li
+                                          key={iIdx}
+                                          className={`flex items-center justify-between py-1.5 px-2 rounded-xl text-xs transition-all ${
+                                            isBought
+                                              ? 'bg-emerald-50/60 dark:bg-emerald-950/30'
+                                              : 'hover:bg-gray-50 dark:hover:bg-gray-700/40'
+                                          }`}
+                                        >
+                                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                            <button 
+                                              type="button"
+                                              onClick={() => !isPast && handleToggleIngredientBought(selectedDay, meal.meal_name, ing.name)}
+                                              disabled={isPast}
+                                              className={`w-5 h-5 shrink-0 rounded-lg flex items-center justify-center transition-all ${
+                                                isBought
+                                                  ? 'bg-emerald-600 dark:bg-emerald-500 text-white shadow-xs'
+                                                  : 'bg-gray-100 dark:bg-gray-700/70 text-gray-400 dark:text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 border border-gray-200 dark:border-gray-600'
+                                              } disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer`}
+                                              title={isPast ? "Đã qua ngày" : (isBought ? "Đã mua - Bấm để chuyển về Cần mua" : "Cần mua - Bấm để đánh dấu Đã mua")}
+                                            >
+                                              {isBought ? (
+                                                <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                                              ) : (
+                                                <ShoppingCart className="w-3 h-3 text-gray-400 dark:text-gray-400" />
+                                              )}
+                                            </button>
+                                            <span
+                                              className={`truncate ${
+                                                isBought
+                                                  ? 'line-through text-emerald-800/80 dark:text-emerald-300/70 font-medium decoration-emerald-500/50'
+                                                  : 'font-medium text-gray-800 dark:text-gray-200'
+                                              }`}
+                                            >
+                                              {ing.name}
+                                            </span>
+                                          </div>
+
+                                          {/* Right Status Badge */}
+                                          {isPast && !isBought ? (
+                                            <span className="text-[10px] text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full font-medium shrink-0 ml-2">
+                                              Đã bỏ qua
+                                            </span>
+                                          ) : isBought ? (
+                                            <span className="text-[10px] text-emerald-700 dark:text-emerald-300 bg-emerald-100/70 dark:bg-emerald-900/50 px-2 py-0.5 rounded-full font-bold shrink-0 ml-2">
+                                              Đã mua
+                                            </span>
+                                          ) : (
+                                            <span className="text-[10px] text-gray-400 dark:text-gray-400 bg-gray-100/90 dark:bg-gray-700/60 px-2 py-0.5 rounded-full font-normal shrink-0 ml-2">
+                                              Cần mua
+                                            </span>
+                                          )}
+                                        </li>
+                                      );
+                                    })
+                                  ) : (
+                                    <li className="text-xs text-gray-400 dark:text-gray-500 italic flex items-center gap-2 py-1">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600 shrink-0" />
+                                      Chưa có nguyên liệu
+                                    </li>
+                                  )}
+                                </ul>
+                              </div>
+                            </div>
+
+                            {/* Tương tác "Đã mua đủ" vs "Thêm món chưa mua vào giỏ" */}
+                            <div className="p-4 bg-gray-50/60 dark:bg-gray-800/80 border-t border-gray-100 dark:border-gray-700/80">
+                              {isAllBought ? (
+                                <div className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold text-white bg-emerald-600 dark:bg-emerald-600 shadow-sm shadow-emerald-700/30 border border-emerald-500 select-none transition-all duration-300">
+                                  <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
+                                  <span className="tracking-wide">Đã mua đủ nguyên liệu</span>
+                                </div>
+                              ) : (
+                                <button
+                                  disabled={!hasIngredients || isPast}
+                                  onClick={() => handleAddMealIngredientsToCart(selectedDay, meal.meal_name, meal.ingredients || [])}
+                                  className={`w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all duration-200 ${
+                                    isPast
+                                      ? 'text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 cursor-not-allowed'
+                                      : 'text-emerald-800 dark:text-emerald-200 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-700/80 shadow-2xs hover:shadow-xs active:scale-98 cursor-pointer'
+                                  }`}
+                                >
+                                  <Plus className="w-4 h-4 stroke-[2.5]" />
+                                  <span>{isPast ? 'Đã qua hạn đi chợ' : 'Thêm món chưa mua vào giỏ'}</span>
+                                </button>
+                              )}
                             </div>
                           </div>
-
-                          <div className="p-4 bg-gray-50/50 dark:bg-gray-800/80 border-t border-gray-100 dark:border-gray-700">
-                            <button
-                              disabled={!meal.ingredients || meal.ingredients.length === 0 || isPast || meal.ingredients.every(i => i.isBought)}
-                              onClick={() => handleAddMealIngredientsToCart(selectedDay, meal.meal_name, meal.ingredients || [])}
-                              className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:text-emerald-800 bg-white dark:bg-gray-700 hover:bg-emerald-50 dark:hover:bg-gray-600 border border-emerald-200 dark:border-emerald-700 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-gray-700"
-                            >
-                              <Plus className="w-3.5 h-3.5" />
-                              <span>{isPast ? 'Đã qua hạn đi chợ' : (meal.ingredients?.every(i => i.isBought) ? 'Đã mua đủ' : 'Thêm món chưa mua vào giỏ')}</span>
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {!isPast && currentMeals.length > 0 && (
-                    <div className="flex justify-center mt-6">
-                      <button 
-                        onClick={() => handleOpenEditMeal(selectedDay)}
-                        className="flex items-center justify-center gap-2.5 bg-gradient-to-r from-teal-600 via-teal-700 to-emerald-700 hover:from-teal-500 hover:to-emerald-600 text-white border-2 border-teal-400/60 hover:border-teal-300 px-8 py-3 rounded-2xl font-bold text-sm transition-all shadow-lg shadow-teal-900/25 hover:shadow-xl hover:shadow-teal-800/35 hover:-translate-y-0.5 active:scale-95 cursor-pointer"
-                      >
-                        <Plus className="w-5 h-5 stroke-[2.5]" />
-                        <span>Thêm bữa ăn</span>
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Floating Action Button (FAB) for Instant Meal Adding */}
-                  {!isPast && (
-                    <div className="fixed bottom-20 md:bottom-8 right-5 md:right-8 z-30">
-                      <button
-                        onClick={() => handleOpenEditMeal(selectedDay)}
-                        title={`Thêm bữa ăn cho ${currentDayObj?.label || 'ngày đã chọn'}`}
-                        className="flex items-center gap-2.5 bg-gradient-to-r from-teal-600 via-teal-700 to-emerald-700 hover:from-teal-500 hover:to-emerald-600 text-white border-2 border-teal-300/60 px-4 py-3 sm:px-5 sm:py-3.5 rounded-full shadow-2xl shadow-teal-950/50 hover:shadow-teal-800/60 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer group"
-                      >
-                        <Plus className="w-5 h-5 stroke-[2.5] transition-transform group-hover:rotate-90 duration-300" />
-                        <span className="font-bold text-xs sm:text-sm tracking-wide whitespace-nowrap">
-                          Thêm bữa ăn
-                        </span>
-                      </button>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
               );
             })()}
 
-            {/* Smart Meal Insight Tip */}
-            <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-800 p-4 rounded-2xl flex items-center gap-3 text-emerald-900 dark:text-emerald-200 text-xs sm:text-sm">
-              <Sparkles className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              <p>
-                <strong>Mẹo:</strong> Bạn có thể đánh dấu nguyên liệu <strong>Đã mua</strong> bằng ô check vuông ngay trên thực đơn. Khi bấm "Thêm vào giỏ", hệ thống sẽ chỉ nhặt những món <strong>Chưa mua</strong> để bạn không bị trùng lặp.
-              </p>
+            {/* Smart Meal Insight Tip (Hộp Mẹo Cách Điệu Với Icon Bóng Đèn) */}
+            <div className="bg-gradient-to-r from-amber-50/80 via-emerald-50/40 to-teal-50/60 dark:from-gray-800/90 dark:via-emerald-950/20 dark:to-gray-800/90 border border-amber-200/60 dark:border-gray-700/80 p-4 sm:p-5 rounded-3xl flex items-start sm:items-center gap-3.5 sm:gap-4 shadow-xs">
+              <div className="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-xs border border-amber-200/60 dark:border-amber-800/60">
+                <Lightbulb className="w-5 h-5 stroke-[2.25]" />
+              </div>
+              <div className="text-xs sm:text-sm text-gray-700 dark:text-gray-200 leading-relaxed flex-1">
+                <strong className="text-amber-800 dark:text-amber-300 font-bold uppercase tracking-wider text-[11px] sm:text-xs block sm:inline mr-2">
+                  Mẹo thông minh:
+                </strong>
+                Bạn có thể nhấp trực tiếp vào biểu tượng trước mỗi nguyên liệu để chuyển đổi giữa trạng thái <strong>Cần mua</strong> (icon giỏ hàng) và <strong>Đã mua</strong> (icon tick xanh). Khi bấm nút dưới thẻ, hệ thống sẽ chỉ nhặt những món chưa mua để giỏ hàng không bị trùng lặp.
+              </div>
             </div>
           </div>
         )}
