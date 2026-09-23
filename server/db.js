@@ -70,6 +70,7 @@ export async function initializeDatabase() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     );
     ALTER TABLE transactions ADD COLUMN IF NOT EXISTS user_email VARCHAR(255);
+    ALTER TABLE transactions ALTER COLUMN id TYPE VARCHAR(255);
     CREATE INDEX IF NOT EXISTS idx_transactions_user ON transactions (user_email);
     CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions (transaction_date DESC);
     CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions (type);
@@ -89,6 +90,7 @@ export async function initializeDatabase() {
     );
     ALTER TABLE meal_plans ADD COLUMN IF NOT EXISTS user_email VARCHAR(255);
     ALTER TABLE meal_plans ADD COLUMN IF NOT EXISTS order_index INT DEFAULT 0;
+    ALTER TABLE meal_plans ALTER COLUMN id TYPE VARCHAR(255);
     ALTER TABLE meal_plans DROP CONSTRAINT IF EXISTS uq_date_meal;
     DO $$ BEGIN
       IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'uq_user_date_meal') THEN
@@ -112,6 +114,7 @@ export async function initializeDatabase() {
     );
     ALTER TABLE grocery_items ADD COLUMN IF NOT EXISTS user_email VARCHAR(255);
     ALTER TABLE grocery_items ADD COLUMN IF NOT EXISTS plan_date DATE;
+    ALTER TABLE grocery_items ALTER COLUMN id TYPE VARCHAR(255);
     CREATE INDEX IF NOT EXISTS idx_grocery_user ON grocery_items (user_email);
     CREATE INDEX IF NOT EXISTS idx_grocery_is_bought ON grocery_items (is_bought);
     CREATE INDEX IF NOT EXISTS idx_grocery_plan_date ON grocery_items (plan_date);
@@ -125,6 +128,7 @@ export async function initializeDatabase() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     );
     ALTER TABLE categories ADD COLUMN IF NOT EXISTS user_email VARCHAR(255);
+    ALTER TABLE categories ALTER COLUMN id TYPE VARCHAR(255);
     ALTER TABLE categories DROP CONSTRAINT IF EXISTS uq_type_name;
     CREATE INDEX IF NOT EXISTS idx_categories_user ON categories (user_email);
     CREATE INDEX IF NOT EXISTS idx_categories_type ON categories (type);
@@ -177,6 +181,7 @@ export async function initializeDatabase() {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     );
     ALTER TABLE preset_dishes ADD COLUMN IF NOT EXISTS user_email VARCHAR(255);
+    ALTER TABLE preset_dishes ALTER COLUMN id TYPE VARCHAR(255);
     ALTER TABLE preset_dishes ADD COLUMN IF NOT EXISTS category VARCHAR(50) DEFAULT 'Món chính';
     ALTER TABLE preset_dishes ADD COLUMN IF NOT EXISTS calories VARCHAR(50);
     ALTER TABLE preset_dishes ADD COLUMN IF NOT EXISTS ingredients JSONB DEFAULT '[]'::jsonb;

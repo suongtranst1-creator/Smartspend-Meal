@@ -119,6 +119,15 @@
   - Toàn bộ các bảng dữ liệu (`transactions`, `meal_plans`, `grocery_items`, `categories`, `system_logs`, `preset_dishes`) đều được gắn khóa phân vùng `user_email`.
   - Ràng buộc thực đơn tuần đa người dùng: `UNIQUE (user_email, plan_date, meal_name)` cho phép nhiều tài khoản cùng lên kế hoạch cho cùng một ngày mà không bị ghi đè hay xung đột.
   - Khi đăng xuất hoặc hết hạn phiên, bộ nhớ đệm phía trình duyệt được xóa sạch (`clearUserData()`), ngăn chặn triệt để tình trạng lộ lọt hoặc hiển thị chồng chéo dữ liệu giữa các tài khoản dùng chung thiết bị.
+* **Tự Động Nạp Bộ Dữ Liệu Mẫu Phong Phú Cho Người Dùng Mới (Smart Onboarding Dummy Data)**:
+  - Khi một người dùng mới đăng nhập lần đầu vào hệ thống (qua Google SSO hoặc môi trường thử nghiệm), hệ thống tự động nhận diện tài khoản mới và nạp sẵn một bộ dữ liệu mẫu sinh động, phong phú và thực tế để người dùng trải nghiệm ngay mà không phải bắt đầu từ trang trắng.
+  - **Tính toán ngày tương đối theo tuần hiện tại**: Ngày tháng của các bữa ăn và giao dịch thu chi được tính toán động dựa trên `new Date()` (Hôm nay, Hôm qua, Ngày mai, Ngày mốt), đảm bảo các bữa ăn luôn hiển thị trực tiếp trong "Tuần này" trên khung lịch 7 ngày.
+  - **Bộ dữ liệu mẫu đa dạng gồm**:
+    + **7 giao dịch Thu Chi thực tế**: 2 khoản thu (Lương chuyển khoản 18.5M, Thưởng dự án 3.5M) và 5 khoản chi sinh hoạt gia đình (Tiền nhà, Hóa đơn điện nước, Đi chợ WinMart, Ăn trưa văn phòng & cafe, Mua sắm đồ dùng) với số dư khởi tạo chuẩn xác 14.625.000 VNĐ.
+    + **5 bữa ăn Thực Đơn Tuần**: Được lên lịch chu đáo cho Hôm nay (Bữa Trưa: Thịt kho tàu + Canh chua cá lóc; Bữa Tối: Sườn xào chua ngọt + Rau muống xào tỏi), Ngày mai (Bữa Sáng: Phở bò tái lăn; Bữa Trưa: Gà kho gừng + Canh bí đỏ), Ngày mốt (Bữa Tối: Cá basa kho tộ) kèm lượng calo và danh sách nguyên liệu định lượng.
+    + **8 món trong Giỏ Đi Chợ**: Đầy đủ phân loại với trạng thái mua sắm thực tế (các món gia vị, đồ khô, trứng dừa đã có sẵn và các món thịt cá, rau tươi cần mua).
+    + **2 món ăn mẫu cá nhân tùy chỉnh**: (*Bún chả Hà Nội gia truyền*, *Salad ức gà sốt mè rang*) nạp sẵn vào kho món riêng của tài khoản.
+  - **Cơ chế Idempotent an toàn tuyệt đối**: Hệ thống kiểm tra trước khi ghi; nếu tài khoản đã có dữ liệu từ trước sẽ giữ nguyên vẹn 100%, không bao giờ ghi đè hoặc tạo dữ liệu trùng lặp.
 
 ---
 

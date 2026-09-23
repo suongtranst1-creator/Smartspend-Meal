@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import crypto from 'crypto';
 import { pool, checkConnection, initializeDatabase } from './db.js';
 
 import {
@@ -12,6 +13,7 @@ import {
   generateSessionToken,
   requireAuth
 } from './auth.js';
+import { seedUserDataIfNew } from './seedUser.js';
 
 dotenv.config();
 
@@ -63,6 +65,13 @@ app.post('/api/auth/google', async (req, res) => {
   try {
     const userPayload = await verifyGoogleCredential(credential);
 
+    // Tự động khởi tạo dữ liệu mẫu phong phú cho người dùng mới đăng nhập lần đầu
+    try {
+      await seedUserDataIfNew(userPayload.email);
+    } catch (seedErr) {
+      console.error('Lỗi khi seed dummy data cho Google user:', seedErr.message);
+    }
+
     // Cấp phát Session Token (JWT) cho người dùng
     const token = generateSessionToken(userPayload);
 
@@ -105,6 +114,13 @@ app.post('/api/auth/dev-login', async (req, res) => {
     picture: '',
   };
 
+  // Tự động khởi tạo dữ liệu mẫu phong phú cho người dùng mới đăng nhập lần đầu
+  try {
+    await seedUserDataIfNew(userPayload.email);
+  } catch (seedErr) {
+    console.error('Lỗi khi seed dummy data cho dev-login user:', seedErr.message);
+  }
+
   const token = generateSessionToken(userPayload);
   await logAction('Đăng nhập', 'Tài khoản', userPayload.email, userPayload.email);
 
@@ -115,7 +131,12 @@ app.post('/api/auth/dev-login', async (req, res) => {
 });
 
 // Kiểm tra phiên đăng nhập hiện tại
-app.get('/api/auth/me', requireAuth, (req, res) => {
+app.get('/api/auth/me', requireAuth, async (req, res) => {
+  try {
+    await seedUserDataIfNew(req.user.email);
+  } catch (seedErr) {
+    console.error('Lỗi khi seed dummy data tại /api/auth/me:', seedErr.message);
+  }
   res.json({
     user: req.user,
     valid: true,
@@ -128,6 +149,21 @@ app.post('/api/auth/logout', requireAuth, async (req, res) => {
     await logAction('Đăng xuất', 'Tài khoản', req.user.email, req.user.email);
   } catch {}
   res.json({ message: 'Đăng xuất thành công.' });
+});
+
+// Endpoint tạo lại dữ liệu mẫu chủ động cho tài khoản
+app.post('/api/user/seed-sample', requireAuth, async (req, res) => {
+  try {
+    const email = req.user.email;
+    const seeded = await seedUserDataIfNew(email);
+    res.json({
+      success: true,
+      seeded,
+      message: seeded ? 'Đã khởi tạo bộ dữ liệu mẫu thành công.' : 'Tài khoản đã có dữ liệu từ trước.',
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Không thể khởi tạo dữ liệu mẫu: ' + err.message });
+  }
 });
 
 // Middleware bảo vệ toàn bộ các API bắt đầu bằng /api (ngoại trừ /api/auth/* và /api/health)
@@ -520,7 +556,7 @@ app.put('/api/meals', async (req, res) => {
     return res.status(400).json({ error: 'Thiếu thông tin plan_date hoặc meal_name' });
   }
 
-  const id = `${userEmail}_${plan_date}_${meal_name}`;
+  const id = crypto.createHash('md5').update(`${userEmail}_${plan_date}_${meal_name}`).digest('hex');
   const ingredientsArray = Array.isArray(ingredients) ? ingredients : [];
 
   try {

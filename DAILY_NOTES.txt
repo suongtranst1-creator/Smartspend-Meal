@@ -305,6 +305,17 @@ Mục đích: Theo dõi tiến độ, ghi chép lại các tính năng đã phá
       + Nhận diện nguyên nhân Vibe Host dùng chuỗi placeholder mẫu `your_client_id...`.
       + Bổ sung bộ lọc nhận diện chuỗi placeholder cả ở frontend lẫn backend.
       + Hướng dẫn cấu hình biến môi trường `GOOGLE_CLIENT_ID` chính thức trên Vibe Host thành công.
+[x] 11. Tự Động Khởi Tạo Bộ Dữ Liệu Mẫu Phong Phú Cho Người Dùng Mới (Smart Dummy Data Onboarding):
+    - Tự động nạp sẵn dữ liệu mẫu thực tế, đầy đủ và khoa học ngay khi bất kỳ tài khoản mới nào đăng nhập lần đầu vào hệ thống (qua Google OAuth SSO hoặc kiểm thử).
+    - Tính toán ngày tháng tương đối động theo `new Date()` (Hôm nay, Hôm qua, Ngày mai, Ngày mốt) đảm bảo các bữa ăn luôn hiển thị ngay trong "Tuần này" trên khung lịch 7 ngày và các giao dịch thuộc các ngày gần nhất.
+    - Bộ dữ liệu mẫu khởi tạo gồm:
+      + Sổ Thu Chi: 7 giao dịch chân thực (2 khoản thu: Lương 18.5M, Thưởng 3.5M; 5 khoản chi: Tiền nhà, Hóa đơn điện nước, Đi chợ WinMart, Ăn trưa cơm văn phòng, Mua sắm đồ dùng gia đình) với số dư ban đầu chuẩn xác 14.625.000 VNĐ.
+      + Thực Đơn Tuần: 5 bữa ăn phong phú đầy đủ món chính + món canh/món xào ăn kèm và lượng calo chi tiết cho Hôm nay (Bữa Trưa: Thịt kho tàu + Canh chua cá lóc; Bữa Tối: Sườn xào chua ngọt + Rau muống xào tỏi), Ngày mai (Bữa Sáng: Phở bò tái lăn; Bữa Trưa: Gà kho gừng + Canh bí đỏ), Ngày mốt (Bữa Tối: Cá basa kho tộ).
+      + Danh Sách Đi Chợ: 8 món thực phẩm liên thông thực đơn với trạng thái trực quan (món đã có sẵn trong tủ lạnh và món cần mua).
+      + Món Ăn Mẫu Tùy Chỉnh: 2 công thức riêng của người dùng ("Bún chả Hà Nội gia truyền", "Salad ức gà sốt mè rang") kèm định lượng chi tiết.
+      + Nhật Ký Hệ Thống: 1 bản ghi audit log khởi tạo tài khoản.
+    - Cơ chế Idempotent: Kiểm tra cẩn trọng trước khi ghi; tuyệt đối không ghi đè, không nhân đôi và bảo toàn 100% dữ liệu nếu người dùng đã có dữ liệu từ trước.
+    - Nâng cấp độ dài trường ID các bảng CSDL lên `VARCHAR(255)` đồng thời áp dụng mã hóa MD5 hash để đảm bảo ID bữa ăn luôn an toàn, duy nhất và tương thích mọi định dạng email.
 
 * Kế hoạch tiếp theo (To-do):
     - [x] Đẩy toàn bộ mã nguồn lên GitHub, cập nhật tài liệu README.md và DAILY_NOTES.txt.
