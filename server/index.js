@@ -51,48 +51,7 @@ app.get('/api/auth/config', (req, res) => {
   });
 });
 
-// Cập nhật Google Client ID vào .env và bộ nhớ
-app.post('/api/auth/save-client-id', async (req, res) => {
-  const currentId = (process.env.GOOGLE_CLIENT_ID || '').trim();
-  const isCurrentlyConfigured = currentId && !currentId.includes('your_client_id') && !currentId.startsWith('your_');
 
-  // Nếu đã được cấu hình bằng Client ID thực sự trên production thì khóa lại
-  if (process.env.NODE_ENV === 'production' && isCurrentlyConfigured) {
-    return res.status(403).json({
-      error: 'Client ID đã được cấu hình chính thức trên máy chủ. Để thay đổi, vui lòng cập nhật trong bảng điều khiển Vibe Host.'
-    });
-  }
-
-  const { clientId } = req.body;
-  if (!clientId || !clientId.trim()) {
-    return res.status(400).json({ error: 'Client ID không được để trống.' });
-  }
-
-  const cleanClientId = clientId.trim();
-  // Regex kiểm tra định dạng chuẩn của Google OAuth 2.0 Client ID để chống tiêm ký tự lạ (CRLF/Injection)
-  const GOOGLE_CLIENT_ID_REGEX = /^[0-9]+-[a-z0-9_]+\.apps\.googleusercontent\.com$/i;
-  if (!GOOGLE_CLIENT_ID_REGEX.test(cleanClientId)) {
-    return res.status(400).json({
-      error: 'Định dạng Client ID không hợp lệ. Phải có định dạng: <chuỗi_số>-<chuỗi_ký_tự>.apps.googleusercontent.com'
-    });
-  }
-
-  process.env.GOOGLE_CLIENT_ID = cleanClientId;
-
-  try {
-    const envPath = path.join(__dirname, '../.env');
-    let envContent = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf8') : '';
-    if (envContent.includes('GOOGLE_CLIENT_ID=')) {
-      envContent = envContent.replace(/GOOGLE_CLIENT_ID=.*/g, `GOOGLE_CLIENT_ID=${cleanClientId}`);
-    } else {
-      envContent += `\nGOOGLE_CLIENT_ID=${cleanClientId}\n`;
-    }
-    fs.writeFileSync(envPath, envContent, 'utf8');
-    res.json({ success: true, googleClientId: cleanClientId });
-  } catch (err) {
-    res.status(500).json({ error: 'Không thể lưu file .env: ' + err.message });
-  }
-});
 
 // Xác thực tài khoản Google (One Tap & Sign in with Google)
 app.post('/api/auth/google', async (req, res) => {

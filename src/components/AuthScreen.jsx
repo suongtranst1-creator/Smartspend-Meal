@@ -1,14 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ShieldCheck,
   AlertCircle,
   Loader2,
   Lock,
-  Sparkles,
-  ExternalLink,
-  Key,
-  CheckCircle2,
-  ArrowRight
+  Sparkles
 } from 'lucide-react';
 
 export default function AuthScreen({ onLoginSuccess, initialError = '' }) {
@@ -16,9 +11,6 @@ export default function AuthScreen({ onLoginSuccess, initialError = '' }) {
   const [isLoadingConfig, setIsLoadingConfig] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState(initialError);
-  const [inputClientId, setInputClientId] = useState('');
-  const [isSavingClientId, setIsSavingClientId] = useState(false);
-  const [showGuide, setShowGuide] = useState(false);
 
   const googleBtnRef = useRef(null);
 
@@ -142,57 +134,6 @@ export default function AuthScreen({ onLoginSuccess, initialError = '' }) {
     initGoogleGsi();
   }, [googleClientId]);
 
-  // Lưu Google Client ID vào .env thông qua API
-  const handleSaveClientId = async (e) => {
-    e.preventDefault();
-    if (!inputClientId.trim()) return;
-
-    setIsSavingClientId(true);
-    setErrorMessage('');
-
-    try {
-      const res = await fetch('/api/auth/save-client-id', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId: inputClientId.trim() }),
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        setGoogleClientId(data.googleClientId);
-      } else {
-        setErrorMessage(data.error || 'Không thể lưu Client ID.');
-      }
-    } catch (err) {
-      setErrorMessage('Lỗi kết nối máy chủ khi lưu Client ID.');
-    } finally {
-      setIsSavingClientId(false);
-    }
-  };
-
-  // Đăng nhập thử nghiệm nhanh
-  const handleQuickBypass = async () => {
-    setIsSubmitting(true);
-    setErrorMessage('');
-    try {
-      const res = await fetch('/api/auth/dev-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: 'user@gmail.com', name: 'Google User' }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        localStorage.setItem('smartspend_token', data.token);
-        localStorage.setItem('smartspend_user', JSON.stringify(data.user));
-        if (onLoginSuccess) onLoginSuccess(data.user, data.token);
-      }
-    } catch (e) {
-      setErrorMessage('Không thể đăng nhập thử nghiệm.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-gradient-to-br from-emerald-50 via-slate-50 to-teal-50 dark:from-gray-950 dark:via-gray-900 dark:to-emerald-950/40">
       {/* Background Decorative Blobs */}
@@ -274,91 +215,17 @@ export default function AuthScreen({ onLoginSuccess, initialError = '' }) {
                 />
               </div>
             ) : (
-              /* CHƯA CÓ GOOGLE CLIENT ID: HƯỚNG DẪN CẤU HÌNH & NHẬP NHANH */
+              /* CHƯA CÓ GOOGLE CLIENT ID: CHỈ HIỂN THỊ THÔNG BÁO */
               <div className="w-full">
-                <div className="p-4 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/70 dark:border-emerald-800/50 mb-5 text-left">
-                  <div className="flex items-center gap-2 font-bold text-xs text-emerald-800 dark:text-emerald-300 mb-1.5">
-                    <Key className="w-4 h-4 text-emerald-600" />
-                    <span>Cần cấu hình Google Client ID</span>
+                <div className="p-4 rounded-2xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 text-center">
+                  <div className="flex items-center justify-center gap-2 font-bold text-xs sm:text-sm text-amber-800 dark:text-amber-300 mb-1.5">
+                    <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                    <span>Chưa cấu hình Google Client ID</span>
                   </div>
-                  <p className="text-[11px] text-gray-600 dark:text-gray-300 leading-relaxed mb-3">
-                    Để kết nối Google OAuth 2.0 (mở cửa sổ <code className="bg-emerald-100 dark:bg-emerald-900/60 px-1 py-0.5 rounded font-mono text-[10px]">accounts.google.com</code>), bạn cần dán <strong>Client ID</strong> từ Google Cloud Console vào đây:
+                  <p className="text-[11px] sm:text-xs text-amber-700/90 dark:text-amber-300/80 leading-relaxed">
+                    Hệ thống chưa được thiết lập Google Client ID trong biến môi trường máy chủ. Vui lòng cấu hình trên bảng điều khiển máy chủ để đăng nhập.
                   </p>
-
-                  <form onSubmit={handleSaveClientId} className="space-y-2">
-                    <input
-                      type="text"
-                      required
-                      value={inputClientId}
-                      onChange={(e) => setInputClientId(e.target.value)}
-                      placeholder="xxxxxx.apps.googleusercontent.com"
-                      className="w-full px-3 py-2 text-xs rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
-                    />
-                    <button
-                      type="submit"
-                      disabled={isSavingClientId || !inputClientId.trim()}
-                      className="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition-all disabled:opacity-50 cursor-pointer"
-                    >
-                      {isSavingClientId ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <CheckCircle2 className="w-4 h-4" />
-                      )}
-                      <span>Lưu & Bật nút Đăng nhập Google</span>
-                    </button>
-                  </form>
                 </div>
-
-                <div className="flex items-center justify-between gap-2 pt-2 border-t border-gray-100 dark:border-gray-700/60">
-                  <button
-                    type="button"
-                    onClick={() => setShowGuide(!showGuide)}
-                    className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline font-medium flex items-center gap-1 cursor-pointer"
-                  >
-                    <span>{showGuide ? 'Ẩn hướng dẫn' : 'Xem cách lấy Google Client ID'}</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleQuickBypass}
-                    className="text-[11px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
-                    title="Vào thử nghiệm giao diện ngay lập tức"
-                  >
-                    Vào thử nghiệm ➔
-                  </button>
-                </div>
-
-                {/* Hướng dẫn tạo Google Client ID từng bước */}
-                {showGuide && (
-                  <div className="mt-4 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-700 text-left text-[11px] text-gray-600 dark:text-gray-300 space-y-2">
-                    <p className="font-bold text-gray-800 dark:text-gray-100">
-                      Hướng dẫn lấy Client ID (chưa đầy 2 phút):
-                    </p>
-                    <ol className="list-decimal pl-4 space-y-1.5 leading-relaxed">
-                      <li>
-                        Truy cập <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noreferrer" className="text-emerald-600 dark:text-emerald-400 font-semibold underline">Google Cloud Console</a>.
-                      </li>
-                      <li>Tạo hoặc chọn Project của bạn.</li>
-                      <li>
-                        Vào mục <strong>Credentials</strong> &gt; bấm <strong>Create Credentials</strong> &gt; chọn <strong>OAuth client ID</strong>.
-                      </li>
-                      <li>
-                        Chọn Application type: <strong>Web application</strong>.
-                      </li>
-                      <li>
-                        Tại mục <strong>Authorized JavaScript origins</strong>, thêm:
-                        <br />
-                        <code className="bg-gray-200 dark:bg-gray-800 px-1 py-0.5 rounded font-mono text-[10px]">http://localhost:5000</code>
-                        <br />
-                        <code className="bg-gray-200 dark:bg-gray-800 px-1 py-0.5 rounded font-mono text-[10px]">http://localhost:5173</code>
-                      </li>
-                      <li>
-                        Bấm <strong>Create</strong>, sau đó copy chuỗi <strong>Client ID</strong> dán vào ô trên (hoặc vào file <code className="bg-gray-200 dark:bg-gray-800 px-1 py-0.5 rounded font-mono text-[10px]">.env</code>).
-                      </li>
-                    </ol>
-                  </div>
-                )}
               </div>
             )}
           </div>
