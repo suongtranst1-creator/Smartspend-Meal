@@ -267,7 +267,9 @@ app.get('/api/preset-dishes', async (req, res) => {
     const result = await pool.query(`
       SELECT id, user_email, name, category, calories, ingredients, created_at, updated_at
       FROM preset_dishes
-      WHERE user_email = $1 OR user_email IS NULL
+      WHERE (user_email = $1 OR (user_email IS NULL AND id NOT IN (
+        SELECT dish_id FROM user_deleted_preset_dishes WHERE user_email = $1
+      )))
       ORDER BY 
         CASE WHEN user_email IS NOT NULL THEN 0 ELSE 1 END,
         category ASC, name ASC;
@@ -315,13 +317,19 @@ app.put('/api/preset-dishes/:id', async (req, res) => {
 
     const dish = checkRes.rows[0];
     if (!dish.user_email) {
-      // Nếu là món mặc định, nhân bản thành món riêng của user
+      // Nếu là món mặc định, nhân bản thành món riêng của user và ẩn món mặc định gốc cho user này
       const newId = `dish_${Date.now()}`;
       const newRes = await pool.query(
         `INSERT INTO preset_dishes (id, user_email, name, category, calories, ingredients)
          VALUES ($1, $2, $3, $4, $5, $6::jsonb)
          RETURNING *;`,
         [newId, userEmail, name || dish.name, category || dish.category, calories !== undefined ? calories : dish.calories, JSON.stringify(ingrArray)]
+      );
+      await pool.query(
+        `INSERT INTO user_deleted_preset_dishes (user_email, dish_id)
+         VALUES ($1, $2)
+         ON CONFLICT (user_email, dish_id) DO NOTHING;`,
+        [userEmail, id]
       );
       await logAction('Sửa (Tùy biến)', 'Món mẫu', name || dish.name, userEmail);
       return res.json(newRes.rows[0]);
@@ -350,15 +358,31 @@ app.delete('/api/preset-dishes/:id', async (req, res) => {
   const userEmail = req.user.email;
 
   try {
-    const result = await pool.query(
-      'DELETE FROM preset_dishes WHERE id = $1 AND user_email = $2 RETURNING *;',
-      [id, userEmail]
-    );
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Không tìm thấy món hoặc đây là món mặc định không thể xóa' });
+    const checkRes = await pool.query('SELECT * FROM preset_dishes WHERE id = $1;', [id]);
+    if (checkRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy món ăn mẫu' });
     }
-    await logAction('Xóa', 'Món mẫu', result.rows[0].name, userEmail);
-    res.json({ message: 'Xóa món mẫu thành công', id });
+
+    const dish = checkRes.rows[0];
+    if (dish.user_email && dish.user_email !== userEmail) {
+      return res.status(403).json({ error: 'Không có quyền xóa món của người dùng khác' });
+    }
+
+    if (dish.user_email === userEmail) {
+      // Món riêng của user -> Xóa hẳn trong CSDL
+      await pool.query('DELETE FROM preset_dishes WHERE id = $1 AND user_email = $2;', [id, userEmail]);
+    } else {
+      // Món mặc định hệ thống (user_email IS NULL) -> Ghi nhận ẩn cho riêng user này
+      await pool.query(
+        `INSERT INTO user_deleted_preset_dishes (user_email, dish_id)
+         VALUES ($1, $2)
+         ON CONFLICT (user_email, dish_id) DO NOTHING;`,
+        [userEmail, id]
+      );
+    }
+
+    await logAction('Xóa', 'Món mẫu', dish.name, userEmail);
+    res.json({ message: 'Xóa món mẫu thành công', id, name: dish.name });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

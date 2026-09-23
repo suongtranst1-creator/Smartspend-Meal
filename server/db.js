@@ -202,6 +202,15 @@ export async function initializeDatabase() {
         ('dish_def_9', NULL, 'Cá basa kho tộ', 'Món chính', '320 kcal', '[{"name":"Cá basa","quantity":"400g"},{"name":"Hành tím","quantity":"2 củ"},{"name":"Tiêu đen","quantity":"1 muỗng"},{"name":"Ớt hiểm","quantity":"2 quả"}]'::jsonb),
         ('dish_def_10', NULL, 'Canh bí đỏ thịt băm', 'Món canh', '160 kcal', '[{"name":"Bí đỏ","quantity":"300g"},{"name":"Thịt heo băm","quantity":"100g"},{"name":"Hành lá","quantity":"2 nhánh"}]'::jsonb)
     ON CONFLICT (id) DO NOTHING;
+
+    -- 7. Bảng user_deleted_preset_dishes (Ghi nhận các món mẫu mặc định đã bị người dùng xóa/ẩn cho riêng họ)
+    CREATE TABLE IF NOT EXISTS user_deleted_preset_dishes (
+        user_email VARCHAR(255) NOT NULL,
+        dish_id VARCHAR(255) NOT NULL,
+        deleted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (user_email, dish_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_user_deleted_preset_dishes_user ON user_deleted_preset_dishes (user_email);
   `;
 
   try {

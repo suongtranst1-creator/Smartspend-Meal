@@ -316,6 +316,14 @@ Mục đích: Theo dõi tiến độ, ghi chép lại các tính năng đã phá
       + Nhật Ký Hệ Thống: 1 bản ghi audit log khởi tạo tài khoản.
     - Cơ chế Idempotent: Kiểm tra cẩn trọng trước khi ghi; tuyệt đối không ghi đè, không nhân đôi và bảo toàn 100% dữ liệu nếu người dùng đã có dữ liệu từ trước.
     - Nâng cấp độ dài trường ID các bảng CSDL lên `VARCHAR(255)` đồng thời áp dụng mã hóa MD5 hash để đảm bảo ID bữa ăn luôn an toàn, duy nhất và tương thích mọi định dạng email.
+[x] 12. Bổ Sung Toàn Diện Chức Năng Xóa Món Ăn Mẫu (Delete Preset Dishes):
+    - Khắc phục triệt để vấn đề chỉ có nút Thêm và Sửa mà thiếu nút Xóa món mẫu:
+      + Trên giao diện danh sách thẻ món mẫu (Tab Cài Đặt): Bổ sung nút Xóa (icon Thùng rác đỏ `Trash2`) cho toàn bộ các món mẫu, đi kèm hiệu ứng hover mượt mà và hộp thoại xác nhận an toàn ("Bạn có chắc muốn xóa món mẫu '<name>' khỏi danh sách?").
+      + Trong Popup Chỉnh sửa món mẫu (`Modal`): Bổ sung nút "Xóa món này" màu đỏ nổi bật ở góc dưới bên trái form, cho phép người dùng thao tác xóa nhanh ngay trong lúc đang xem hoặc chỉnh sửa công thức.
+    - Xử lý nghiệp vụ Backend & Cơ sở dữ liệu thông minh:
+      + Đối với món tùy chỉnh của người dùng: Xóa trực tiếp bản ghi khỏi bảng `preset_dishes` trong PostgreSQL.
+      + Đối với món mặc định hệ thống: Tạo bảng `user_deleted_preset_dishes (user_email, dish_id)` để ghi nhận trạng thái ẩn cho riêng tài khoản đó, giúp danh sách của họ sạch sẽ theo đúng ý muốn mà không làm ảnh hưởng hoặc làm mất món của các tài khoản khác trên hệ thống.
+      + Khi chỉnh sửa một món mẫu mặc định, hệ thống tự động lưu thành món tùy chỉnh của người dùng và đồng thời ẩn món mặc định gốc, tránh việc bị trùng lặp 2 món cùng tên.
 
 * Kế hoạch tiếp theo (To-do):
     - [x] Đẩy toàn bộ mã nguồn lên GitHub, cập nhật tài liệu README.md và DAILY_NOTES.txt.

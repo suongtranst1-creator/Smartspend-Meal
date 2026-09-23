@@ -95,14 +95,16 @@
 ### 🍳 Phần C: Quản Lý Món Ăn Mẫu & Công Thức Nguyên Liệu (Preset Dishes & Recipes)
 * **Kho Món Ăn Gia Đình Mẫu Đa Dạng**:
   - Tích hợp sẵn 10 món ăn gia đình quen thuộc của người Việt: *Thịt kho tàu*, *Canh chua cá lóc*, *Trứng chiên hành*, *Rau muống xào tỏi*, *Sườn xào chua ngọt*, *Bò xào bông cải*... với đầy đủ lượng calo ước tính và định lượng nguyên liệu chuẩn.
-* **Tự Do Sáng Tạo & Quản Trị Công Thức Riêng**:
+* **Tự Do Sáng Tạo, Chỉnh Sửa & Xóa Công Thức Linh Hoạt**:
   - Đặt tại vị trí ưu tiên hàng đầu trong Tab Cài Đặt (ngay dưới thẻ tài khoản).
-  - Cho phép người dùng Thêm mới, Chỉnh sửa và Xóa công thức món ăn của riêng mình.
+  - Cho phép người dùng Thêm mới, Chỉnh sửa và Xóa bất kỳ món ăn mẫu nào trong danh sách.
+  - **Nút xóa trực quan 2 vị trí**: Thao tác xóa với icon Thùng rác đỏ trực tiếp trên thẻ món hoặc nút "Xóa món này" trong popup chỉnh sửa, đi kèm hộp thoại xác nhận bảo vệ an toàn.
   - Phân loại rõ ràng: *Món chính*, *Món canh*, *Món xào*, *Món phụ*, *Ăn sáng*, *Tráng miệng*, *Ăn vặt*.
   - Tích hợp thanh tìm kiếm tức thì theo tên món ăn hoặc tên nguyên liệu.
-* **Phân Quyền Linh Hoạt**:
-  - Món mẫu chung của hệ thống hiển thị cho tất cả mọi người tham khảo.
-  - Món tùy chỉnh do người dùng tạo được lưu riêng biệt cho từng tài khoản (`user_email`), đảm bảo tính cá nhân hóa tối đa.
+* **Phân Quyền Linh Hoạt & Bảo Toàn Dữ Liệu Đa Người Dùng**:
+  - Món tùy chỉnh do người dùng tạo được lưu riêng biệt và có thể xóa hoàn toàn khỏi CSDL.
+  - Khi người dùng xóa một món mặc định của hệ thống, hệ thống ghi nhận ẩn (`user_deleted_preset_dishes`) cho riêng tài khoản đó, đảm bảo danh sách của họ sạch sẽ theo đúng ý muốn mà không ảnh hưởng tới người dùng khác.
+  - Khi người dùng chỉnh sửa một món mặc định, hệ thống tự động lưu thành công thức tùy biến riêng và ẩn món gốc, loại bỏ hoàn toàn hiện tượng trùng lặp.
 
 ---
 

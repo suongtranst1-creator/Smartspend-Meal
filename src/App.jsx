@@ -1355,7 +1355,7 @@ export default function App() {
   };
 
   const handleDeletePresetDish = async (id, name) => {
-    if (!window.confirm(`Bạn có chắc muốn xóa món mẫu "${name}"?`)) return;
+    if (!window.confirm(`Bạn có chắc muốn xóa món mẫu "${name}" khỏi danh sách?`)) return;
 
     try {
       const res = await fetch(`/api/preset-dishes/${id}`, { method: 'DELETE' });
@@ -1364,7 +1364,7 @@ export default function App() {
         showToast(`Đã xóa món mẫu "${name}"!`);
       } else {
         const data = await res.json();
-        alert(data.error || 'Không thể xóa món mặc định của hệ thống');
+        alert(data.error || 'Không thể xóa món mẫu này');
       }
     } catch (err) {
       console.warn('Delete preset dish error:', err);
@@ -3225,16 +3225,14 @@ export default function App() {
                             >
                               <Pencil className="w-3.5 h-3.5" />
                             </button>
-                            {dish.user_email && (
-                              <button
-                                type="button"
-                                onClick={() => handleDeletePresetDish(dish.id, dish.name)}
-                                className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-white dark:hover:bg-gray-600 transition-colors cursor-pointer"
-                                title="Xóa món tùy chỉnh này"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleDeletePresetDish(dish.id, dish.name)}
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-white dark:hover:bg-gray-600 transition-colors cursor-pointer"
+                              title="Xóa món mẫu này"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </div>
 
@@ -4003,23 +4001,40 @@ export default function App() {
               </div>
 
               {/* Form Buttons */}
-              <div className="pt-2 flex items-center justify-end gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsPresetModalOpen(false);
-                    setEditingPresetDish(null);
-                  }}
-                  className="px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm active:scale-98 transition-all cursor-pointer"
-                >
-                  {editingPresetDish ? 'Cập nhật món mẫu' : 'Lưu món mẫu'}
-                </button>
+              <div className="pt-2 flex items-center justify-between gap-2.5">
+                {editingPresetDish ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsPresetModalOpen(false);
+                      handleDeletePresetDish(editingPresetDish.id, editingPresetDish.name);
+                    }}
+                    className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50 transition-colors cursor-pointer"
+                    title="Xóa món mẫu này"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Xóa món này</span>
+                  </button>
+                ) : <div />}
+
+                <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsPresetModalOpen(false);
+                      setEditingPresetDish(null);
+                    }}
+                    className="px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm active:scale-98 transition-all cursor-pointer"
+                  >
+                    {editingPresetDish ? 'Cập nhật món mẫu' : 'Lưu món mẫu'}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
