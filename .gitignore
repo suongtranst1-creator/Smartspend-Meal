@@ -4,8 +4,10 @@ node_modules/
 .pnp.js
 
 # Production
-dist/
 build/
+dist/*.png
+dist/*.jpg
+dist/*.jpeg
 
 # Logs & environment
 npm-debug.log*
