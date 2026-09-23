@@ -43,16 +43,24 @@ const logAction = async (action, entity_type, entity_name, user_email = null) =>
 
 // Lấy cấu hình public (Google Client ID) cho frontend
 app.get('/api/auth/config', (req, res) => {
+  const rawClientId = (process.env.GOOGLE_CLIENT_ID || '').trim();
+  const isPlaceholder = !rawClientId || rawClientId.includes('your_client_id') || rawClientId.startsWith('your_');
   res.json({
-    googleClientId: process.env.GOOGLE_CLIENT_ID || '',
+    googleClientId: isPlaceholder ? '' : rawClientId,
     authEnabled: true,
   });
 });
 
-// Cập nhật Google Client ID vào .env và bộ nhớ (Chỉ cho phép môi trường dev / local)
+// Cập nhật Google Client ID vào .env và bộ nhớ
 app.post('/api/auth/save-client-id', async (req, res) => {
-  if (process.env.NODE_ENV === 'production') {
-    return res.status(403).json({ error: 'Không được phép thay đổi cấu hình môi trường trực tiếp trong môi trường production.' });
+  const currentId = (process.env.GOOGLE_CLIENT_ID || '').trim();
+  const isCurrentlyConfigured = currentId && !currentId.includes('your_client_id') && !currentId.startsWith('your_');
+
+  // Nếu đã được cấu hình bằng Client ID thực sự trên production thì khóa lại
+  if (process.env.NODE_ENV === 'production' && isCurrentlyConfigured) {
+    return res.status(403).json({
+      error: 'Client ID đã được cấu hình chính thức trên máy chủ. Để thay đổi, vui lòng cập nhật trong bảng điều khiển Vibe Host.'
+    });
   }
 
   const { clientId } = req.body;

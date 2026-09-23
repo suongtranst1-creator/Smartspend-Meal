@@ -38,7 +38,9 @@ export default function AuthScreen({ onLoginSuccess, initialError = '' }) {
         if (res.ok) {
           const data = await res.json();
           if (isMounted) {
-            setGoogleClientId(data.googleClientId || '');
+            const rawId = (data.googleClientId || '').trim();
+            const isPlaceholder = !rawId || rawId.includes('your_client_id') || rawId.startsWith('your_');
+            setGoogleClientId(isPlaceholder ? '' : rawId);
           }
         }
       } catch (err) {
