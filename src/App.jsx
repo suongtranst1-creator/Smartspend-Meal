@@ -44,6 +44,26 @@ const formatVND = (amount) => {
   }).format(amount || 0);
 };
 
+// Format integer amount without decimals for CSV: e.g. 50000 -> "50000"
+const formatAmountForCSV = (amount) => {
+  return String(Math.round(Number(amount) || 0));
+};
+
+// Format time HH:mm from created_at or ISO string
+const formatTime = (timeStr) => {
+  if (!timeStr) return '';
+  try {
+    // Handle ISO format: "2024-09-23T09:30:00.000Z" or "2024-09-23 09:30:00+07"
+    const d = new Date(timeStr);
+    if (!isNaN(d.getTime())) {
+      const h = String(d.getHours()).padStart(2, '0');
+      const m = String(d.getMinutes()).padStart(2, '0');
+      return `${h}:${m}`;
+    }
+  } catch { }
+  return '';
+};
+
 // Format number input with thousand dots separator: e.g. "50000" -> "50.000", "1000000" -> "1.000.000"
 const formatNumberInput = (val) => {
   if (val === null || val === undefined) return '';
@@ -130,10 +150,10 @@ const getWeekDays = (weekOffset = 0) => {
   return dayNames.map((name, index) => {
     const d = new Date(monday);
     d.setDate(monday.getDate() + index);
-    
+
     // So sánh isToday (chỉ tính ngày, tháng, năm)
     const isToday = d.toDateString() === now.toDateString();
-    
+
     // So sánh isPast (đã qua hay chưa, loại trừ thời gian)
     const isPast = d.setHours(0, 0, 0, 0) < new Date().setHours(0, 0, 0, 0);
 
@@ -316,11 +336,10 @@ function DateRangePicker({ startDate, endDate, onChange }) {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer shadow-xs ${
-          hasRange
+        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer shadow-xs ${hasRange
             ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-200'
             : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-        }`}
+          }`}
         title="Chọn khoảng thời gian (dd/mm/yyyy - dd/mm/yyyy)"
       >
         <Calendar className={`w-3.5 h-3.5 shrink-0 ${hasRange ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400'}`} />
@@ -462,13 +481,12 @@ function DateRangePicker({ startDate, endDate, onChange }) {
                   <button
                     type="button"
                     onClick={() => handleSelectDay(day)}
-                    className={`relative z-10 w-7 h-7 text-xs font-semibold rounded-lg flex items-center justify-center transition-all cursor-pointer ${
-                      isStart || isEnd
+                    className={`relative z-10 w-7 h-7 text-xs font-semibold rounded-lg flex items-center justify-center transition-all cursor-pointer ${isStart || isEnd
                         ? 'bg-emerald-600 text-white shadow-xs font-bold'
                         : inRange
-                        ? 'text-emerald-900 dark:text-emerald-200 font-bold'
-                        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`}
+                          ? 'text-emerald-900 dark:text-emerald-200 font-bold'
+                          : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
                   >
                     {day}
                   </button>
@@ -520,7 +538,7 @@ function DateRangePicker({ startDate, endDate, onChange }) {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('spend'); // 'spend' | 'meal' | 'shop'
-  
+
   // State: Thu Chi
   const [transactions, setTransactions] = useState(INITIAL_TRANSACTIONS);
   const [filterType, setFilterType] = useState('all'); // 'all' | 'income' | 'expense'
@@ -540,14 +558,14 @@ export default function App() {
   // State: Thực Đơn
   const [weekOffset, setWeekOffset] = useState(0);
   const WEEK_DAYS = useMemo(() => getWeekDays(weekOffset), [weekOffset]);
-  
+
   const todayKey = useMemo(() => {
     return WEEK_DAYS.find((d) => d.isToday)?.key || WEEK_DAYS[0].key;
   }, [WEEK_DAYS]);
 
   const [selectedDay, setSelectedDay] = useState(todayKey);
   const [mealData, setMealData] = useState({}); // { "YYYY-MM-DD": [ { meal_name: "Bữa Sáng", main: "...", ... } ] }
-  
+
   // Sync selected day to today when week changes if today is in this week
   useEffect(() => {
     if (weekOffset === 0) {
@@ -577,7 +595,7 @@ export default function App() {
   const [newQuantity, setNewQuantity] = useState('');
   const [newCategory, setNewCategory] = useState('Rau củ');
   const [actualTotalBill, setActualTotalBill] = useState('');
-  
+
   // State: Chỉnh sửa món đi chợ
   const [isShoppingModalOpen, setIsShoppingModalOpen] = useState(false);
   const [editingShoppingItem, setEditingShoppingItem] = useState(null);
@@ -591,7 +609,7 @@ export default function App() {
   const [categories, setCategories] = useState([]);
   const [systemLogs, setSystemLogs] = useState([]);
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'system');
-  
+
   // Database Connection Status
   const [dbStatus, setDbStatus] = useState({ checked: false, connected: false, database: null, error: null });
 
@@ -619,6 +637,19 @@ export default function App() {
       return () => mediaQuery.removeEventListener('change', listener);
     }
   }, [theme]);
+
+  // Lock body scroll when any modal is open
+  const anyModalOpen = isModalOpen || isMealModalOpen || isShoppingModalOpen;
+  useEffect(() => {
+    if (anyModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [anyModalOpen]);
 
   // Initial load from PostgreSQL Backend API
   useEffect(() => {
@@ -828,16 +859,25 @@ export default function App() {
       showToast(`Đã cập nhật giao dịch: "${updatedItem.title}"`);
 
       try {
-        await fetch(`/api/transactions/${editingTransaction.id}`, {
+        const res = await fetch(`/api/transactions/${editingTransaction.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(updatedItem),
         });
+        if (res.ok) {
+          const saved = await res.json();
+          // Sync created_at from server response
+          if (saved && saved.created_at) {
+            setTransactions((prev) =>
+              prev.map((t) => (t.id === editingTransaction.id ? { ...updatedItem, created_at: saved.created_at } : t))
+            );
+          }
+        }
       } catch (err) {
         console.warn('API sync:', err);
       }
     } else {
-      // Create new
+      // Create new — set created_at optimistically so time shows immediately
       const item = {
         id: Date.now().toString(),
         type: newTrans.type,
@@ -845,16 +885,26 @@ export default function App() {
         amount: parsedAmount,
         category: newTrans.category,
         date: newTrans.date,
+        created_at: new Date().toISOString(),
       };
       setTransactions([item, ...transactions]);
       showToast(`Đã thêm giao dịch: "${item.title}"`);
 
       try {
-        await fetch('/api/transactions', {
+        const res = await fetch('/api/transactions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(item),
         });
+        if (res.ok) {
+          const saved = await res.json();
+          // Sync id & created_at from server response
+          if (saved && saved.id) {
+            setTransactions((prev) =>
+              prev.map((t) => (t.id === item.id ? { ...item, ...saved } : t))
+            );
+          }
+        }
       } catch (err) {
         console.warn('API sync:', err);
       }
@@ -882,7 +932,7 @@ export default function App() {
   const handleOpenEditMeal = (plan_date, meal = null) => {
     setEditingMealTarget({
       plan_date,
-      original_meal_name: meal ? meal.meal_name : '', 
+      original_meal_name: meal ? meal.meal_name : '',
     });
 
     setMealForm({
@@ -901,7 +951,7 @@ export default function App() {
     if (!editingMealTarget || !mealForm.main.trim() || !mealForm.mealName.trim()) return;
 
     const { plan_date, original_meal_name } = editingMealTarget;
-    
+
     // Parse ingredients and preserve isBought state if it exists
     const ingredientsArray = mealForm.ingredientsStr
       .split('\n')
@@ -1117,7 +1167,7 @@ export default function App() {
   const handleToggleCheck = async (id) => {
     const itemToToggle = shoppingList.find((i) => i.id === id);
     if (!itemToToggle) return;
-    
+
     const newCheckedStatus = !itemToToggle.checked;
 
     setShoppingList(
@@ -1135,7 +1185,7 @@ export default function App() {
     // --- Sync with Meal Planner ---
     let mealDataUpdated = false;
     const newMealData = { ...mealData };
-    
+
     Object.keys(newMealData).forEach(plan_date => {
       // Nếu món có lưu plan_date cụ thể, chỉ cập nhật đúng ngày đó
       if (itemToToggle.plan_date && itemToToggle.plan_date !== plan_date) {
@@ -1161,7 +1211,7 @@ export default function App() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ plan_date, ...updatedMeal }),
           }).catch(e => console.warn('Sync meal error:', e));
-          
+
           return updatedMeal;
         }
         return meal;
@@ -1278,7 +1328,7 @@ export default function App() {
   // Batch add ingredients from meal
   const handleAddMealIngredientsToCart = async (planDate, mealName, ingredients) => {
     if (!ingredients || ingredients.length === 0) return;
-    
+
     const mealTag = formatMealTag(planDate, mealName);
 
     // Lọc ra các món chưa mua trong bữa ăn này mà CHƯA có trong giỏ đi chợ của chính bữa ăn này
@@ -1314,7 +1364,7 @@ export default function App() {
       checked: false,
       plan_date: planDate || null,
     }));
-    
+
     setShoppingList((prev) => [...prev, ...newItems]);
     showToast(`Đã thêm ${newItems.length} món của ${mealTag} vào giỏ đi chợ!`);
 
@@ -1411,13 +1461,14 @@ export default function App() {
   };
 
   const handleExportCSV = () => {
-    const header = ['Thời gian', 'Loại', 'Số tiền', 'Danh mục', 'Tiêu đề'];
+    const header = ['Thời gian', 'Giờ', 'Loại', 'Số tiền (VNĐ)', 'Danh mục', 'Tiêu đề'];
     const csvContent = [
       header.join(','),
       ...transactions.map(t => [
         `"${formatDate(t.date)}"`,
+        `"${formatTime(t.created_at)}"`,
         t.type === 'income' ? 'Thu' : 'Chi',
-        t.amount,
+        formatAmountForCSV(t.amount),
         `"${t.category}"`,
         `"${t.title.replace(/"/g, '""')}"`
       ].join(','))
@@ -1440,13 +1491,21 @@ export default function App() {
       alert('Chưa có bản ghi nhật ký nào để xuất!');
       return;
     }
-    const header = ['Thời gian', 'Hành động', 'Loại', 'Chi tiết'];
+    const header = ['Thời gian', 'Hành động', 'Loại dữ liệu', 'Chi tiết (Tên đối tượng)'];
+    const actionLabel = (action) => {
+      const map = { CREATE: 'Thêm mới', UPDATE: 'Cập nhật', DELETE: 'Xóa', TOGGLE: 'Thay đổi trạng thái', FINALIZE: 'Chốt hóa đơn', REORDER: 'Sắp xếp lại', BATCH: 'Thêm hàng loạt' };
+      return map[action?.toUpperCase()] || action || '';
+    };
+    const entityLabel = (type) => {
+      const map = { transaction: 'Giao dịch thu chi', meal: 'Thực đơn bữa ăn', grocery: 'Nguyên liệu đi chợ', category: 'Danh mục', shopping: 'Đi chợ' };
+      return map[type?.toLowerCase()] || type || '';
+    };
     const csvContent = [
       header.join(','),
       ...systemLogs.map(log => [
-        `"${formatLogTime(log.time)}"`,
-        `"${(log.action || '').replace(/"/g, '""')}"`,
-        `"${(log.entity_type || '').replace(/"/g, '""')}"`,
+        `"${formatLogTime(log.created_at || log.time)}"`,
+        `"${actionLabel(log.action).replace(/"/g, '""')}"`,
+        `"${entityLabel(log.entity_type).replace(/"/g, '""')}"`,
         `"${(log.entity_name || '').replace(/"/g, '""')}"`
       ].join(','))
     ].join('\n');
@@ -1547,16 +1606,14 @@ export default function App() {
             >
               <span className="relative flex h-2.5 w-2.5">
                 <span
-                  className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                    dbStatus.connected ? 'bg-emerald-400' : 'bg-rose-400'
-                  }`}
+                  className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${dbStatus.connected ? 'bg-emerald-400' : 'bg-rose-400'
+                    }`}
                 />
                 <span
-                  className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
-                    dbStatus.connected
+                  className={`relative inline-flex rounded-full h-2.5 w-2.5 ${dbStatus.connected
                       ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]'
                       : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]'
-                  }`}
+                    }`}
                 />
               </span>
 
@@ -1564,9 +1621,8 @@ export default function App() {
               <div className="absolute top-full right-0 mt-2 z-50 pointer-events-none opacity-0 translate-y-1 scale-95 group-hover:opacity-100 group-hover:translate-y-0 group-hover:scale-100 transition-all duration-150 ease-out whitespace-nowrap">
                 <div className="bg-gray-900/95 dark:bg-gray-800 text-white text-[11px] font-medium py-1.5 px-3 rounded-lg shadow-xl border border-gray-700/50 flex items-center gap-2">
                   <span
-                    className={`w-2 h-2 rounded-full shrink-0 ${
-                      dbStatus.connected ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'
-                    }`}
+                    className={`w-2 h-2 rounded-full shrink-0 ${dbStatus.connected ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'
+                      }`}
                   />
                   <span>
                     {dbStatus.connected ? 'Đã kết nối' : 'Không thể kết nối'}
@@ -1592,11 +1648,10 @@ export default function App() {
             <nav className="hidden md:flex items-center gap-1 bg-gray-100/90 dark:bg-gray-800/90 p-1 rounded-xl border border-gray-200/70 dark:border-gray-700/70 shrink-0">
               <button
                 onClick={() => setActiveTab('spend')}
-                className={`relative flex items-center gap-1.5 px-3 py-2 lg:px-4 lg:py-2 rounded-lg text-xs lg:text-sm whitespace-nowrap transition-all ${
-                  activeTab === 'spend'
+                className={`relative flex items-center gap-1.5 px-3 py-2 lg:px-4 lg:py-2 rounded-lg text-xs lg:text-sm whitespace-nowrap transition-all ${activeTab === 'spend'
                     ? 'font-bold text-emerald-800 dark:text-emerald-300 bg-white dark:bg-gray-700 shadow-sm border border-emerald-500/25 dark:border-emerald-500/30'
                     : 'font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
-                }`}
+                  }`}
               >
                 <Wallet className={`w-4 h-4 shrink-0 ${activeTab === 'spend' ? 'text-emerald-600 dark:text-emerald-400 stroke-[2.25]' : ''}`} />
                 <span className="whitespace-nowrap">Sổ Thu Chi</span>
@@ -1606,11 +1661,10 @@ export default function App() {
               </button>
               <button
                 onClick={() => setActiveTab('meal')}
-                className={`relative flex items-center gap-1.5 px-3 py-2 lg:px-4 lg:py-2 rounded-lg text-xs lg:text-sm whitespace-nowrap transition-all ${
-                  activeTab === 'meal'
+                className={`relative flex items-center gap-1.5 px-3 py-2 lg:px-4 lg:py-2 rounded-lg text-xs lg:text-sm whitespace-nowrap transition-all ${activeTab === 'meal'
                     ? 'font-bold text-emerald-800 dark:text-emerald-300 bg-white dark:bg-gray-700 shadow-sm border border-emerald-500/25 dark:border-emerald-500/30'
                     : 'font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
-                }`}
+                  }`}
               >
                 <Utensils className={`w-4 h-4 shrink-0 ${activeTab === 'meal' ? 'text-emerald-600 dark:text-emerald-400 stroke-[2.25]' : ''}`} />
                 <span className="whitespace-nowrap">Thực Đơn Tuần</span>
@@ -1620,11 +1674,10 @@ export default function App() {
               </button>
               <button
                 onClick={() => setActiveTab('shop')}
-                className={`relative flex items-center gap-1.5 px-3 py-2 lg:px-4 lg:py-2 rounded-lg text-xs lg:text-sm whitespace-nowrap transition-all ${
-                  activeTab === 'shop'
+                className={`relative flex items-center gap-1.5 px-3 py-2 lg:px-4 lg:py-2 rounded-lg text-xs lg:text-sm whitespace-nowrap transition-all ${activeTab === 'shop'
                     ? 'font-bold text-emerald-800 dark:text-emerald-300 bg-white dark:bg-gray-700 shadow-sm border border-emerald-500/25 dark:border-emerald-500/30'
                     : 'font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
-                }`}
+                  }`}
               >
                 <ShoppingCart className={`w-4 h-4 shrink-0 ${activeTab === 'shop' ? 'text-emerald-600 dark:text-emerald-400 stroke-[2.25]' : ''}`} />
                 <span className="whitespace-nowrap">Đi Chợ</span>
@@ -1639,11 +1692,10 @@ export default function App() {
               </button>
               <button
                 onClick={() => setActiveTab('settings')}
-                className={`relative flex items-center gap-1.5 px-3 py-2 lg:px-4 lg:py-2 rounded-lg text-xs lg:text-sm whitespace-nowrap transition-all ${
-                  activeTab === 'settings'
+                className={`relative flex items-center gap-1.5 px-3 py-2 lg:px-4 lg:py-2 rounded-lg text-xs lg:text-sm whitespace-nowrap transition-all ${activeTab === 'settings'
                     ? 'font-bold text-emerald-800 dark:text-emerald-300 bg-white dark:bg-gray-700 shadow-sm border border-emerald-500/25 dark:border-emerald-500/30'
                     : 'font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
-                }`}
+                  }`}
               >
                 <Settings className={`w-4 h-4 shrink-0 ${activeTab === 'settings' ? 'text-emerald-600 dark:text-emerald-400 stroke-[2.25]' : ''}`} />
                 <span className="whitespace-nowrap">Cài Đặt</span>
@@ -1777,31 +1829,28 @@ export default function App() {
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={() => setFilterType('all')}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                    filterType === 'all'
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${filterType === 'all'
                       ? 'bg-emerald-700 dark:bg-emerald-600 text-white shadow-xs'
                       : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
+                    }`}
                 >
                   Tất cả ({filteredTransactions.length})
                 </button>
                 <button
                   onClick={() => setFilterType('expense')}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                    filterType === 'expense'
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${filterType === 'expense'
                       ? 'bg-rose-600 text-white shadow-xs'
                       : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
+                    }`}
                 >
                   Khoản Chi
                 </button>
                 <button
                   onClick={() => setFilterType('income')}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                    filterType === 'income'
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${filterType === 'income'
                       ? 'bg-emerald-600 text-white shadow-xs'
                       : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
+                    }`}
                 >
                   Khoản Thu
                 </button>
@@ -1883,11 +1932,10 @@ export default function App() {
                       {/* Left: Type Icon + Title + Category & Date Badges */}
                       <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1">
                         <div
-                          className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                            item.type === 'income'
+                          className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 ${item.type === 'income'
                               ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400'
                               : 'bg-rose-50 dark:bg-rose-950/40 text-rose-500 dark:text-rose-400'
-                          }`}
+                            }`}
                         >
                           {item.type === 'income' ? (
                             <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -1902,13 +1950,19 @@ export default function App() {
                           >
                             {item.title}
                           </div>
-                          <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 overflow-hidden">
+                          <div className="flex items-center flex-wrap gap-x-1.5 gap-y-0.5 mt-0.5">
                             <span className="text-[10px] sm:text-[11px] bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 sm:px-2 py-0.5 rounded-md font-medium whitespace-nowrap shrink-0">
                               {item.category}
                             </span>
                             <span className="text-[10px] sm:text-[11px] text-gray-400 dark:text-gray-500 flex items-center gap-1 whitespace-nowrap shrink-0">
                               <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
                               {formatDate(item.date)}
+                              {formatTime(item.created_at) && (
+                                <>
+                                  <span className="text-gray-300 dark:text-gray-600">·</span>
+                                  <span>{formatTime(item.created_at)}</span>
+                                </>
+                              )}
                             </span>
                           </div>
                         </div>
@@ -1917,15 +1971,14 @@ export default function App() {
                       {/* Right: Formatted Amount (Never Wrap) + Edit/Delete Buttons */}
                       <div className="flex items-center gap-1 sm:gap-2.5 shrink-0 text-right ml-1">
                         <span
-                          className={`font-bold text-xs sm:text-base whitespace-nowrap tabular-nums shrink-0 ${
-                            item.type === 'income'
+                          className={`font-bold text-xs sm:text-base whitespace-nowrap tabular-nums shrink-0 ${item.type === 'income'
                               ? 'text-emerald-600 dark:text-emerald-400'
                               : 'text-rose-600 dark:text-rose-400'
-                          }`}
+                            }`}
                         >
                           {item.type === 'income' ? '+' : '-'}&nbsp;{formatVND(item.amount)}
                         </span>
-                        
+
                         {/* Edit & Delete Action Buttons */}
                         <div className="flex items-center gap-0.5 sm:gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
                           <button
@@ -1948,10 +2001,10 @@ export default function App() {
                   ))
                 )}
               </div>
-              
+
               {filteredTransactions.length > displayLimit && (
                 <div className="p-3 border-t border-gray-100 dark:border-gray-700 flex justify-center bg-gray-50/30 dark:bg-gray-800/40">
-                  <button 
+                  <button
                     onClick={() => setDisplayLimit((prev) => prev + 10)}
                     className="flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 px-5 py-2.5 rounded-xl transition-colors active:scale-95"
                   >
@@ -1994,36 +2047,33 @@ export default function App() {
                   const isSelected = selectedDay === day.key;
                   const currentMeals = mealData[day.key] || [];
                   const hasMeals = currentMeals.length > 0;
-                  
+
                   return (
                     <button
                       key={day.key}
                       onClick={() => setSelectedDay(day.key)}
-                      className={`relative flex flex-col items-center py-2.5 sm:py-3 rounded-xl transition-all ${
-                        isSelected
+                      className={`relative flex flex-col items-center py-2.5 sm:py-3 rounded-xl transition-all ${isSelected
                           ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-600/20 scale-102'
                           : 'bg-gray-50 dark:bg-gray-700/60 hover:bg-emerald-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 hover:text-emerald-700 dark:hover:text-emerald-300'
-                      }`}
+                        }`}
                     >
                       {hasMeals && !isSelected && (
                         <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-emerald-500 rounded-full border-2 border-white dark:border-gray-800 shadow-xs"></span>
                       )}
                       {day.isToday && (
                         <span
-                          className={`absolute -top-1.5 px-1.5 py-0.2 rounded-full text-[9px] font-bold ${
-                            isSelected
+                          className={`absolute -top-1.5 px-1.5 py-0.2 rounded-full text-[9px] font-bold ${isSelected
                               ? 'bg-amber-400 text-amber-950'
                               : 'bg-emerald-600 text-white'
-                          }`}
+                            }`}
                         >
                           Nay
                         </span>
                       )}
                       <span className="text-xs sm:text-sm">{day.label}</span>
                       <span
-                        className={`text-[10px] mt-0.5 ${
-                          isSelected ? 'text-emerald-100' : 'text-gray-400 dark:text-gray-400'
-                        }`}
+                        className={`text-[10px] mt-0.5 ${isSelected ? 'text-emerald-100' : 'text-gray-400 dark:text-gray-400'
+                          }`}
                       >
                         {day.dateStr}
                       </span>
@@ -2120,15 +2170,13 @@ export default function App() {
                               setDraggedMealIdx(null);
                               setDragOverMealIdx(null);
                             }}
-                            className={`bg-white dark:bg-gray-800 rounded-3xl border overflow-hidden flex flex-col justify-between transition-all duration-300 relative ${
-                              !isPast && currentMeals.length > 1 ? 'cursor-grab active:cursor-grabbing' : ''
-                            } ${
-                              draggedMealIdx === idx
+                            className={`bg-white dark:bg-gray-800 rounded-3xl border overflow-hidden flex flex-col justify-between transition-all duration-300 relative ${!isPast && currentMeals.length > 1 ? 'cursor-grab active:cursor-grabbing' : ''
+                              } ${draggedMealIdx === idx
                                 ? 'opacity-40 scale-95 border-dashed border-emerald-500 shadow-none'
                                 : dragOverMealIdx === idx
-                                ? 'border-emerald-500 ring-4 ring-emerald-500/20 shadow-2xl scale-[1.02]'
-                                : 'border-gray-100 dark:border-gray-700/80 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.25)] hover:shadow-[0_16px_40px_rgb(0,0,0,0.1)] hover:-translate-y-1'
-                            }`}
+                                  ? 'border-emerald-500 ring-4 ring-emerald-500/20 shadow-2xl scale-[1.02]'
+                                  : 'border-gray-100 dark:border-gray-700/80 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.25)] hover:shadow-[0_16px_40px_rgb(0,0,0,0.1)] hover:-translate-y-1'
+                              }`}
                           >
                             <div className="p-6">
                               <div className="flex items-center justify-between pb-3.5 border-b border-gray-100 dark:border-gray-700/80">
@@ -2230,22 +2278,20 @@ export default function App() {
                                       return (
                                         <li
                                           key={iIdx}
-                                          className={`flex items-center justify-between py-1.5 px-2 rounded-xl text-xs transition-all ${
-                                            isBought
+                                          className={`flex items-center justify-between py-1.5 px-2 rounded-xl text-xs transition-all ${isBought
                                               ? 'bg-emerald-50/60 dark:bg-emerald-950/30'
                                               : 'hover:bg-gray-50 dark:hover:bg-gray-700/40'
-                                          }`}
+                                            }`}
                                         >
                                           <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                            <button 
+                                            <button
                                               type="button"
                                               onClick={() => !isPast && handleToggleIngredientBought(selectedDay, meal.meal_name, ing.name)}
                                               disabled={isPast}
-                                              className={`w-5 h-5 shrink-0 rounded-lg flex items-center justify-center transition-all ${
-                                                isBought
+                                              className={`w-5 h-5 shrink-0 rounded-lg flex items-center justify-center transition-all ${isBought
                                                   ? 'bg-emerald-600 dark:bg-emerald-500 text-white shadow-xs'
                                                   : 'bg-gray-100 dark:bg-gray-700/70 text-gray-400 dark:text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 border border-gray-200 dark:border-gray-600'
-                                              } disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer`}
+                                                } disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer`}
                                               title={isPast ? "Đã qua ngày" : (isBought ? "Đã mua - Bấm để chuyển về Cần mua" : "Cần mua - Bấm để đánh dấu Đã mua")}
                                             >
                                               {isBought ? (
@@ -2255,11 +2301,10 @@ export default function App() {
                                               )}
                                             </button>
                                             <span
-                                              className={`truncate ${
-                                                isBought
+                                              className={`truncate ${isBought
                                                   ? 'line-through text-emerald-800/80 dark:text-emerald-300/70 font-medium decoration-emerald-500/50'
                                                   : 'font-medium text-gray-800 dark:text-gray-200'
-                                              }`}
+                                                }`}
                                             >
                                               {ing.name}
                                             </span>
@@ -2303,11 +2348,10 @@ export default function App() {
                                 <button
                                   disabled={!hasIngredients || isPast}
                                   onClick={() => handleAddMealIngredientsToCart(selectedDay, meal.meal_name, meal.ingredients || [])}
-                                  className={`w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all duration-200 ${
-                                    isPast
+                                  className={`w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all duration-200 ${isPast
                                       ? 'text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 cursor-not-allowed'
                                       : 'text-emerald-800 dark:text-emerald-200 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-700/80 shadow-2xs hover:shadow-xs active:scale-98 cursor-pointer'
-                                  }`}
+                                    }`}
                                 >
                                   <Plus className="w-4 h-4 stroke-[2.5]" />
                                   <span>{isPast ? 'Đã qua hạn đi chợ' : 'Thêm món chưa mua vào giỏ'}</span>
@@ -2410,18 +2454,16 @@ export default function App() {
                       <div
                         key={item.id}
                         onClick={() => handleToggleCheck(item.id)}
-                        className={`p-3 sm:p-3.5 sm:px-5 flex items-center justify-between gap-2 cursor-pointer select-none transition-colors ${
-                          item.checked ? 'bg-gray-50/50 dark:bg-gray-800/40' : 'hover:bg-gray-50/80 dark:hover:bg-gray-700/40'
-                        }`}
+                        className={`p-3 sm:p-3.5 sm:px-5 flex items-center justify-between gap-2 cursor-pointer select-none transition-colors ${item.checked ? 'bg-gray-50/50 dark:bg-gray-800/40' : 'hover:bg-gray-50/80 dark:hover:bg-gray-700/40'
+                          }`}
                       >
                         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                           <button
                             type="button"
-                            className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors shrink-0 ${
-                              item.checked
+                            className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors shrink-0 ${item.checked
                                 ? 'text-emerald-600 dark:text-emerald-400'
                                 : 'text-gray-300 dark:text-gray-600 hover:text-gray-400'
-                            }`}
+                              }`}
                           >
                             {item.checked ? (
                               <CheckCircle2 className="w-5 h-5" />
@@ -2431,11 +2473,10 @@ export default function App() {
                           </button>
 
                           <span
-                            className={`text-xs sm:text-sm font-medium transition-all truncate min-w-0 ${
-                              item.checked
+                            className={`text-xs sm:text-sm font-medium transition-all truncate min-w-0 ${item.checked
                                 ? 'line-through text-gray-400 dark:text-gray-500'
                                 : 'text-gray-800 dark:text-gray-200'
-                            }`}
+                              }`}
                             title={item.name}
                           >
                             {item.name}
@@ -2618,7 +2659,7 @@ export default function App() {
                         title="Tải về file CSV nhật ký hệ thống"
                       >
                         <Download className="w-4 h-4 stroke-[2.25]" />
-                        <span>Tải Logs CSV</span>
+                        <span>Tải CSV</span>
                       </button>
                     </div>
                   </div>
@@ -2642,7 +2683,7 @@ export default function App() {
                     </h2>
                   </div>
 
-                  <form 
+                  <form
                     onSubmit={(e) => {
                       e.preventDefault();
                       const form = e.target;
@@ -2651,23 +2692,23 @@ export default function App() {
                     }}
                     className="flex flex-col sm:flex-row gap-2.5 mb-4"
                   >
-                    <select 
-                      name="type" 
-                      className="px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs sm:text-sm font-medium text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30" 
+                    <select
+                      name="type"
+                      className="px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs sm:text-sm font-medium text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
                       required
                     >
                       <option value="expense" className="dark:bg-gray-800">Khoản Chi (Expense)</option>
                       <option value="income" className="dark:bg-gray-800">Khoản Thu (Income)</option>
                     </select>
-                    <input 
-                      name="name" 
-                      placeholder="Tên danh mục mới..." 
-                      className="flex-1 px-3.5 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs sm:text-sm text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30" 
-                      required 
+                    <input
+                      name="name"
+                      placeholder="Tên danh mục mới..."
+                      className="flex-1 px-3.5 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs sm:text-sm text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                      required
                     />
                     {/* Nút chính: Solid Button nổi bật */}
-                    <button 
-                      type="submit" 
+                    <button
+                      type="submit"
                       className="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl font-bold text-xs sm:text-sm shadow-md shadow-emerald-600/25 active:scale-98 transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
                     >
                       <Plus className="w-4 h-4 stroke-[2.5]" />
@@ -2679,31 +2720,28 @@ export default function App() {
                 {/* Danh sách danh mục với Color Coding (vạch đỏ cho Expense, vạch xanh lá cho Income) */}
                 <div className="max-h-72 overflow-y-auto pr-1 space-y-2.5 custom-scrollbar flex-1">
                   {categories.filter(c => c.type === 'expense' || c.type === 'income').map(c => (
-                    <div 
-                      key={c.id} 
-                      className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${
-                        c.type === 'expense'
+                    <div
+                      key={c.id}
+                      className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${c.type === 'expense'
                           ? 'border-l-4 border-l-rose-500 border-gray-100 dark:border-gray-700/80 bg-rose-50/25 dark:bg-rose-950/10'
                           : 'border-l-4 border-l-emerald-500 border-gray-100 dark:border-gray-700/80 bg-emerald-50/25 dark:bg-emerald-950/10'
-                      }`}
+                        }`}
                     >
                       <div className="flex flex-col min-w-0 pr-2">
                         <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
                           {c.name}
                         </span>
                         <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                            c.type === 'expense' ? 'bg-rose-500' : 'bg-emerald-500'
-                          }`} />
-                          <span className={`text-[10px] font-bold uppercase tracking-wider ${
-                            c.type === 'expense' ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
-                          }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${c.type === 'expense' ? 'bg-rose-500' : 'bg-emerald-500'
+                            }`} />
+                          <span className={`text-[10px] font-bold uppercase tracking-wider ${c.type === 'expense' ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
+                            }`}>
                             {c.type === 'expense' ? 'Khoản Chi (Expense)' : 'Khoản Thu (Income)'}
                           </span>
                         </div>
                       </div>
-                      <button 
-                        onClick={() => handleDeleteCategory(c.id, c.name)} 
+                      <button
+                        onClick={() => handleDeleteCategory(c.id, c.name)}
                         className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors cursor-pointer shrink-0"
                         title="Xóa danh mục này"
                       >
@@ -2740,7 +2778,7 @@ export default function App() {
       {/* MODAL 1: THÊM / CHỈNH SỬA GIAO DỊCH THU CHI                               */}
       {/* ========================================================================= */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fade-in" style={{ overscrollBehavior: 'contain' }} onWheel={e => e.stopPropagation()} >
           <div className="bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
             <div className="p-5 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
               <h3 className="font-bold text-gray-900 dark:text-white text-base flex items-center gap-2">
@@ -2773,22 +2811,20 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setNewTrans({ ...newTrans, type: 'expense' })}
-                  className={`py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    newTrans.type === 'expense'
+                  className={`py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${newTrans.type === 'expense'
                       ? 'bg-white dark:bg-gray-800 text-rose-600 dark:text-rose-400 shadow-xs'
                       : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white'
-                  }`}
+                    }`}
                 >
                   Khoản Chi
                 </button>
                 <button
                   type="button"
                   onClick={() => setNewTrans({ ...newTrans, type: 'income' })}
-                  className={`py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    newTrans.type === 'income'
+                  className={`py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${newTrans.type === 'income'
                       ? 'bg-white dark:bg-gray-800 text-emerald-700 dark:text-emerald-400 shadow-xs'
                       : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white'
-                  }`}
+                    }`}
                 >
                   Khoản Thu
                 </button>
@@ -2894,7 +2930,7 @@ export default function App() {
       {/* MODAL 2: CHỈNH SỬA THỰC ĐƠN BỮA ĂN (MEAL EDIT MODAL)                      */}
       {/* ========================================================================= */}
       {isMealModalOpen && editingMealTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fade-in" style={{ overscrollBehavior: 'contain' }} onWheel={e => e.stopPropagation()} >
           <div className="bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
             <div className="p-5 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
               <div>
@@ -2931,8 +2967,9 @@ export default function App() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
                     Calo ước tính
+                    <span className="text-[10px] font-normal text-gray-400 dark:text-gray-500 normal-case">(tùy chọn)</span>
                   </label>
                   <input
                     type="text"
@@ -3018,7 +3055,7 @@ export default function App() {
       {/* MODAL 3: CHỈNH SỬA MÓN ĐI CHỢ (SHOPPING ITEM EDIT MODAL)                   */}
       {/* ========================================================================= */}
       {isShoppingModalOpen && editingShoppingItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fade-in" style={{ overscrollBehavior: 'contain' }} onWheel={e => e.stopPropagation()} >
           <div className="bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
             <div className="p-5 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
               <h3 className="font-bold text-gray-900 dark:text-white text-base flex items-center gap-2">
@@ -3097,11 +3134,10 @@ export default function App() {
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-200/80 dark:border-gray-800 px-6 py-2 flex items-center justify-around shadow-lg transition-colors">
         <button
           onClick={() => setActiveTab('spend')}
-          className={`relative flex flex-col items-center py-1 gap-1 text-xs transition-colors ${
-            activeTab === 'spend'
+          className={`relative flex flex-col items-center py-1 gap-1 text-xs transition-colors ${activeTab === 'spend'
               ? 'font-bold text-emerald-700 dark:text-emerald-400'
               : 'font-medium text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
-          }`}
+            }`}
         >
           <Wallet className={`w-5 h-5 ${activeTab === 'spend' ? 'stroke-[2.25]' : ''}`} />
           <span>Thu Chi</span>
@@ -3111,11 +3147,10 @@ export default function App() {
         </button>
         <button
           onClick={() => setActiveTab('meal')}
-          className={`relative flex flex-col items-center py-1 gap-1 text-xs transition-colors ${
-            activeTab === 'meal'
+          className={`relative flex flex-col items-center py-1 gap-1 text-xs transition-colors ${activeTab === 'meal'
               ? 'font-bold text-emerald-700 dark:text-emerald-400'
               : 'font-medium text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
-          }`}
+            }`}
         >
           <Utensils className={`w-5 h-5 ${activeTab === 'meal' ? 'stroke-[2.25]' : ''}`} />
           <span>Thực Đơn</span>
@@ -3125,11 +3160,10 @@ export default function App() {
         </button>
         <button
           onClick={() => setActiveTab('shop')}
-          className={`relative flex flex-col items-center py-1 gap-1 text-xs transition-colors ${
-            activeTab === 'shop'
+          className={`relative flex flex-col items-center py-1 gap-1 text-xs transition-colors ${activeTab === 'shop'
               ? 'font-bold text-emerald-700 dark:text-emerald-400'
               : 'font-medium text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
-          }`}
+            }`}
         >
           <div className="relative">
             <ShoppingCart className={`w-5 h-5 ${activeTab === 'shop' ? 'stroke-[2.25]' : ''}`} />
@@ -3146,11 +3180,10 @@ export default function App() {
         </button>
         <button
           onClick={() => setActiveTab('settings')}
-          className={`relative flex flex-col items-center py-1 gap-1 text-xs transition-colors ${
-            activeTab === 'settings'
+          className={`relative flex flex-col items-center py-1 gap-1 text-xs transition-colors ${activeTab === 'settings'
               ? 'font-bold text-emerald-700 dark:text-emerald-400'
               : 'font-medium text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
-          }`}
+            }`}
         >
           <Settings className={`w-5 h-5 ${activeTab === 'settings' ? 'stroke-[2.25]' : ''}`} />
           <span>Cài Đặt</span>

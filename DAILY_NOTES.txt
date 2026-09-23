@@ -236,6 +236,25 @@ Mục đích: Theo dõi tiến độ, ghi chép lại các tính năng đã phá
       + Phân cấp nút bấm (Button Hierarchy): Dùng nút viền (Outlined Button) màu xanh ngọc thanh thoát cho các chức năng tải CSV và nút đặc (Solid Gradient Button) nổi bật cho nút "+ Thêm" danh mục mới, tránh cảm giác bị ngợp thị giác.
       + Phân loại bằng màu sắc (Color Coding): Bổ sung vạch màu viền trái nổi bật cho danh sách danh mục (vạch đỏ `border-l-rose-500` cho Khoản Chi - Expense, vạch xanh `border-l-emerald-500` cho Khoản Thu - Income) giúp người dùng nhận diện tức thì bằng mắt.
 
+================================================================================
+📅 NGÀY: 23/09/2026 (Thứ Tư) - TỐI ƯU CHI TIẾT GIAO DỊCH, TRẢI NGHIỆM MODAL & EXPORT CSV
+================================================================================
+[x] 1. Hiển thị giờ phút (HH:mm) trong Lịch sử Giao dịch:
+    - Bổ sung định dạng thời gian thực tế `· HH:mm` vào nhãn ngày giờ của từng giao dịch trong Tab Thu Chi.
+    - Cập nhật backend `server/index.js` trả về trường `created_at` trong mệnh đề `RETURNING` khi tạo mới hoặc cập nhật giao dịch để đồng bộ tức thì.
+    - Tối ưu layout hiển thị: Sử dụng `flex-wrap` kết hợp `gap-x-1.5 gap-y-0.5` thay thế cho `overflow-hidden`, đảm bảo nhãn thời gian và danh mục luôn hiển thị trọn vẹn, không bị che/cắt trên màn hình điện thoại hoặc khi tên giao dịch dài.
+
+[x] 2. Hoàn thiện xuất file CSV và Lịch sử hệ thống:
+    - Sửa định dạng cột Số tiền trong file CSV xuất ra: Loại bỏ số thập phân dư `.00`, làm tròn số nguyên chuẩn xác bằng `Math.round`.
+    - Chuẩn hóa cột Chi tiết trong file CSV và Log hệ thống: Ghi rõ ràng hành động (Tạo mới, Cập nhật, Xóa) cùng tên đối tượng cụ thể thay vì chỉ ghi ID kỹ thuật.
+
+[x] 3. Nâng cấp trải nghiệm người dùng (UX) khi mở Modal:
+    - Khóa cuộn trang nền (`overflow: hidden` trên `document.body`) khi có bất kỳ Popup / Modal nào đang mở (Thêm giao dịch, Thêm món ăn, Cài đặt...), ngăn chặn hoàn toàn hiện tượng trượt cuộn giao diện phía sau.
+    - Bổ sung `overscrollBehavior: 'contain'` chống trượt cuộn xuyên thấu (Scroll chaining).
+
+[x] 4. Tinh chỉnh biểu mẫu Thực đơn (Meal Planner):
+    - Đổi trường "Calo ước tính" thành không bắt buộc (optional), hiển thị nhãn "(tùy chọn)" rõ ràng, giúp người dùng linh hoạt nhập liệu nhanh mà không cần tra cứu calo nếu không có nhu cầu.
+
 * Kế hoạch tiếp theo (To-do):
     - [ ] Kiểm thử toàn diện các luồng nghiệp vụ trên môi trường thật.
     - [ ] Chuẩn bị bài thuyết trình / tài liệu nộp đề tài bảng Văn phòng.

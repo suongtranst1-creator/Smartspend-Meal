@@ -34,8 +34,11 @@
   - `Tổng Thu`: Tự động cộng dồn các khoản lương, thưởng, thu nhập phụ kèm tỷ lệ & biểu tượng trực quan.
   - `Tổng Chi Tiêu`: Tổng hợp toàn bộ các khoản chi sinh hoạt, ăn uống, hóa đơn và đi chợ.
   - `Số Dư Hiện Tại`: Thể hiện tình trạng tài chính an toàn trong thẻ nền xanh ngọc sang trọng.
-* **Ghi Chép & Quản Lý Giao Dịch Nhanh Chóng**:
+* **Ghi Chép & Quản Lý Giao Dịch Nhanh Chóng & Chi Tiết**:
   - Thêm mới, chỉnh sửa và xóa khoản thu/chi linh hoạt với đầy đủ thông tin: Số tiền (VNĐ), Danh mục (Ăn uống, Tiền nhà, Hóa đơn, Lương...), Ngày ghi, Tiêu đề giao dịch.
+  - **Hiển thị mốc thời gian thực tế (`· HH:mm`)**: Lịch sử giao dịch hiển thị rõ ràng ngày tháng kèm giờ phút ghi nhận giao dịch, bố cục co giãn tự động linh hoạt (`flex-wrap`) không bị che khuất ngay cả khi tiêu đề dài hoặc trên màn hình hẹp.
+* **Trải Nghiệm Modal & Giao Diện Thân Thiện**:
+  - **Khóa cuộn trang nền (Scroll-lock)**: Ngăn ngừa hoàn toàn tình trạng trượt cuộn giao diện nền khi đang mở các bảng Pop-up/Modal thêm sửa giao dịch, món ăn hay cài đặt.
 * **Tự Động Định Dạng Ngắt Dấu Hàng Nghìn (Thousand Separator)**:
   - Khi gõ số tiền vào ô `SỐ TIỀN (VNĐ)`, hệ thống **tự động ngắt dấu chấm `.` cứ mỗi 3 chữ số** (ví dụ: gõ `50000` ➔ tự động hiển thị `50.000`, `1000000` ➔ `1.000.000`).
   - Giao diện hiện đại: Tích hợp huy hiệu `VNĐ` trực quan, loại bỏ các nút mũi tên spinner mặc định gây vướng mắt của trình duyệt, hỗ trợ bàn phím số thông minh (`inputMode="numeric"`) trên điện thoại di động.
@@ -52,8 +55,9 @@
     - Loại bỏ nút *"Mặc định"* dư thừa khi ở trạng thái ban đầu, giữ thanh công cụ luôn sạch sẽ, thoáng mắt.
     - Nút **"Đặt lại bộ lọc"** (kèm biểu tượng `RotateCcw`) chỉ tự động xuất hiện khi người dùng đang kích hoạt bộ lọc hoặc sắp xếp khác mặc định, khôi phục mọi thông số về ban đầu chỉ với 1 cú click.
   - Tích hợp tính năng **Phân trang (Xem thêm)** tối ưu tốc độ tải và hiệu năng hiển thị.
-* **Xuất Báo Cáo CSV (Export Data)**:
-  - Xuất toàn bộ lịch sử giao dịch ra tệp CSV định dạng chuẩn UTF-8 (hỗ trợ BOM), mở trực tiếp trên Microsoft Excel hoặc Google Sheets không bị lỗi font tiếng Việt.
+* **Xuất Báo Cáo CSV & Lịch Sử Hệ Thống Chuẩn Xác (Export Data)**:
+  - Xuất toàn bộ lịch sử giao dịch và nhật ký hệ thống ra tệp CSV định dạng chuẩn UTF-8 (hỗ trợ BOM), mở trực tiếp trên Microsoft Excel hoặc Google Sheets không bị lỗi font tiếng Việt.
+  - Cột số tiền định dạng số nguyên chuẩn xác (không bị thừa số thập phân `.00`), thông tin chi tiết nhật ký rõ ràng, trực quan.
 
 ---
 
@@ -62,7 +66,7 @@
   - **Thanh chọn ngày thông minh**: Hỗ trợ chuyển tuần (*Tuần trước*, *Tuần này*, *Tuần sau*) kèm nút bấm nhanh "Nay" về ngày hiện tại.
   - **Chỉ báo trực quan (Visual Dots)**: Chấm xanh hiển thị trên thanh ngày giúp nhận biết ngay ngày nào đã có kế hoạch bữa ăn.
   - **Khóa bảo vệ dữ liệu quá khứ**: Các ngày đã qua được khóa an toàn (chế độ chỉ xem), ngăn chặn vô tình chỉnh sửa thực đơn cũ.
-  - **Tự do đặt tên bữa ăn**: Không giới hạn cố định, người dùng có thể thêm bất kỳ bữa ăn nào (Bữa Sáng, Bữa Trưa, Bữa Tối, Bữa Xế, Ăn Vặt...) kèm lượng calo, món chính, món phụ và danh sách nguyên liệu.
+  - **Tự do đặt tên bữa ăn & Tùy chọn Calo linh hoạt**: Không giới hạn cố định, người dùng có thể thêm bất kỳ bữa ăn nào (Bữa Sáng, Bữa Trưa, Bữa Tối, Bữa Xế, Ăn Vặt...) kèm lượng calo ước tính (tùy chọn - không bắt buộc), món chính, món phụ và danh sách nguyên liệu.
 * **Kéo Thả Sắp Xếp Thứ Tự Bữa Ăn Trong Ngày (Drag & Drop Reordering)**:
   - **Kéo thả trực tiếp trên thẻ (Direct Card Drag & Drop)**: Người dùng có thể nhấp chuột giữ và kéo thả trực tiếp thẻ bữa ăn để đổi thứ tự linh hoạt (ví dụ: đưa Bữa Trưa lên trước Bữa Tối dù được thêm vào sau).
   - **Hiệu ứng phản hồi mượt mà**: Thẻ đang kéo trở nên trong suốt nhẹ với viền đứt nét; vị trí thả hiển thị vòng viền xanh ngọc (`ring-2 ring-emerald-500`) phóng to nhẹ trực quan.

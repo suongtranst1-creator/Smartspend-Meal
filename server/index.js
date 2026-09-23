@@ -149,7 +149,7 @@ app.post('/api/transactions', async (req, res) => {
     const result = await pool.query(
       `INSERT INTO transactions (id, type, title, amount, category, transaction_date)
        VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id, type, title, amount::numeric, category, TO_CHAR(transaction_date, 'YYYY-MM-DD') as date;`,
+       RETURNING id, type, title, amount::numeric, category, TO_CHAR(transaction_date, 'YYYY-MM-DD') as date, created_at;`,
       [transId, type, title, amount, category, transDate]
     );
     
@@ -172,7 +172,7 @@ app.put('/api/transactions/:id', async (req, res) => {
       `UPDATE transactions
        SET type = $1, title = $2, amount = $3, category = $4, transaction_date = $5
        WHERE id = $6
-       RETURNING id, type, title, amount::numeric, category, TO_CHAR(transaction_date, 'YYYY-MM-DD') as date;`,
+       RETURNING id, type, title, amount::numeric, category, TO_CHAR(transaction_date, 'YYYY-MM-DD') as date, created_at;`,
       [type, title, amount, category, date, id]
     );
     if (result.rows.length === 0) {
