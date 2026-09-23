@@ -290,6 +290,22 @@ Mục đích: Theo dõi tiến độ, ghi chép lại các tính năng đã phá
     - Ghi nhận đầy đủ nhật ký phát triển ngày 23/09/2026 vào DAILY_NOTES.txt.
     - Đóng gói bản build sản phẩm (`dist/`) và đẩy toàn bộ mã nguồn lên nhánh `main` kho lưu trữ GitHub chính thức.
 
+[x] 10. Rà Soát Bảo Mật Toàn Diện, Vá Lỗ Hổng & Tinh Gọn Màn Hình Đăng Nhập:
+    - Rà soát toàn bộ dự án về code hardcode và nguy cơ vi phạm bảo mật:
+      + Vá lỗi xác thực Google: Xóa bỏ đoạn fallback `jwt.decode` (không kiểm tra chữ ký số) trong `server/auth.js`; bắt buộc kiểm tra chữ ký token chuẩn qua Google Auth Library.
+      + Chặn lỗ hổng Backdoor: Vô hiệu hóa endpoint `/api/auth/dev-login` trên môi trường Production (trả về 403 Forbidden).
+      + Xóa bỏ endpoint `/api/auth/save-client-id` ở backend nhằm ngăn chặn hoàn toàn nguy cơ ghi đè file cấu hình hệ thống từ bên ngoài.
+      + Loại bỏ hardcode email cá nhân trong migration CSDL (`server/db.js`), thay bằng biến môi trường `ADMIN_EMAIL` / `DEFAULT_USER_EMAIL` với truy vấn Parameterized.
+      + Đồng bộ hóa toàn diện file `schema.sql` đầy đủ 6 bảng, trường `user_email` và 10 món mẫu truyền thống Việt Nam.
+    - Tinh gọn Màn hình Đăng nhập (`AuthScreen.jsx`):
+      + Loại bỏ hoàn toàn form nhập Client ID, nút lưu và link hướng dẫn theo phản hồi người dùng.
+      + Khi chưa cấu hình Google Client ID, chỉ hiển thị thông báo thanh lịch và ngắn gọn thông báo hệ thống chưa được thiết lập Client ID.
+      + Khi đã có Google Client ID hợp lệ, hiển thị nút chính thức "Sign in with Google" chuẩn mực ở vị trí trung tâm.
+    - Khắc phục triệt để lỗi Google OAuth 401 (`invalid_client`) trên Vibe Host:
+      + Nhận diện nguyên nhân Vibe Host dùng chuỗi placeholder mẫu `your_client_id...`.
+      + Bổ sung bộ lọc nhận diện chuỗi placeholder cả ở frontend lẫn backend.
+      + Hướng dẫn cấu hình biến môi trường `GOOGLE_CLIENT_ID` chính thức trên Vibe Host thành công.
+
 * Kế hoạch tiếp theo (To-do):
     - [x] Đẩy toàn bộ mã nguồn lên GitHub, cập nhật tài liệu README.md và DAILY_NOTES.txt.
     - [ ] Kiểm thử toàn diện các luồng nghiệp vụ trên môi trường thật.

@@ -166,10 +166,12 @@ Hệ thống được thiết kế theo chuẩn cơ sở dữ liệu quan hệ P
 
 ## 🔒 6. Tiêu Chuẩn An Toàn & Bảo Mật Dữ Liệu
 
-- **Đăng nhập Google OAuth 2.0 an toàn**: Xác thực chữ ký token trực tiếp với Google APIs, không bao giờ lưu trữ mật khẩu của người dùng.
-- **Phân quyền truy cập đa tài khoản (Multi-Tenant Isolation)**: Mọi truy vấn SQL đều được gán chặt chẽ với định danh `user_email` trích xuất từ Token JWT đã ký.
-- **Chống SQL Injection**: 100% câu lệnh truy vấn đều sử dụng cú pháp Parameterized Query (`$1, $2, $3...`).
-- **Bảo mật biến môi trường**: Tệp cấu hình nhạy cảm (`.env`) chứa Secret Key và thông tin kết nối CSDL được loại trừ khỏi Git thông qua `.gitignore`.
+- **Đăng nhập Google OAuth 2.0 an toàn**: Xác thực chữ ký token trực tiếp với Google APIs thông qua thư viện chính thức `google-auth-library`, không bao giờ lưu trữ mật khẩu của người dùng và từ chối mọi token không có chữ ký số hợp lệ.
+- **Phân quyền truy cập đa tài khoản (Multi-Tenant Isolation)**: Mọi truy vấn SQL đều được gán chặt chẽ với định danh `user_email` trích xuất từ Token JWT đã ký. Người dùng A tuyệt đối không thể xem, sửa hoặc xóa dữ liệu của người dùng B.
+- **Chống SQL Injection**: 100% câu lệnh truy vấn đều sử dụng cú pháp Parameterized Query (`$1, $2, $3...`), không ghép chuỗi SQL trực tiếp.
+- **Bảo vệ môi trường Production**: Vô hiệu hóa toàn bộ endpoint thử nghiệm (`/api/auth/dev-login`) trên Production (`NODE_ENV === 'production'`) ngăn chặn mọi nguy cơ backdoor.
+- **Bảo mật biến môi trường**: Tệp cấu hình nhạy cảm (`.env`) chứa Secret Key và thông tin kết nối CSDL được loại trừ hoàn toàn khỏi Git thông qua `.gitignore`, chỉ cấu hình biến môi trường trực tiếp trên hosting (như Vibe Host).
+- **Giao diện xác thực tối giản**: Khi chưa cấu hình Google Client ID trên máy chủ, màn hình chỉ hiển thị thông báo trạng thái thanh lịch, không để lộ thông tin nhạy cảm hay form nhập cấu hình ra giao diện công cộng.
 
 ---
 
