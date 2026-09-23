@@ -32,8 +32,61 @@ import {
   Download,
   RotateCcw,
   Lightbulb,
-  FileSpreadsheet
+  FileSpreadsheet,
+  LogOut,
+  ShieldCheck,
+  User,
+  Search,
+  BookOpen
 } from 'lucide-react';
+import AuthScreen from './components/AuthScreen.jsx';
+import {
+  mergeIngredients,
+  textToIngredientsArray,
+  ingredientsArrayToText,
+  parseIngredientLine,
+} from './utils/ingredientHelper.js';
+
+// Fetch Interceptor: Tự động đính kèm Bearer token vào các request /api
+// và xử lý hủy phiên ngay lập tức khi nhận mã lỗi 401 hoặc 403
+if (typeof window !== 'undefined' && !window.__smartspend_fetch_intercepted) {
+  window.__smartspend_fetch_intercepted = true;
+  const originalFetch = window.fetch;
+  window.fetch = async (input, init = {}) => {
+    let url = typeof input === 'string' ? input : input?.url || '';
+    if (
+      url.startsWith('/api') &&
+      !url.startsWith('/api/auth/config') &&
+      !url.startsWith('/api/auth/google') &&
+      !url.startsWith('/api/auth/dev-login')
+    ) {
+      const token = localStorage.getItem('smartspend_token');
+      if (token) {
+        init = init || {};
+        init.headers = {
+          ...init.headers,
+          Authorization: `Bearer ${token}`,
+        };
+      }
+    }
+    const response = await originalFetch(input, init);
+    // Nếu token hết hạn hoặc tài khoản bị cấm (401/403) trên các route dữ liệu nội bộ
+    if (
+      (response.status === 401 || response.status === 403) &&
+      url.startsWith('/api') &&
+      !url.startsWith('/api/auth/google') &&
+      !url.startsWith('/api/auth/dev-login') &&
+      !url.startsWith('/api/auth/config')
+    ) {
+      window.dispatchEvent(
+        new CustomEvent('smartspend:auth_expired', {
+          detail: { status: response.status }
+        })
+      );
+    }
+    return response;
+  };
+}
 
 // Currency Formatter
 const formatVND = (amount) => {
@@ -539,6 +592,18 @@ function DateRangePicker({ startDate, endDate, onChange }) {
 export default function App() {
   const [activeTab, setActiveTab] = useState('spend'); // 'spend' | 'meal' | 'shop'
 
+  // State: Xác thực & Phiên làm việc (Google OAuth 2.0 & Access Control)
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('smartspend_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [authError, setAuthError] = useState('');
+
   // State: Thu Chi
   const [transactions, setTransactions] = useState(INITIAL_TRANSACTIONS);
   const [filterType, setFilterType] = useState('all'); // 'all' | 'income' | 'expense'
@@ -585,6 +650,13 @@ export default function App() {
     ingredientsStr: '',
   });
 
+  // Tập hợp tên các món đã chọn trong thực đơn hiện tại (cả món chính và món phụ) để chống chọn 2 lần
+  const currentSelectedDishNames = useMemo(() => {
+    const mains = mealForm.main.split('\n').map((s) => s.trim().toLowerCase()).filter(Boolean);
+    const sides = mealForm.side.split('\n').map((s) => s.trim().toLowerCase()).filter(Boolean);
+    return new Set([...mains, ...sides]);
+  }, [mealForm.main, mealForm.side]);
+
   // State: Kéo thả sắp xếp bữa ăn
   const [draggedMealIdx, setDraggedMealIdx] = useState(null);
   const [dragOverMealIdx, setDragOverMealIdx] = useState(null);
@@ -610,8 +682,95 @@ export default function App() {
   const [systemLogs, setSystemLogs] = useState([]);
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'system');
 
+  // State: Món Ăn Mẫu (Preset Dishes & Ingredients)
+  const [presetDishes, setPresetDishes] = useState([]);
+  const [isPresetModalOpen, setIsPresetModalOpen] = useState(false);
+  const [editingPresetDish, setEditingPresetDish] = useState(null);
+  const [presetForm, setPresetForm] = useState({
+    name: '',
+    category: 'Món chính',
+    calories: '',
+    ingredientsStr: '',
+  });
+  const [presetCategoryFilter, setPresetCategoryFilter] = useState('all');
+  const [presetSearch, setPresetSearch] = useState('');
+
   // Database Connection Status
   const [dbStatus, setDbStatus] = useState({ checked: false, connected: false, database: null, error: null });
+
+  // Xóa toàn bộ dữ liệu trong bộ nhớ state để đảm bảo tách biệt giữa các tài khoản
+  const clearUserData = () => {
+    setTransactions([]);
+    setMealData({});
+    setShoppingList([]);
+    setSystemLogs([]);
+    setPresetDishes([]);
+  };
+
+  // Hàm xử lý Đăng xuất
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {}
+    localStorage.removeItem('smartspend_token');
+    localStorage.removeItem('smartspend_user');
+    setCurrentUser(null);
+    setAuthError('');
+    clearUserData();
+  };
+
+  // Lắng nghe sự kiện phiên hết hạn hoặc bị hủy truy cập
+  useEffect(() => {
+    const handleAuthExpired = () => {
+      localStorage.removeItem('smartspend_token');
+      localStorage.removeItem('smartspend_user');
+      setCurrentUser(null);
+      clearUserData();
+      setAuthError(
+        'Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại.'
+      );
+    };
+
+    window.addEventListener('smartspend:auth_expired', handleAuthExpired);
+    return () => {
+      window.removeEventListener('smartspend:auth_expired', handleAuthExpired);
+    };
+  }, []);
+
+  // Xác minh phiên đăng nhập qua /api/auth/me khi mở ứng dụng
+  useEffect(() => {
+    const token = localStorage.getItem('smartspend_token');
+    if (!token) {
+      setCurrentUser(null);
+      setIsAuthChecking(false);
+      return;
+    }
+
+    fetch('/api/auth/me')
+      .then(async (res) => {
+        if (res.ok) {
+          const data = await res.json();
+          setCurrentUser(data.user);
+          localStorage.setItem('smartspend_user', JSON.stringify(data.user));
+        } else {
+          localStorage.removeItem('smartspend_token');
+          localStorage.removeItem('smartspend_user');
+          setCurrentUser(null);
+          clearUserData();
+          if (res.status === 403) {
+            setAuthError(
+              'Tài khoản của bạn không có quyền truy cập vào hệ thống.'
+            );
+          }
+        }
+      })
+      .catch(() => {
+        // Lỗi kết nối mạng, tạm giữ token
+      })
+      .finally(() => {
+        setIsAuthChecking(false);
+      });
+  }, []);
 
   // Handle Theme Change
   useEffect(() => {
@@ -639,7 +798,7 @@ export default function App() {
   }, [theme]);
 
   // Lock body scroll when any modal is open
-  const anyModalOpen = isModalOpen || isMealModalOpen || isShoppingModalOpen;
+  const anyModalOpen = isModalOpen || isMealModalOpen || isShoppingModalOpen || isPresetModalOpen;
   useEffect(() => {
     if (anyModalOpen) {
       document.body.style.overflow = 'hidden';
@@ -654,6 +813,9 @@ export default function App() {
   // Initial load from PostgreSQL Backend API
   useEffect(() => {
     async function loadData() {
+      // Chỉ tải dữ liệu người dùng khi đã đăng nhập hợp lệ
+      if (!currentUser) return;
+
       try {
         const healthRes = await fetch('/api/health');
         if (healthRes.ok) {
@@ -728,6 +890,17 @@ export default function App() {
             } catch (e) {
               console.error(e);
             }
+
+            // Load Preset Dishes
+            try {
+              const dishRes = await fetch('/api/preset-dishes');
+              if (dishRes.ok) {
+                const dishData = await dishRes.json();
+                if (Array.isArray(dishData)) setPresetDishes(dishData);
+              }
+            } catch (e) {
+              console.error(e);
+            }
           }
         }
       } catch (err) {
@@ -735,7 +908,7 @@ export default function App() {
       }
     }
     loadData();
-  }, []);
+  }, [currentUser]);
 
   // Toast notification
   const [toastMessage, setToastMessage] = useState(null);
@@ -804,7 +977,6 @@ export default function App() {
     setDateRange({ start: '', end: '' });
     setSortBy('date-desc');
     setDisplayLimit(10);
-    showToast('Đã đặt lại bộ lọc và sắp xếp lịch sử về mặc định');
   };
 
   // Open modal to add new transaction
@@ -946,33 +1118,125 @@ export default function App() {
     setIsMealModalOpen(true);
   };
 
+  // Chọn món chính từ Món ăn mẫu (Tự động nạp & cộng dồn nguyên liệu)
+  const handleSelectPresetForMain = (preset) => {
+    if (!preset) return;
+    const existingMains = mealForm.main.split('\n').map((s) => s.trim().toLowerCase()).filter(Boolean);
+    const existingSides = mealForm.side.split('\n').map((s) => s.trim().toLowerCase()).filter(Boolean);
+    const targetName = preset.name.trim().toLowerCase();
+
+    if (existingMains.includes(targetName) || existingSides.includes(targetName)) {
+      alert(`Món "${preset.name}" đã có trong thực đơn (món chính hoặc món phụ)! Không thể chọn 2 lần.`);
+      return;
+    }
+
+    const currentIngrs = textToIngredientsArray(mealForm.ingredientsStr);
+    const presetIngrs = Array.isArray(preset.ingredients) ? preset.ingredients : [];
+    const merged = mergeIngredients(currentIngrs, presetIngrs);
+
+    setMealForm((prev) => {
+      const updatedMain = prev.main.trim() ? `${prev.main.trim()}\n${preset.name}` : preset.name;
+      return {
+        ...prev,
+        main: updatedMain,
+        calories: prev.calories || preset.calories || '',
+        ingredientsStr: ingredientsArrayToText(merged),
+      };
+    });
+
+    showToast(`Đã thêm món "${preset.name}" và tự động gộp định lượng nguyên liệu!`);
+  };
+
+  // Chọn món phụ từ Món ăn mẫu (Tự động nạp & cộng dồn nguyên liệu)
+  const handleSelectPresetForSide = (preset) => {
+    if (!preset) return;
+    const existingMains = mealForm.main.split('\n').map((s) => s.trim().toLowerCase()).filter(Boolean);
+    const existingSides = mealForm.side.split('\n').map((s) => s.trim().toLowerCase()).filter(Boolean);
+    const targetName = preset.name.trim().toLowerCase();
+
+    if (existingMains.includes(targetName) || existingSides.includes(targetName)) {
+      alert(`Món "${preset.name}" đã có trong thực đơn (món chính hoặc món phụ)! Không thể chọn 2 lần.`);
+      return;
+    }
+
+    const currentIngrs = textToIngredientsArray(mealForm.ingredientsStr);
+    const presetIngrs = Array.isArray(preset.ingredients) ? preset.ingredients : [];
+    const merged = mergeIngredients(currentIngrs, presetIngrs);
+
+    setMealForm((prev) => {
+      const updatedSide = prev.side.trim() ? `${prev.side.trim()}\n${preset.name}` : preset.name;
+      return {
+        ...prev,
+        side: updatedSide,
+        ingredientsStr: ingredientsArrayToText(merged),
+      };
+    });
+
+    showToast(`Đã thêm món phụ "${preset.name}" và tự động gộp định lượng nguyên liệu!`);
+  };
+
+  // Tự động quét và cộng dồn định lượng nguyên liệu trùng lặp trong form
+  const handleSmartDeduplicateIngredients = () => {
+    if (!mealForm.ingredientsStr.trim()) {
+      showToast('Chưa có nguyên liệu nào để gộp');
+      return;
+    }
+    const current = textToIngredientsArray(mealForm.ingredientsStr);
+    const formatted = ingredientsArrayToText(current);
+    setMealForm((prev) => ({ ...prev, ingredientsStr: formatted }));
+    showToast('✨ Đã quét và tự động cộng dồn tất cả nguyên liệu trùng lặp!');
+  };
+
   const handleSaveMeal = async (e) => {
     e.preventDefault();
     if (!editingMealTarget || !mealForm.main.trim() || !mealForm.mealName.trim()) return;
 
+    // Kiểm tra không được chọn món 2 lần (kể cả món chính và món phụ)
+    const mains = mealForm.main.split('\n').map((s) => s.trim()).filter(Boolean);
+    const sides = mealForm.side.split('\n').map((s) => s.trim()).filter(Boolean);
+    const allDishes = [...mains, ...sides];
+    const seenDishes = new Set();
+    let duplicateDishName = null;
+    for (const d of allDishes) {
+      const key = d.toLowerCase();
+      if (seenDishes.has(key)) {
+        duplicateDishName = d;
+        break;
+      }
+      seenDishes.add(key);
+    }
+    if (duplicateDishName) {
+      alert(`Không được chọn món trùng lặp: Món "${duplicateDishName}" đã có trong thực đơn (món chính hoặc món phụ)!`);
+      return;
+    }
+
     const { plan_date, original_meal_name } = editingMealTarget;
 
     // Parse ingredients and preserve isBought state if it exists
-    const ingredientsArray = mealForm.ingredientsStr
-      .split('\n')
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .map((name) => {
-        let isBought = false;
-        if (original_meal_name) {
-          const oldMeal = mealData[plan_date]?.find((m) => m.meal_name === original_meal_name);
-          const oldIngr = oldMeal?.ingredients?.find((i) => i.name === name);
-          if (oldIngr) isBought = oldIngr.isBought;
-        }
-        return { name, isBought };
-      });
+    const parsedIngredients = textToIngredientsArray(mealForm.ingredientsStr).map((ing) => {
+      let isBought = false;
+      const formattedName = ing.quantity ? `${ing.name} (${ing.quantity})` : ing.name;
+      if (original_meal_name) {
+        const oldMeal = mealData[plan_date]?.find((m) => m.meal_name === original_meal_name);
+        const oldIngr = oldMeal?.ingredients?.find((i) => {
+          const normOld = (i.name || '').toLowerCase().trim();
+          const normIng = (ing.name || '').toLowerCase().trim();
+          return normOld.includes(normIng) || normIng.includes(normOld);
+        });
+        if (oldIngr) isBought = oldIngr.isBought;
+      }
+      return {
+        name: formattedName,
+        isBought,
+      };
+    });
 
     const mealPayload = {
       meal_name: mealForm.mealName.trim(),
       main: mealForm.main.trim(),
       side: mealForm.side.trim(),
       calories: mealForm.calories.trim(),
-      ingredients: ingredientsArray,
+      ingredients: parsedIngredients,
     };
 
     let dayMeals = mealData[plan_date] ? [...mealData[plan_date]] : [];
@@ -1008,6 +1272,102 @@ export default function App() {
       }
     } catch (err) {
       console.warn('API sync:', err);
+    }
+  };
+
+  // ==========================================
+  // Preset Dishes Handlers (Món Ăn Mẫu)
+  // ==========================================
+  const handleOpenNewPresetDish = () => {
+    setEditingPresetDish(null);
+    setPresetForm({
+      name: '',
+      category: 'Món chính',
+      calories: '',
+      ingredientsStr: '',
+    });
+    setIsPresetModalOpen(true);
+  };
+
+  const handleOpenEditPresetDish = (dish) => {
+    setEditingPresetDish(dish);
+    const ingrText = Array.isArray(dish.ingredients)
+      ? ingredientsArrayToText(dish.ingredients)
+      : '';
+    setPresetForm({
+      name: dish.name || '',
+      category: dish.category || 'Món chính',
+      calories: dish.calories || '',
+      ingredientsStr: ingrText,
+    });
+    setIsPresetModalOpen(true);
+  };
+
+  const handleSavePresetDish = async (e) => {
+    e.preventDefault();
+    if (!presetForm.name.trim()) return;
+
+    const parsedIngredients = textToIngredientsArray(presetForm.ingredientsStr);
+
+    const payload = {
+      name: presetForm.name.trim(),
+      category: presetForm.category || 'Món chính',
+      calories: presetForm.calories.trim(),
+      ingredients: parsedIngredients,
+    };
+
+    if (editingPresetDish) {
+      try {
+        const res = await fetch(`/api/preset-dishes/${editingPresetDish.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+          const updated = await res.json();
+          setPresetDishes((prev) =>
+            prev.map((d) => (d.id === editingPresetDish.id ? updated : d))
+          );
+          showToast(`Đã cập nhật món mẫu "${payload.name}"!`);
+        }
+      } catch (err) {
+        console.warn('Save preset dish error:', err);
+      }
+    } else {
+      try {
+        const res = await fetch('/api/preset-dishes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+          const created = await res.json();
+          setPresetDishes((prev) => [created, ...prev]);
+          showToast(`Đã thêm món mẫu "${payload.name}"!`);
+        }
+      } catch (err) {
+        console.warn('Create preset dish error:', err);
+      }
+    }
+
+    setIsPresetModalOpen(false);
+    setEditingPresetDish(null);
+  };
+
+  const handleDeletePresetDish = async (id, name) => {
+    if (!window.confirm(`Bạn có chắc muốn xóa món mẫu "${name}"?`)) return;
+
+    try {
+      const res = await fetch(`/api/preset-dishes/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setPresetDishes((prev) => prev.filter((d) => d.id !== id));
+        showToast(`Đã xóa món mẫu "${name}"!`);
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Không thể xóa món mặc định của hệ thống');
+      }
+    } catch (err) {
+      console.warn('Delete preset dish error:', err);
     }
   };
 
@@ -1568,13 +1928,47 @@ export default function App() {
     return activeShoppingList.filter((i) => i.checked).length;
   }, [activeShoppingList]);
 
+  // Màn hình tải trạng thái phiên đăng nhập ban đầu
+  if (isAuthChecking) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 p-0.5 shadow-lg shadow-emerald-500/20">
+            <img
+              src="/Logo.png"
+              alt="SmartSpend Logo"
+              className="w-full h-full object-cover rounded-[14px]"
+            />
+          </div>
+          <div className="flex items-center gap-2 text-xs text-gray-500 font-medium mt-2">
+            <span className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+            <span>Đang xác minh phiên đăng nhập...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Nếu chưa đăng nhập hoặc bị từ chối truy cập -> Hiển thị Màn hình xác thực Google SSO
+  if (!currentUser) {
+    return (
+      <AuthScreen
+        onLoginSuccess={(user) => {
+          setCurrentUser(user);
+          setAuthError('');
+        }}
+        initialError={authError}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 pb-20 md:pb-10 transition-colors duration-200">
-      {/* Toast Notification */}
+      {/* Toast Notification (Repositioned to bottom-right on desktop to avoid covering top tabs) */}
       {toastMessage && (
-        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-emerald-700 dark:bg-emerald-600 text-white px-5 py-3 rounded-full shadow-lg flex items-center gap-2 text-sm font-medium animate-bounce">
-          <Sparkles className="w-4 h-4 text-emerald-200" />
-          <span>{toastMessage}</span>
+        <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 md:translate-x-0 md:left-auto md:right-6 z-50 bg-gray-900/95 dark:bg-emerald-600 text-white px-4 py-2.5 rounded-2xl shadow-xl shadow-black/20 flex items-center gap-2.5 text-xs sm:text-sm font-medium backdrop-blur-md border border-white/10 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <Sparkles className="w-4 h-4 text-emerald-400 dark:text-emerald-200 shrink-0" />
+          <span className="whitespace-nowrap">{toastMessage}</span>
         </div>
       )}
 
@@ -1704,6 +2098,46 @@ export default function App() {
                 )}
               </button>
             </nav>
+
+            {/* User Profile & Logout Action */}
+            {currentUser && (
+              <div className="flex items-center gap-2 pl-2 sm:pl-3 border-l border-gray-200/80 dark:border-gray-700/80 shrink-0">
+                <div
+                  className="flex items-center gap-2 cursor-pointer group"
+                  onClick={() => setActiveTab('settings')}
+                  title={`Đang đăng nhập: ${currentUser.email}`}
+                >
+                  {currentUser.picture ? (
+                    <img
+                      src={currentUser.picture}
+                      alt={currentUser.name}
+                      className="w-8 h-8 rounded-xl border border-emerald-500/40 object-cover shadow-2xs group-hover:ring-2 group-hover:ring-emerald-500/30 transition-all"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center font-bold text-xs shadow-2xs group-hover:ring-2 group-hover:ring-emerald-500/30 transition-all">
+                      {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                  )}
+                  <div className="hidden xl:flex flex-col text-left leading-tight max-w-[120px]">
+                    <span className="text-xs font-bold text-gray-800 dark:text-gray-200 truncate">
+                      {currentUser.name || 'Người dùng'}
+                    </span>
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
+                      {currentUser.email}
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="p-2 rounded-xl text-gray-500 hover:text-rose-600 dark:text-gray-400 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-gray-200/70 dark:border-gray-700/70 bg-gray-50/50 dark:bg-gray-800/50 transition-all cursor-pointer shadow-2xs"
+                  title="Đăng xuất khỏi hệ thống"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -2603,6 +3037,256 @@ export default function App() {
         {/* ========================================================================= */}
         {activeTab === 'settings' && (
           <div className="space-y-6 animate-in fade-in duration-300">
+            {/* Thẻ Tài khoản & Bảo mật (Google OAuth 2.0 & Access Control) */}
+            <div className="bg-white dark:bg-gray-800 rounded-3xl p-5 sm:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.25)] border border-gray-100 dark:border-gray-700/80">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5 min-w-0">
+                  {currentUser?.picture ? (
+                    <img
+                      src={currentUser.picture}
+                      alt={currentUser.name}
+                      className="w-12 h-12 rounded-2xl border-2 border-emerald-500/40 object-cover shadow-sm shrink-0"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
+                      {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">
+                        {currentUser?.name || 'Tài khoản Google'}
+                      </h2>
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 px-2.5 py-0.5 rounded-full shrink-0">
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        <span>Đã đăng nhập</span>
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+                      {currentUser?.email}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                    title="Đăng xuất khỏi ứng dụng"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Đăng xuất</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* ================================================================= */}
+            {/* KHỐI QUẢN LÝ MÓN ĂN MẪU & CÔNG THỨC NGUYÊN LIỆU (PRESET RECIPES) */}
+            {/* ================================================================= */}
+            <div className="bg-white dark:bg-gray-800 rounded-3xl p-5 sm:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.25)] border border-gray-100 dark:border-gray-700/80 space-y-5">
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100 dark:border-gray-700/80">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400">
+                    <BookOpen className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-900 dark:text-white text-base sm:text-lg flex items-center gap-2">
+                      Món Ăn Mẫu & Công Thức Nguyên Liệu
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300">
+                        {presetDishes.length} món
+                      </span>
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      Thiết lập món kèm định lượng chuẩn. Khi lên thực đơn sẽ tự động điền và cộng dồn nguyên liệu.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleOpenNewPresetDish}
+                  className="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl font-bold text-xs sm:text-sm shadow-md shadow-emerald-600/25 active:scale-98 transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0 self-start sm:self-auto"
+                >
+                  <Plus className="w-4 h-4 stroke-[2.5]" />
+                  <span>Thêm Món Mẫu</span>
+                </button>
+              </div>
+
+              {/* Filters & Search Toolbar */}
+              <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+                {/* Category Pills */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full custom-scrollbar">
+                  {[
+                    { id: 'all', label: 'Tất cả' },
+                    { id: 'Món chính', label: 'Món chính' },
+                    { id: 'Món canh', label: 'Món canh' },
+                    { id: 'Món xào', label: 'Món xào' },
+                    { id: 'Món phụ', label: 'Món phụ' },
+                    { id: 'Ăn sáng', label: 'Ăn sáng' },
+                  ].map((cat) => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setPresetCategoryFilter(cat.id)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                        presetCategoryFilter === cat.id
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'bg-gray-100 dark:bg-gray-700/60 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Search Bar */}
+                <div className="relative min-w-[220px]">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Tìm tên món hoặc nguyên liệu..."
+                    value={presetSearch}
+                    onChange={(e) => setPresetSearch(e.target.value)}
+                    className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-xs text-gray-800 dark:text-gray-200 placeholder:text-gray-400 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                  />
+                  {presetSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setPresetSearch('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Cards Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                {presetDishes
+                  .filter((dish) => {
+                    const matchCat =
+                      presetCategoryFilter === 'all' || dish.category === presetCategoryFilter;
+                    const q = presetSearch.toLowerCase().trim();
+                    const matchQ =
+                      !q ||
+                      dish.name.toLowerCase().includes(q) ||
+                      (Array.isArray(dish.ingredients) &&
+                        dish.ingredients.some(
+                          (i) =>
+                            i.name?.toLowerCase().includes(q) ||
+                            i.quantity?.toLowerCase().includes(q)
+                        ));
+                    return matchCat && matchQ;
+                  })
+                  .map((dish) => (
+                    <div
+                      key={dish.id}
+                      className="p-4 rounded-2xl bg-gray-50/70 dark:bg-gray-700/40 border border-gray-100 dark:border-gray-700 hover:border-emerald-300 dark:hover:border-emerald-600/50 transition-all flex flex-col justify-between group shadow-2xs"
+                    >
+                      <div>
+                        {/* Top: Name & Badges */}
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <div className="min-w-0">
+                            <h4 className="font-bold text-sm text-gray-900 dark:text-white truncate">
+                              {dish.name}
+                            </h4>
+                            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300">
+                                {dish.category || 'Món chính'}
+                              </span>
+                              {dish.calories && (
+                                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-orange-100 dark:bg-orange-950/70 text-orange-800 dark:text-orange-300">
+                                  {dish.calories}
+                                </span>
+                              )}
+                              {dish.user_email ? (
+                                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300">
+                                  Tùy chỉnh
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300">
+                                  Mẫu có sẵn
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Quick Actions */}
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditPresetDish(dish)}
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-white dark:hover:bg-gray-600 transition-colors cursor-pointer"
+                              title="Chỉnh sửa công thức món mẫu"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            {dish.user_email && (
+                              <button
+                                type="button"
+                                onClick={() => handleDeletePresetDish(dish.id, dish.name)}
+                                className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-white dark:hover:bg-gray-600 transition-colors cursor-pointer"
+                                title="Xóa món tùy chỉnh này"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Ingredients Tag Chips */}
+                        <div className="mt-2.5 pt-2 border-t border-gray-200/50 dark:border-gray-600/50">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-400 block mb-1">
+                            Nguyên liệu định lượng:
+                          </span>
+                          <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto custom-scrollbar pr-0.5">
+                            {Array.isArray(dish.ingredients) && dish.ingredients.length > 0 ? (
+                              dish.ingredients.map((ing, idx) => (
+                                <span
+                                  key={idx}
+                                  className="text-[11px] px-2 py-0.5 rounded-lg bg-white dark:bg-gray-800 border border-gray-200/70 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium"
+                                >
+                                  {ing.name}
+                                  {ing.quantity ? (
+                                    <span className="text-emerald-700 dark:text-emerald-400 font-semibold ml-1">
+                                      ({ing.quantity})
+                                    </span>
+                                  ) : null}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-xs text-gray-400 italic">Chưa có nguyên liệu</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+
+              {/* Empty state when filtering */}
+              {presetDishes.filter((dish) => {
+                const matchCat =
+                  presetCategoryFilter === 'all' || dish.category === presetCategoryFilter;
+                const q = presetSearch.toLowerCase().trim();
+                return (
+                  matchCat &&
+                  (!q ||
+                    dish.name.toLowerCase().includes(q) ||
+                    (Array.isArray(dish.ingredients) &&
+                      dish.ingredients.some((i) => i.name?.toLowerCase().includes(q))))
+                );
+              }).length === 0 && (
+                <div className="py-8 text-center text-gray-400 dark:text-gray-500 text-xs">
+                  Không tìm thấy món ăn mẫu nào phù hợp với bộ lọc hiện tại.
+                </div>
+              )}
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Cột trái: Khối Dữ liệu & Hệ thống gộp 2 chức năng gọn gàng */}
               <div className="bg-white dark:bg-gray-800 rounded-3xl p-5 sm:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.25)] border border-gray-100 dark:border-gray-700/80 flex flex-col justify-between">
@@ -2981,12 +3665,49 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Main Dish Textarea (Có chỗ xuống dòng thêm nhiều món) */}
+              {/* Main Dish with Preset Selector */}
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1 flex items-center justify-between">
-                  <span>Món chính</span>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    Món chính
+                  </label>
                   <span className="text-[11px] font-normal text-emerald-600 dark:text-emerald-400 lowercase">(mỗi dòng 1 món)</span>
-                </label>
+                </div>
+
+                {/* Quick Select from Preset Dishes (Chỉ hiển thị Món chính) */}
+                {presetDishes && presetDishes.some((p) => (p.category || '').toLowerCase() === 'món chính') && (
+                  <div className="mb-2">
+                    <select
+                      onChange={(e) => {
+                        const found = presetDishes.find((p) => p.id === e.target.value);
+                        if (found) {
+                          handleSelectPresetForMain(found);
+                          e.target.value = '';
+                        }
+                      }}
+                      defaultValue=""
+                      className="w-full text-xs py-1.5 px-2.5 rounded-lg bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-medium focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+                    >
+                      <option value="" disabled>✨ Chọn nhanh Món Chính Mẫu (tự điền nguyên liệu)...</option>
+                      {presetDishes
+                        .filter((p) => (p.category || '').toLowerCase() === 'món chính')
+                        .map((p) => {
+                          const isChosen = currentSelectedDishNames.has(p.name.trim().toLowerCase());
+                          return (
+                            <option
+                              key={p.id}
+                              value={p.id}
+                              disabled={isChosen}
+                              className={isChosen ? 'text-gray-400 bg-gray-100 dark:bg-gray-800' : ''}
+                            >
+                              {p.name} {isChosen ? '— (Đã chọn trong thực đơn)' : (p.calories ? `• ${p.calories}` : '')}
+                            </option>
+                          );
+                        })}
+                    </select>
+                  </div>
+                )}
+
                 <textarea
                   rows={2}
                   required
@@ -2997,12 +3718,49 @@ export default function App() {
                 />
               </div>
 
-              {/* Side Dish Textarea (Có chỗ xuống dòng thêm nhiều món) */}
+              {/* Side Dish with Preset Selector */}
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1 flex items-center justify-between">
-                  <span>Món phụ / Canh ăn kèm</span>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    Món phụ / Canh ăn kèm
+                  </label>
                   <span className="text-[11px] font-normal text-emerald-600 dark:text-emerald-400 lowercase">(mỗi dòng 1 món)</span>
-                </label>
+                </div>
+
+                {/* Quick Select from Preset Dishes (Lọc bỏ Món chính, chỉ hiển thị Món canh, Món xào, Món phụ...) */}
+                {presetDishes && presetDishes.some((p) => (p.category || '').toLowerCase() !== 'món chính') && (
+                  <div className="mb-2">
+                    <select
+                      onChange={(e) => {
+                        const found = presetDishes.find((p) => p.id === e.target.value);
+                        if (found) {
+                          handleSelectPresetForSide(found);
+                          e.target.value = '';
+                        }
+                      }}
+                      defaultValue=""
+                      className="w-full text-xs py-1.5 px-2.5 rounded-lg bg-teal-50/80 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 text-teal-800 dark:text-teal-300 font-medium focus:outline-none focus:ring-1 focus:ring-teal-500 cursor-pointer"
+                    >
+                      <option value="" disabled>✨ Chọn nhanh Món Phụ / Canh Mẫu (tự điền & cộng dồn)...</option>
+                      {presetDishes
+                        .filter((p) => (p.category || '').toLowerCase() !== 'món chính')
+                        .map((p) => {
+                          const isChosen = currentSelectedDishNames.has(p.name.trim().toLowerCase());
+                          return (
+                            <option
+                              key={p.id}
+                              value={p.id}
+                              disabled={isChosen}
+                              className={isChosen ? 'text-gray-400 bg-gray-100 dark:bg-gray-800' : ''}
+                            >
+                              {p.name} {isChosen ? '— (Đã chọn trong thực đơn)' : `(${p.category || 'Món phụ'})`}
+                            </option>
+                          );
+                        })}
+                    </select>
+                  </div>
+                )}
+
                 <textarea
                   rows={2}
                   placeholder="VD: Canh rau ngót thịt băm&#10;Dưa leo, cà chua..."
@@ -3012,12 +3770,22 @@ export default function App() {
                 />
               </div>
 
-              {/* Ingredients Textarea */}
+              {/* Ingredients Textarea with Smart Merge Button */}
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1 flex items-center justify-between">
-                  <span>Nguyên liệu chuẩn bị</span>
-                  <span className="text-[11px] font-normal text-gray-400 dark:text-gray-500 lowercase">(mỗi dòng 1 nguyên liệu)</span>
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    Nguyên liệu chuẩn bị
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleSmartDeduplicateIngredients}
+                    className="text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 flex items-center gap-1 cursor-pointer bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800/60 transition-colors"
+                    title="Tự động tìm các nguyên liệu trùng tên và cộng dồn định lượng (ví dụ: Trứng 4 quả + 2 quả = 6 quả; 400g + 0.5kg = 900g)"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    <span>Gộp định lượng trùng</span>
+                  </button>
+                </div>
                 <textarea
                   rows={3}
                   placeholder="Thịt heo 300g&#10;Hành hoa&#10;Gia vị nấu..."
@@ -3025,6 +3793,9 @@ export default function App() {
                   onChange={(e) => setMealForm({ ...mealForm, ingredientsStr: e.target.value })}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 custom-scrollbar"
                 />
+                <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1 flex items-center gap-1">
+                  <span>💡 Khi chọn món mẫu, nguyên liệu trùng nhau sẽ được tự động cộng dồn số lượng.</span>
+                </p>
               </div>
 
               {/* Action Buttons */}
@@ -3121,6 +3892,133 @@ export default function App() {
                   className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm active:scale-98 transition-all cursor-pointer"
                 >
                   Cập nhật món
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 4: THÊM / CHỈNH SỬA MÓN ĂN MẪU (PRESET DISH MODAL)                  */}
+      {/* ========================================================================= */}
+      {isPresetModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fade-in"
+          style={{ overscrollBehavior: 'contain' }}
+          onWheel={(e) => e.stopPropagation()}
+        >
+          <div className="bg-white dark:bg-gray-800 w-full max-w-lg rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="p-5 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between shrink-0">
+              <h3 className="font-bold text-gray-900 dark:text-white text-base flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                {editingPresetDish ? 'Chỉnh Sửa Món Ăn Mẫu' : 'Thêm Món Ăn Mẫu Mới'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsPresetModalOpen(false);
+                  setEditingPresetDish(null);
+                }}
+                className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSavePresetDish} className="p-5 space-y-4 overflow-y-auto custom-scrollbar flex-1">
+              {/* Tên món ăn */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
+                  Tên món ăn <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="VD: Thịt kho tàu, Canh chua cá lóc..."
+                  value={presetForm.name}
+                  onChange={(e) => setPresetForm({ ...presetForm, name: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 font-medium"
+                />
+              </div>
+
+              {/* Danh mục & Calo */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
+                    Danh mục món
+                  </label>
+                  <select
+                    value={presetForm.category}
+                    onChange={(e) => setPresetForm({ ...presetForm, category: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 cursor-pointer"
+                  >
+                    <option value="Món chính">Món chính</option>
+                    <option value="Món canh">Món canh</option>
+                    <option value="Món xào">Món xào</option>
+                    <option value="Món phụ">Món phụ</option>
+                    <option value="Ăn sáng">Ăn sáng</option>
+                    <option value="Khác">Khác</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
+                    Calo ước tính
+                    <span className="text-[10px] font-normal text-gray-400 dark:text-gray-500 normal-case">(tùy chọn)</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="VD: 450 kcal"
+                    value={presetForm.calories}
+                    onChange={(e) => setPresetForm({ ...presetForm, calories: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              {/* Danh sách nguyên liệu & định lượng */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1 flex items-center justify-between">
+                  <span>Nguyên liệu & Định lượng chuẩn</span>
+                  <span className="text-[11px] font-normal text-emerald-600 dark:text-emerald-400 lowercase">(mỗi dòng 1 nguyên liệu)</span>
+                </label>
+                <textarea
+                  rows={5}
+                  required
+                  placeholder={'Thịt ba chỉ 400g\nTrứng vịt 4 quả\nNước dừa tươi 300ml\nHành tím 3 củ\nNước mắm 2 muỗng'}
+                  value={presetForm.ingredientsStr}
+                  onChange={(e) => setPresetForm({ ...presetForm, ingredientsStr: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 custom-scrollbar font-mono text-xs leading-relaxed"
+                />
+                <div className="mt-1.5 p-2.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-800/40 text-[11px] text-emerald-800 dark:text-emerald-300 space-y-1">
+                  <div className="font-semibold flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" />
+                    <span>Hệ thống tự động cộng dồn thông minh:</span>
+                  </div>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Khi lên thực đơn, nếu nhiều món cùng dùng một nguyên liệu (ví dụ: cùng dùng trứng, thịt heo, hành lá...), hệ thống sẽ gộp tên và cộng dồn định lượng (vd: 4 quả + 2 quả = 6 quả; 400g + 0.5kg = 900g).
+                  </p>
+                </div>
+              </div>
+
+              {/* Form Buttons */}
+              <div className="pt-2 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsPresetModalOpen(false);
+                    setEditingPresetDish(null);
+                  }}
+                  className="px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm active:scale-98 transition-all cursor-pointer"
+                >
+                  {editingPresetDish ? 'Cập nhật món mẫu' : 'Lưu món mẫu'}
                 </button>
               </div>
             </form>

@@ -255,7 +255,43 @@ Mục đích: Theo dõi tiến độ, ghi chép lại các tính năng đã phá
 [x] 4. Tinh chỉnh biểu mẫu Thực đơn (Meal Planner):
     - Đổi trường "Calo ước tính" thành không bắt buộc (optional), hiển thị nhãn "(tùy chọn)" rõ ràng, giúp người dùng linh hoạt nhập liệu nhanh mà không cần tra cứu calo nếu không có nhu cầu.
 
+[x] 5. Tích hợp Đăng nhập Google OAuth 2.0 (Single Sign-On):
+    - Đã cấu hình mã Google OAuth 2.0 Client ID chính thức từ Google Cloud Console vào biến môi trường hệ thống.
+    - Tích hợp chuẩn Google Identity Services (GSI) với nút "Sign in with Google" chính thức từ máy chủ Google, tự động mở cửa sổ Pop-up chọn tài khoản / đăng nhập trên `accounts.google.com`.
+    - Hỗ trợ Google One-Tap tự động trượt ra ở góc trên bên phải màn hình để đăng nhập một chạm tức thì.
+    - Cấp phát phiên làm việc an toàn với JSON Web Token (JWT) thời hạn 30 ngày, bảo vệ các endpoint dữ liệu qua middleware `requireAuth`.
+    - Tích hợp thông tin tài khoản (Avatar, Họ tên, Email) và nút Đăng xuất trên thanh điều hướng Header và trong Tab Cài Đặt.
+
+[x] 6. Thiết kế Kiến trúc Phân vùng Dữ liệu Độc lập cho từng Client (Per-Client Multi-Tenant Data Isolation):
+    - Bổ sung trường `user_email VARCHAR(255)` và đánh index hiệu năng cao vào các bảng cốt lõi: `transactions`, `meal_plans`, `grocery_items`, `categories`, `system_logs`.
+    - Điều chỉnh ràng buộc toàn vẹn thực đơn tuần từ `(plan_date, meal_name)` thành `(user_email, plan_date, meal_name)` nhằm cho phép nhiều tài khoản cùng lên kế hoạch thực đơn cho cùng một ngày mà không bị xung đột.
+    - Cập nhật toàn bộ các API Backend (CRUD Thu chi, Thực đơn, Đi chợ, Danh mục, Nhật ký hệ thống) bắt buộc lọc và ghi dữ liệu độc lập theo `req.user.email` từ token JWT.
+    - Bảo toàn toàn bộ 25+ bản ghi dữ liệu hiện có gán về tài khoản chính `suongtranst1@gmail.com`.
+    - Tự động xóa sạch bộ nhớ tạm phía Frontend (`clearUserData()`) khi Đăng xuất / Hết hạn phiên để chống hiện tượng hiển thị chồng chéo dữ liệu giữa các tài khoản đăng nhập trên cùng một máy tính.
+    - Chạy bộ kiểm thử tự động (Automated Isolation Tests) xác nhận 100% không rò rỉ dữ liệu giữa các tài khoản Client khác nhau.
+
+[x] 7. Quản lý Món Ăn Mẫu (Preset Recipes) & Tự Động Điền / Cộng Dồn Định Lượng Nguyên Liệu Thông Minh:
+    - Bổ sung bảng `preset_dishes` trong PostgreSQL hỗ trợ lưu trữ danh mục món, lượng calo ước tính và mảng nguyên liệu định lượng (JSONB). Hệ thống khởi tạo sẵn 10 món ăn gia đình quen thuộc của người Việt (Thịt kho tàu, Canh chua cá lóc, Trứng chiên hành, Rau muống xào tỏi, Sườn xào chua ngọt...).
+    - Hỗ trợ phân quyền linh hoạt: Món mẫu hệ thống (`user_email IS NULL`) hiển thị cho toàn bộ người dùng; Món tùy chỉnh do từng người dùng tự tạo sẽ được lưu biệt lập theo tài khoản của họ.
+    - Xây dựng giao diện Quản lý Món Mẫu trực quan tại Tab "Cài Đặt": Xem danh sách card món ăn, lọc theo phân loại (Món chính, Món canh, Món xào, Món phụ, Ăn sáng), tìm kiếm tức thì theo tên món/nguyên liệu, thêm mới / chỉnh sửa / xóa món tùy chỉnh.
+    - Tích hợp Dropdown gợi ý chọn nhanh món mẫu ngay tại biểu mẫu Lên Thực Đơn (Món chính & Món phụ / Canh ăn kèm). Khi người dùng chọn món, hệ thống tự động bóc tách và điền danh sách nguyên liệu.
+    - Thuật toán Smart Ingredient Merger (`src/utils/ingredientHelper.js`): Tự động nhận diện các nguyên liệu trùng tên khi chọn nhiều món hoặc thêm món phụ (ví dụ: cùng dùng Trứng, Hành lá, Thịt heo...) để gộp thành 1 dòng và cộng dồn định lượng (ví dụ: Trứng 4 quả + Trứng 3 quả -> Trứng (7 quả); 400g + 0.5kg -> 900g). Bổ sung nút "Gộp định lượng trùng" để người dùng kích hoạt thủ công bất cứ lúc nào.
+
+[x] 8. Tinh chỉnh Trải nghiệm Người Dùng (UX) & Ràng Buộc Trùng Lặp Món Ăn:
+    - Ràng buộc không được chọn món 2 lần: Tự động khóa và hiển thị nhãn "— (Đã chọn trong thực đơn)" trên các món đã được chọn trong dropdown của cả Món chính và Món phụ. Ngăn chặn việc thêm cùng một món 2 lần vào thực đơn dù ở bất kỳ ô nhập nào. Đồng thời xác thực chặn trùng lặp trước khi lưu thực đơn.
+    - Tắt thông báo khi Đặt lại bộ lọc: Loại bỏ popup thông báo khi người dùng nhấn nút "Đặt lại bộ lọc" ở Sổ Thu Chi giúp thao tác mượt mà và không gây gián đoạn.
+    - Định vị lại hộp Thông báo nổi (Toast Notification): Di dời từ đỉnh giữa màn hình (nơi từng che lấp thanh điều hướng các tab) xuống góc dưới bên phải màn hình (bottom-right trên màn hình lớn / bottom-20 trên thiết bị di động), giải phóng hoàn toàn khu vực thanh menu điều hướng bên trên.
+    - Tối ưu bố cục giao diện Cài Đặt: Đưa khối "Món Ăn Mẫu & Công Thức Nguyên Liệu" lên vị trí ưu tiên hàng đầu (ngay dưới thẻ Tài khoản Google, phía trên cụm Dữ liệu hệ thống và Quản lý danh mục) giúp người dùng tiếp cận và chỉnh sửa công thức nhanh chóng nhất.
+    - Tinh chỉnh dropdown Món phụ: Lọc bỏ hoàn toàn các món thuộc danh mục "Món chính" khỏi dropdown gợi ý món phụ, chỉ hiển thị các món thuộc "Món canh", "Món xào", "Món phụ"... giúp việc lên thực đơn chuẩn xác và thuận tiện.
+    - Tinh chỉnh dropdown Món chính: Chỉ hiển thị các món thuộc danh mục "Món chính" trong dropdown gợi ý món chính, phân tách rõ ràng và độc lập với món phụ.
+
+[x] 9. Cập Nhật Tài Liệu & Đồng Bộ Toàn Bộ Mã Nguồn Lên GitHub:
+    - Cập nhật toàn diện tài liệu README.md: Bổ sung kiến trúc Google OAuth 2.0 Single Sign-On, Phân vùng dữ liệu biệt lập từng Client (Multi-Tenant Isolation), Quản lý Món Ăn Mẫu & Công Thức Nguyên Liệu, Thuật toán Gộp định lượng thông minh (Smart Ingredient Aggregation), Khóa trùng lặp món ăn, và cập nhật sơ đồ CSDL PostgreSQL.
+    - Ghi nhận đầy đủ nhật ký phát triển ngày 23/09/2026 vào DAILY_NOTES.txt.
+    - Đóng gói bản build sản phẩm (`dist/`) và đẩy toàn bộ mã nguồn lên nhánh `main` kho lưu trữ GitHub chính thức.
+
 * Kế hoạch tiếp theo (To-do):
+    - [x] Đẩy toàn bộ mã nguồn lên GitHub, cập nhật tài liệu README.md và DAILY_NOTES.txt.
     - [ ] Kiểm thử toàn diện các luồng nghiệp vụ trên môi trường thật.
     - [ ] Chuẩn bị bài thuyết trình / tài liệu nộp đề tài bảng Văn phòng.
 
