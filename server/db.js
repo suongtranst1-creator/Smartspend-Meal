@@ -197,16 +197,19 @@ export async function initializeDatabase() {
         ('dish_def_9', NULL, 'Cá basa kho tộ', 'Món chính', '320 kcal', '[{"name":"Cá basa","quantity":"400g"},{"name":"Hành tím","quantity":"2 củ"},{"name":"Tiêu đen","quantity":"1 muỗng"},{"name":"Ớt hiểm","quantity":"2 quả"}]'::jsonb),
         ('dish_def_10', NULL, 'Canh bí đỏ thịt băm', 'Món canh', '160 kcal', '[{"name":"Bí đỏ","quantity":"300g"},{"name":"Thịt heo băm","quantity":"100g"},{"name":"Hành lá","quantity":"2 nhánh"}]'::jsonb)
     ON CONFLICT (id) DO NOTHING;
-
-    -- Gán dữ liệu cũ chưa có user_email về tài khoản chính suongtranst1@gmail.com
-    UPDATE transactions SET user_email = 'suongtranst1@gmail.com' WHERE user_email IS NULL;
-    UPDATE meal_plans SET user_email = 'suongtranst1@gmail.com' WHERE user_email IS NULL;
-    UPDATE grocery_items SET user_email = 'suongtranst1@gmail.com' WHERE user_email IS NULL;
-    UPDATE system_logs SET user_email = 'suongtranst1@gmail.com' WHERE user_email IS NULL;
   `;
 
   try {
     await pool.query(initSql);
+
+    // Gán dữ liệu cũ chưa có user_email về tài khoản mặc định (ADMIN_EMAIL hoặc cấu hình)
+    const defaultAdminEmail = process.env.ADMIN_EMAIL || process.env.DEFAULT_USER_EMAIL || 'suongtranst1@gmail.com';
+    if (defaultAdminEmail) {
+      await pool.query('UPDATE transactions SET user_email = $1 WHERE user_email IS NULL;', [defaultAdminEmail]);
+      await pool.query('UPDATE meal_plans SET user_email = $1 WHERE user_email IS NULL;', [defaultAdminEmail]);
+      await pool.query('UPDATE grocery_items SET user_email = $1 WHERE user_email IS NULL;', [defaultAdminEmail]);
+      await pool.query('UPDATE system_logs SET user_email = $1 WHERE user_email IS NULL;', [defaultAdminEmail]);
+    }
 
     // Tự động bỏ qua / xóa các món đi chợ chưa mua của các ngày đã qua
     try {

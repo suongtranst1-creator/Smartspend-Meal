@@ -49,14 +49,26 @@ app.get('/api/auth/config', (req, res) => {
   });
 });
 
-// Cập nhật Google Client ID vào .env và bộ nhớ
+// Cập nhật Google Client ID vào .env và bộ nhớ (Chỉ cho phép môi trường dev / local)
 app.post('/api/auth/save-client-id', async (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ error: 'Không được phép thay đổi cấu hình môi trường trực tiếp trong môi trường production.' });
+  }
+
   const { clientId } = req.body;
   if (!clientId || !clientId.trim()) {
     return res.status(400).json({ error: 'Client ID không được để trống.' });
   }
 
   const cleanClientId = clientId.trim();
+  // Regex kiểm tra định dạng chuẩn của Google OAuth 2.0 Client ID để chống tiêm ký tự lạ (CRLF/Injection)
+  const GOOGLE_CLIENT_ID_REGEX = /^[0-9]+-[a-z0-9_]+\.apps\.googleusercontent\.com$/i;
+  if (!GOOGLE_CLIENT_ID_REGEX.test(cleanClientId)) {
+    return res.status(400).json({
+      error: 'Định dạng Client ID không hợp lệ. Phải có định dạng: <chuỗi_số>-<chuỗi_ký_tự>.apps.googleusercontent.com'
+    });
+  }
+
   process.env.GOOGLE_CLIENT_ID = cleanClientId;
 
   try {
@@ -107,8 +119,14 @@ app.post('/api/auth/google', async (req, res) => {
   }
 });
 
-// Endpoint đăng nhập thử nghiệm (Dev / Test Mode)
+// Endpoint đăng nhập thử nghiệm (Dev / Test Mode) - Chặn hoàn toàn trên Production trừ khi bật rõ cờ
 app.post('/api/auth/dev-login', async (req, res) => {
+  if (process.env.NODE_ENV === 'production' && process.env.ENABLE_DEV_LOGIN !== 'true') {
+    return res.status(403).json({
+      error: 'Đăng nhập thử nghiệm (dev-login) bị vô hiệu hóa trên môi trường production vì lý do bảo mật.'
+    });
+  }
+
   const { email, name } = req.body;
   if (!email) {
     return res.status(400).json({ error: 'Vui lòng cung cấp địa chỉ email.' });

@@ -59,17 +59,8 @@ export async function verifyGoogleCredential(idToken) {
     };
   }
 
-  // Trường hợp dự phòng nếu chưa cấu hình GOOGLE_CLIENT_ID trên server (Decode payload)
-  const decoded = jwt.decode(idToken);
-  if (!decoded || !decoded.email) {
-    throw new Error('Không thể giải mã token Google.');
-  }
-  return {
-    email: decoded.email,
-    name: decoded.name || decoded.email.split('@')[0],
-    picture: decoded.picture || '',
-    email_verified: Boolean(decoded.email_verified ?? true),
-  };
+  // Bắt buộc phải có GOOGLE_CLIENT_ID để kiểm tra chữ ký số của Google
+  throw new Error('Chưa cấu hình GOOGLE_CLIENT_ID trên máy chủ. Không thể xác thực chữ ký token từ Google.');
 }
 
 /**
