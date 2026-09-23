@@ -5,7 +5,13 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // Cấu hình kết nối PostgreSQL từ biến môi trường (Environment Variables)
-const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+// Lưu ý: Nếu VibeHost tự động tiêm DATABASE_URL trỏ vào container nội bộ (vays-db-) mà người dùng đã cung cấp DB_HOST thật, ta ưu tiên DB_HOST thật.
+const isVaysInternalUrl = process.env.DATABASE_URL && process.env.DATABASE_URL.includes('vays-db-');
+const hasExternalHost = process.env.DB_HOST && process.env.DB_HOST !== 'localhost' && !process.env.DB_HOST.includes('vays-db-');
+
+const connectionString = (isVaysInternalUrl && hasExternalHost)
+  ? null
+  : (process.env.DATABASE_URL || process.env.POSTGRES_URL);
 
 const poolConfig = connectionString
   ? {
@@ -48,10 +54,15 @@ export async function checkConnection() {
 
 // Hàm tự động khởi tạo bảng nếu chưa có (Auto-migration)
 export async function initializeDatabase() {
+  const targetHost = poolConfig.connectionString
+    ? (poolConfig.connectionString.includes('@') ? poolConfig.connectionString.split('@')[1] : 'DATABASE_URL')
+    : `${poolConfig.host}:${poolConfig.port}`;
+  console.log(`🔌 Đang kết nối CSDL tại: ${targetHost}...`);
+
   const check = await checkConnection();
   if (!check.connected) {
     console.warn('⚠️  Chưa thể kết nối CSDL PostgreSQL:', check.error);
-    console.warn('👉 Lưu ý: Nếu chạy trên máy cá nhân, hãy đảm bảo Host (ngoài) được mở hoặc deploy app lên cùng hệ thống máy chủ.');
+    console.warn('👉 Lưu ý: Hãy đảm bảo đã cấu hình đúng biến môi trường (DATABASE_URL hoặc DB_HOST, DB_NAME, DB_USER, DB_PASSWORD, DB_PORT) ở tab "Biến môi trường" trên VibeHost.');
     return check;
   }
 
