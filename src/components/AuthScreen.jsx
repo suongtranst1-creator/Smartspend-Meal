@@ -113,13 +113,15 @@ export default function AuthScreen({ onLoginSuccess, initialError = '' }) {
           // Render nút Đăng nhập bằng Google chính thức của Google GSI
           if (googleBtnRef.current) {
             googleBtnRef.current.innerHTML = '';
+            const cardPadding = window.innerWidth < 640 ? 64 : 80;
+            const btnWidth = Math.min(320, Math.max(220, window.innerWidth - cardPadding));
             window.google.accounts.id.renderButton(googleBtnRef.current, {
               theme: isDark ? 'filled_black' : 'outline',
               size: 'large',
               type: 'standard',
               shape: 'pill',
               text: 'signin_with',
-              width: 320,
+              width: btnWidth,
               logo_alignment: 'left',
             });
           }
