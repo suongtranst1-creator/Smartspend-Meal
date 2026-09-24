@@ -8,12 +8,16 @@
 [![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-336791.svg?style=flat-square&logo=postgresql)](https://www.postgresql.org/)
 [![Google OAuth](https://img.shields.io/badge/Auth-Google%20OAuth%202.0-4285F4.svg?style=flat-square&logo=google)](https://developers.google.com/identity)
 [![Status](https://img.shields.io/badge/B%E1%BA%A3ng%20d%E1%BB%B1%20thi-B%E1%BA%A3ng%20V%C4%83n%20ph%C3%B2ng-059669.svg?style=flat-square)](#)
+[![Live Demo](https://img.shields.io/badge/Website-smartspend--meal--suongttt.vibe.tinhgon.xyz-059669.svg?style=flat-square&logo=googlechrome&logoColor=white)](https://smartspend-meal-suongttt.vibe.tinhgon.xyz/)
+
+![SmartSpend & Meal - Quản lý Chi tiêu & Thực đơn Thông minh](./og-image.jpg)
 
 ---
 
 ## 📌 1. Thông Tin Đề Tài & Dự Thi
 
 - **Tên sản phẩm**: SmartSpend & Meal - Sổ Thu Chi và Thực Đơn Đi Chợ Tuần
+- **Website ứng dụng (Live Demo)**: [https://smartspend-meal-suongttt.vibe.tinhgon.xyz/](https://smartspend-meal-suongttt.vibe.tinhgon.xyz/)
 - **Nhóm đề tài**: Cá nhân / Đời sống (Tài chính cá nhân & Gia đình)
 - **Bảng dự thi**: Bảng Văn phòng
 - **Ý tưởng cốt lõi**: Giải quyết triệt để 3 câu hỏi muôn thuở của dân văn phòng & gia đình: *"Hôm nay ăn gì?"*, *"Đi chợ cần mua những gì?"* và *"Tiền lương tháng này đã chi tiêu đi đâu?"*.

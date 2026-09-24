@@ -367,10 +367,14 @@ Mục đích: Theo dõi tiến độ, ghi chép lại các tính năng đã phá
       + Chuyển nút Đăng xuất trên màn hình nhỏ từ chiếm hẳn một hàng riêng biệt thành icon nhỏ gọn (hình mũi tên rời khỏi cửa) đặt ở góc trên bên phải của thẻ Profile.
       + Tối ưu Typography: Chuyển dòng tiêu đề "NGUYÊN LIỆU ĐỊNH LƯỢNG:" trong thẻ món mẫu từ viết hoa toàn bộ sang chữ thường chỉ viết hoa chữ cái đầu ("Nguyên liệu định lượng:") với màu xám nhạt (`text-gray-400 font-medium`), giảm bớt độ nặng nề và tăng tính tinh tế cho giao diện.
 
-[x] 5. Cập Nhật Toàn Diện Tài Liệu & Đồng Bộ Lên GitHub:
-    - Bổ sung vào README.md đầy đủ các tính năng: Chế độ che số tiền riêng tư (Mask/Unmask Balance), Thuật toán trừ nguyên liệu 2 chiều (`subtractIngredients`), Tự động đăng nhập Google One-Tap, Tối ưu typography và thẻ Profile, Cuộn lên đầu trang khi chạm lại Tab.
-    - Tách riêng trang nhật ký ngày 24/09/2026 trong DAILY_NOTES.txt.
-    - Đóng gói bản build `dist/` và đẩy toàn bộ mã nguồn lên nhánh `main` kho lưu trữ GitHub chính thức.
+[x] 5. Cấu Hình Hoàn Chỉnh Ảnh Bìa Mạng Xã Hội (Open Graph & Twitter Card) & Cập Nhật Tài Liệu:
+    - Tích hợp ảnh Open Graph `og-image.jpg` độ phân giải cao (1200x630) vào `public/og-image.jpg` và `dist/og-image.jpg`.
+    - Bổ sung toàn diện thẻ meta SEO, Open Graph (Facebook, Zalo, Messenger, Telegram) và Twitter Card vào `index.html` với đầy đủ URL tuyệt đối:
+      + `og:url`: `https://smartspend-meal-suongttt.vibe.tinhgon.xyz/`
+      + `og:image` & `og:image:secure_url`: `https://smartspend-meal-suongttt.vibe.tinhgon.xyz/og-image.jpg` (kích thước chuẩn 1200x630, `image/jpeg`)
+      + `twitter:card`: `summary_large_image`
+    - Cập nhật tài liệu README.md: Bổ sung Live Demo URL và nhúng trực tiếp banner Open Graph ngay đầu trang.
+    - Đóng gói bản build sản phẩm mới nhất (`dist/`) và đẩy toàn bộ mã nguồn lên nhánh `main` kho lưu trữ GitHub chính thức.
 
 * Kế hoạch tiếp theo (To-do):
     - [x] Đóng gói bản build sản phẩm (`dist/`).
