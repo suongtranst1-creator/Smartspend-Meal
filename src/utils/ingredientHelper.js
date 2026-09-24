@@ -240,3 +240,109 @@ export function ingredientsArrayToText(ingredients = []) {
     })
     .join('\n');
 }
+
+/**
+ * Trừ định lượng của 2 giá trị nguyên liệu
+ * Trả về chuỗi định lượng còn lại, hoặc null nếu định lượng đã hết (<= 0)
+ */
+export function subtractQuantities(baseQty = '', deductQty = '') {
+  const cleanBase = String(baseQty || '').trim();
+  const cleanDeduct = String(deductQty || '').trim();
+
+  if (!cleanBase && !cleanDeduct) return null;
+  if (!cleanDeduct) return cleanBase;
+  if (!cleanBase) return null;
+
+  const p1 = parseQuantity(cleanBase);
+  const p2 = parseQuantity(cleanDeduct);
+
+  // Cả 2 đều có giá trị số
+  if (p1.num !== null && p2.num !== null) {
+    const u1 = p1.unit.toLowerCase();
+    const u2 = p2.unit.toLowerCase();
+
+    // 1. Cùng là đơn vị khối lượng (g, kg, lạng)
+    if (WEIGHT_UNITS[u1] && WEIGHT_UNITS[u2]) {
+      const baseGrams = p1.num * WEIGHT_UNITS[u1];
+      const deductGrams = p2.num * WEIGHT_UNITS[u2];
+      const remainingGrams = baseGrams - deductGrams;
+      if (remainingGrams <= 0) return null;
+      if (remainingGrams >= 1000 && remainingGrams % 100 === 0) {
+        return `${Number((remainingGrams / 1000).toFixed(2))}kg`;
+      }
+      return `${Number(remainingGrams.toFixed(1))}g`;
+    }
+
+    // 2. Cùng là đơn vị thể tích (ml, l, lit, lít)
+    if (VOLUME_UNITS[u1] && VOLUME_UNITS[u2]) {
+      const baseMl = p1.num * VOLUME_UNITS[u1];
+      const deductMl = p2.num * VOLUME_UNITS[u2];
+      const remainingMl = baseMl - deductMl;
+      if (remainingMl <= 0) return null;
+      if (remainingMl >= 1000 && remainingMl % 100 === 0) {
+        return `${Number((remainingMl / 1000).toFixed(2))}l`;
+      }
+      return `${Number(remainingMl.toFixed(1))}ml`;
+    }
+
+    // 3. Cùng đơn vị đếm (quả, củ, nhánh, tép, bó, thìa, muỗng, gói, hộp, miếng...)
+    if (u1 === u2 || !u1 || !u2) {
+      const remaining = Number((p1.num - p2.num).toFixed(2));
+      if (remaining <= 0) return null;
+      const unit = p1.unit || p2.unit;
+      return unit ? `${remaining} ${unit}`.trim() : `${remaining}`;
+    }
+
+    // Khác hệ quy đổi nhưng có dạng ghép "2 quả + 100g"
+    if (cleanBase.includes(cleanDeduct)) {
+      const cleaned = cleanBase
+        .replace(cleanDeduct, '')
+        .replace(/\+\s*\+/, '+')
+        .replace(/^\s*\+\s*/, '')
+        .replace(/\s*\+\s*$/, '')
+        .trim();
+      return cleaned || null;
+    }
+  }
+
+  // Khớp chính xác tên hoặc không có số lượng
+  if (cleanBase.toLowerCase() === cleanDeduct.toLowerCase()) {
+    return null;
+  }
+
+  return cleanBase;
+}
+
+/**
+ * Trừ một danh sách nguyên liệu (deductList) ra khỏi danh sách nguyên liệu cơ sở (baseList)
+ * @param {Array<{name: string, quantity: string, isBought?: boolean}>} baseList
+ * @param {Array<{name: string, quantity: string, isBought?: boolean}>} deductList
+ * @returns {Array<{name: string, quantity: string, isBought: boolean}>}
+ */
+export function subtractIngredients(baseList = [], deductList = []) {
+  const result = baseList.map((item) => ({ ...item }));
+
+  deductList.forEach((deductItem) => {
+    if (!deductItem || !deductItem.name) return;
+    const normKey = normalizeIngredientName(deductItem.name);
+
+    const idx = result.findIndex(
+      (item) => normalizeIngredientName(item.name) === normKey
+    );
+
+    if (idx !== -1) {
+      const current = result[idx];
+      const remainingQty = subtractQuantities(current.quantity, deductItem.quantity);
+      if (remainingQty === null) {
+        result.splice(idx, 1);
+      } else {
+        result[idx] = {
+          ...current,
+          quantity: remainingQty,
+        };
+      }
+    }
+  });
+
+  return result;
+}

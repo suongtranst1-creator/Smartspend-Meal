@@ -325,9 +325,45 @@ Mục đích: Theo dõi tiến độ, ghi chép lại các tính năng đã phá
       + Đối với món mặc định hệ thống: Tạo bảng `user_deleted_preset_dishes (user_email, dish_id)` để ghi nhận trạng thái ẩn cho riêng tài khoản đó, giúp danh sách của họ sạch sẽ theo đúng ý muốn mà không làm ảnh hưởng hoặc làm mất món của các tài khoản khác trên hệ thống.
       + Khi chỉnh sửa một món mẫu mặc định, hệ thống tự động lưu thành món tùy chỉnh của người dùng và đồng thời ẩn món mặc định gốc, tránh việc bị trùng lặp 2 món cùng tên.
 
+[x] 13. Tinh Chỉnh Trải Nghiệm Người Dùng (UI/UX) & Tối Ưu Hóa Tính Năng Toàn Diện (24/09/2026):
+    - Món ăn mẫu (Tab Cài Đặt): Lược bỏ nhãn thừa "Mẫu có sẵn", "Tùy chỉnh" trên thẻ món mẫu giúp giao diện thoáng đãng, tập trung vào tên món, phân loại và calo.
+    - Thanh điều hướng Mobile (Bottom Navigation):
+      + Thu nhỏ kích thước icon từ w-5 sang w-4, tinh gọn padding dọc (py-1.5) và cỡ chữ (text-[10px]).
+      + Tiết kiệm đáng kể không gian hiển thị dọc trên màn hình smartphone nhỏ.
+    - Cơ chế Đăng nhập Google One-Tap:
+      + Kích hoạt cấu hình `auto_select: true` trong thư viện Google Identity Services (`AuthScreen.jsx`).
+      + Cho phép người dùng đã từng đăng nhập trước đó tự động vào thẳng hệ thống một chạm mà không bị Google bắt xác nhận/chọn lại tài khoản.
+    - Tinh gọn Dữ liệu & Hệ thống và Quản lý Danh mục (Tab Cài Đặt):
+      + Chuyển đổi khối xuất CSV lịch sử giao dịch và Audit Logs sang các hàng ngang gọn nhẹ với nút bấm thanh lịch.
+      + Thu gọn form thêm danh mục thành 1 hàng ngang inline và danh sách danh mục cuộn mượt tối đa max-h-48 với thẻ badge Chi/Thu súc tích, giảm hơn 50% diện tích chiếm dụng.
+    - Tính năng Scroll To Top On Tab Re-tap:
+      + Bổ sung cơ chế `handleTabClick`: Khi người dùng đang ở bất kỳ tab nào và cuộn xuống dưới, nhấn lại vào tab đó sẽ tự động cuộn mượt lên đầu trang (`window.scrollTo({ top: 0, behavior: 'smooth' })`).
+      + Áp dụng đồng bộ cho cả thanh điều hướng máy tính (Desktop) lẫn thanh dưới điện thoại (Mobile) và avatar người dùng.
+    - Chức năng Ẩn/Hiện Số Tiền (Mask/Unmask Balance, Income & Expense):
+      + Thêm icon con mắt (`Eye` / `EyeOff`) ngay bên cạnh tiêu đề "Số Dư Hiện Tại" trong Tab Thu Chi.
+      + Cho phép chuyển đổi linh hoạt giữa hiển thị số tiền thực tế và đồng loạt che Số Dư Hiện Tại, Tổng Thu và Tổng Chi dạng `•••••••• đ` phục vụ bảo mật thị giác nơi công cộng, tự động ghi nhớ trạng thái qua `localStorage`.
+    - Tinh gọn Modal Thêm Thực Đơn:
+      + Bỏ các dòng chú thích thừa: "(mỗi dòng 1 món)", "(tự điền nguyên liệu)", "(tự điền & cộng dồn)".
+      + Loại bỏ nút bấm thủ công "Gộp định lượng trùng", tinh gọn giao diện nhập liệu.
+    - Thuật Toán Đồng Bộ Hai Chiều Khi Xóa Món Trong Thực Đơn:
+      + Xây dựng thuật toán `subtractQuantities` và `subtractIngredients` trong `src/utils/ingredientHelper.js` hỗ trợ tự động trừ định lượng nguyên liệu chính xác theo đơn vị khối lượng (g, kg), thể tích (ml, l), đơn vị đếm (quả, củ, nhánh, bó...).
+      + Khi người dùng xóa một dòng món ăn (ví dụ "Cá basa kho tộ") ở ô món chính hoặc món phụ, hệ thống tự động nhận diện và khấu trừ đúng lượng nguyên liệu tương ứng khỏi danh sách nguyên liệu bên dưới.
+      + Bổ sung chip xóa nhanh `[Tên món ✕]` dưới mỗi ô giúp xóa 1 chạm tiện lợi trên điện thoại.
+    - Danh sách Đi Chợ:
+      + Lược bỏ nút bấm "Xóa món đã mua" dư thừa do luồng nghiệp vụ chuẩn đã tự động dọn dẹp nguyên liệu khi chốt hóa đơn thu chi.
+      + Tinh gọn thẻ Chốt Sổ Hóa Đơn: Loại bỏ câu mô tả đồng bộ chi tiêu, bỏ dòng "Danh mục ghi sổ: Chi Tiêu ➔ Đi chợ", và gỡ bỏ toàn bộ hộp thông báo "Lưu ý chốt sổ".
+    - Tinh gọn văn bản Tab Cài Đặt:
+      + Lược bỏ cụm từ "và cộng dồn nguyên liệu." trong mô tả Món Ăn Mẫu.
+      + Lược bỏ dòng ghi chú "Dữ liệu CSV định dạng UTF-8 tương thích tiếng Việt." ở thẻ Dữ liệu & Hệ thống.
+    - Rút gọn hộp Mẹo thông minh (Tab Thực Đơn): Tối ưu hóa văn bản súc tích thành 1 câu ngắn gọn, dễ đọc và tiết kiệm diện tích.
+    - Tinh gọn Thẻ Tài Khoản Profile & Typography Món Ăn Mẫu (Tab Cài Đặt):
+      + Bỏ nhãn/badge trạng thái "Đã đăng nhập" (dư thừa về mặt UX).
+      + Chuyển nút Đăng xuất trên màn hình nhỏ từ chiếm hẳn một hàng riêng biệt thành icon nhỏ gọn (hình mũi tên rời khỏi cửa) đặt ở góc trên bên phải của thẻ Profile.
+      + Tối ưu Typography: Chuyển dòng tiêu đề "NGUYÊN LIỆU ĐỊNH LƯỢNG:" trong thẻ món mẫu từ viết hoa toàn bộ sang chữ thường chỉ viết hoa chữ cái đầu ("Nguyên liệu định lượng:") với màu xám nhạt (`text-gray-400 font-medium`), giảm bớt độ nặng nề và tăng tính tinh tế cho giao diện.
+
 * Kế hoạch tiếp theo (To-do):
-    - [x] Đẩy toàn bộ mã nguồn lên GitHub, cập nhật tài liệu README.md và DAILY_NOTES.txt.
-    - [ ] Kiểm thử toàn diện các luồng nghiệp vụ trên môi trường thật.
+    - [x] Đóng gói bản build sản phẩm (`dist/`).
+    - [ ] Kiểm thử toàn diện trên thiết bị di động thực tế.
     - [ ] Chuẩn bị bài thuyết trình / tài liệu nộp đề tài bảng Văn phòng.
 
 ================================================================================

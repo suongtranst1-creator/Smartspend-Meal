@@ -100,7 +100,7 @@ export default function AuthScreen({ onLoginSuccess, initialError = '' }) {
                 handleCredentialResponse(response.credential);
               }
             },
-            auto_select: false,
+            auto_select: true,
             cancel_on_tap_outside: true,
           });
 

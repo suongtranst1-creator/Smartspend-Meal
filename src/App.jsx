@@ -37,11 +37,14 @@ import {
   ShieldCheck,
   User,
   Search,
-  BookOpen
+  BookOpen,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import AuthScreen from './components/AuthScreen.jsx';
 import {
   mergeIngredients,
+  subtractIngredients,
   textToIngredientsArray,
   ingredientsArrayToText,
   parseIngredientLine,
@@ -682,6 +685,21 @@ export default function App() {
   const [systemLogs, setSystemLogs] = useState([]);
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'system');
 
+  // State: Ẩn/Hiện số dư tài khoản
+  const [showBalance, setShowBalance] = useState(() => {
+    return localStorage.getItem('smartspend_show_balance') !== 'false';
+  });
+
+  // Chuyển tab hoặc cuộn mượt lên đầu trang khi bấm lại tab đang chọn (Scroll to top on tab re-tap)
+  const handleTabClick = (tabKey) => {
+    if (activeTab === tabKey) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      setActiveTab(tabKey);
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
+  };
+
   // State: Món Ăn Mẫu (Preset Dishes & Ingredients)
   const [presetDishes, setPresetDishes] = useState([]);
   const [isPresetModalOpen, setIsPresetModalOpen] = useState(false);
@@ -1173,6 +1191,90 @@ export default function App() {
     });
 
     showToast(`Đã thêm món phụ "${preset.name}" và tự động gộp định lượng nguyên liệu!`);
+  };
+
+  // Đồng bộ hai chiều khi sửa / xóa dòng món chính:
+  // Tự động tìm món bị xóa và trừ nguyên liệu tương ứng khỏi danh sách bên dưới
+  const handleMainChange = (newMain) => {
+    const oldLines = mealForm.main.split('\n').map((s) => s.trim()).filter(Boolean);
+    const newLines = newMain.split('\n').map((s) => s.trim()).filter(Boolean);
+
+    const removedDishes = oldLines.filter(
+      (oldDish) => !newLines.some((newDish) => newDish.toLowerCase() === oldDish.toLowerCase())
+    );
+
+    let updatedIngredients = mealForm.ingredientsStr;
+    const deductedDishNames = [];
+
+    for (const removedName of removedDishes) {
+      const preset = presetDishes.find(
+        (p) => p.name.trim().toLowerCase() === removedName.toLowerCase()
+      );
+      if (preset && Array.isArray(preset.ingredients) && preset.ingredients.length > 0) {
+        const currentIngs = textToIngredientsArray(updatedIngredients);
+        const remainingIngs = subtractIngredients(currentIngs, preset.ingredients);
+        updatedIngredients = ingredientsArrayToText(remainingIngs);
+        deductedDishNames.push(preset.name);
+      }
+    }
+
+    setMealForm((prev) => ({
+      ...prev,
+      main: newMain,
+      ingredientsStr: updatedIngredients,
+    }));
+
+    if (deductedDishNames.length > 0) {
+      showToast(`Đã tự động trừ nguyên liệu của món: ${deductedDishNames.join(', ')}`);
+    }
+  };
+
+  // Đồng bộ hai chiều khi sửa / xóa dòng món phụ:
+  // Tự động tìm món bị xóa và trừ nguyên liệu tương ứng khỏi danh sách bên dưới
+  const handleSideChange = (newSide) => {
+    const oldLines = mealForm.side.split('\n').map((s) => s.trim()).filter(Boolean);
+    const newLines = newSide.split('\n').map((s) => s.trim()).filter(Boolean);
+
+    const removedDishes = oldLines.filter(
+      (oldDish) => !newLines.some((newDish) => newDish.toLowerCase() === oldDish.toLowerCase())
+    );
+
+    let updatedIngredients = mealForm.ingredientsStr;
+    const deductedDishNames = [];
+
+    for (const removedName of removedDishes) {
+      const preset = presetDishes.find(
+        (p) => p.name.trim().toLowerCase() === removedName.toLowerCase()
+      );
+      if (preset && Array.isArray(preset.ingredients) && preset.ingredients.length > 0) {
+        const currentIngs = textToIngredientsArray(updatedIngredients);
+        const remainingIngs = subtractIngredients(currentIngs, preset.ingredients);
+        updatedIngredients = ingredientsArrayToText(remainingIngs);
+        deductedDishNames.push(preset.name);
+      }
+    }
+
+    setMealForm((prev) => ({
+      ...prev,
+      side: newSide,
+      ingredientsStr: updatedIngredients,
+    }));
+
+    if (deductedDishNames.length > 0) {
+      showToast(`Đã tự động trừ nguyên liệu của món: ${deductedDishNames.join(', ')}`);
+    }
+  };
+
+  // Nút xóa nhanh từng món chính đã chọn kèm trừ nguyên liệu
+  const handleRemoveMainDish = (dishName) => {
+    const lines = mealForm.main.split('\n').filter((l) => l.trim().toLowerCase() !== dishName.trim().toLowerCase());
+    handleMainChange(lines.join('\n'));
+  };
+
+  // Nút xóa nhanh từng món phụ đã chọn kèm trừ nguyên liệu
+  const handleRemoveSideDish = (dishName) => {
+    const lines = mealForm.side.split('\n').filter((l) => l.trim().toLowerCase() !== dishName.trim().toLowerCase());
+    handleSideChange(lines.join('\n'));
   };
 
   // Tự động quét và cộng dồn định lượng nguyên liệu trùng lặp trong form
@@ -1963,7 +2065,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 pb-20 md:pb-10 transition-colors duration-200">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 pb-16 md:pb-10 transition-colors duration-200">
       {/* Toast Notification (Repositioned to bottom-right on desktop to avoid covering top tabs) */}
       {toastMessage && (
         <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 md:translate-x-0 md:left-auto md:right-6 z-50 bg-gray-900/95 dark:bg-emerald-600 text-white px-4 py-2.5 rounded-2xl shadow-xl shadow-black/20 flex items-center gap-2.5 text-xs sm:text-sm font-medium backdrop-blur-md border border-white/10 animate-in fade-in slide-in-from-bottom-2 duration-200">
@@ -2041,7 +2143,7 @@ export default function App() {
             {/* Desktop Navigation Tabs */}
             <nav className="hidden md:flex items-center gap-1 bg-gray-100/90 dark:bg-gray-800/90 p-1 rounded-xl border border-gray-200/70 dark:border-gray-700/70 shrink-0">
               <button
-                onClick={() => setActiveTab('spend')}
+                onClick={() => handleTabClick('spend')}
                 className={`relative flex items-center gap-1.5 px-3 py-2 lg:px-4 lg:py-2 rounded-lg text-xs lg:text-sm whitespace-nowrap transition-all ${activeTab === 'spend'
                     ? 'font-bold text-emerald-800 dark:text-emerald-300 bg-white dark:bg-gray-700 shadow-sm border border-emerald-500/25 dark:border-emerald-500/30'
                     : 'font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
@@ -2054,7 +2156,7 @@ export default function App() {
                 )}
               </button>
               <button
-                onClick={() => setActiveTab('meal')}
+                onClick={() => handleTabClick('meal')}
                 className={`relative flex items-center gap-1.5 px-3 py-2 lg:px-4 lg:py-2 rounded-lg text-xs lg:text-sm whitespace-nowrap transition-all ${activeTab === 'meal'
                     ? 'font-bold text-emerald-800 dark:text-emerald-300 bg-white dark:bg-gray-700 shadow-sm border border-emerald-500/25 dark:border-emerald-500/30'
                     : 'font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
@@ -2067,7 +2169,7 @@ export default function App() {
                 )}
               </button>
               <button
-                onClick={() => setActiveTab('shop')}
+                onClick={() => handleTabClick('shop')}
                 className={`relative flex items-center gap-1.5 px-3 py-2 lg:px-4 lg:py-2 rounded-lg text-xs lg:text-sm whitespace-nowrap transition-all ${activeTab === 'shop'
                     ? 'font-bold text-emerald-800 dark:text-emerald-300 bg-white dark:bg-gray-700 shadow-sm border border-emerald-500/25 dark:border-emerald-500/30'
                     : 'font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
@@ -2085,7 +2187,7 @@ export default function App() {
                 )}
               </button>
               <button
-                onClick={() => setActiveTab('settings')}
+                onClick={() => handleTabClick('settings')}
                 className={`relative flex items-center gap-1.5 px-3 py-2 lg:px-4 lg:py-2 rounded-lg text-xs lg:text-sm whitespace-nowrap transition-all ${activeTab === 'settings'
                     ? 'font-bold text-emerald-800 dark:text-emerald-300 bg-white dark:bg-gray-700 shadow-sm border border-emerald-500/25 dark:border-emerald-500/30'
                     : 'font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-gray-700/50'
@@ -2104,7 +2206,7 @@ export default function App() {
               <div className="flex items-center gap-2 pl-2 sm:pl-3 border-l border-gray-200/80 dark:border-gray-700/80 shrink-0">
                 <div
                   className="flex items-center gap-2 cursor-pointer group"
-                  onClick={() => setActiveTab('settings')}
+                  onClick={() => handleTabClick('settings')}
                   title={`Đang đăng nhập: ${currentUser.email}`}
                 >
                   {currentUser.picture ? (
@@ -2162,7 +2264,7 @@ export default function App() {
                   </div>
                 </div>
                 <div className="mt-2 sm:mt-3 text-lg sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight relative z-10">
-                  {formatVND(totalIncome)}
+                  {showBalance ? formatVND(totalIncome) : '•••••••• đ'}
                 </div>
                 <p className="text-[10px] sm:text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1 truncate relative z-10">
                   Đã cộng dồn thu nhập
@@ -2205,7 +2307,7 @@ export default function App() {
                   </div>
                 </div>
                 <div className="mt-2 sm:mt-3 text-lg sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight relative z-10">
-                  {formatVND(totalExpense)}
+                  {showBalance ? formatVND(totalExpense) : '•••••••• đ'}
                 </div>
                 <p className="text-[10px] sm:text-xs text-rose-500 dark:text-rose-400 font-medium mt-1 truncate relative z-10">
                   Sinh hoạt & đi chợ
@@ -2240,15 +2342,30 @@ export default function App() {
               {/* Card 3: Số Dư Hiện Tại (Dải màu chuyển từ Xanh Ngọc Teal sang Xanh Lá Cây Thẫm) */}
               <div className="col-span-2 sm:col-span-1 bg-gradient-to-br from-teal-600 via-emerald-700 to-emerald-950 dark:from-teal-700 dark:via-emerald-900 dark:to-gray-950 text-white p-4 sm:p-5 rounded-2xl shadow-[0_8px_30px_rgba(13,148,136,0.25)] hover:shadow-[0_14px_36px_rgba(13,148,136,0.35)] hover:-translate-y-0.5 transition-all duration-300 relative overflow-hidden border border-teal-400/25 dark:border-teal-700/30">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] sm:text-xs font-semibold text-teal-100 uppercase tracking-wider">
-                    Số Dư Hiện Tại
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] sm:text-xs font-semibold text-teal-100 uppercase tracking-wider">
+                      Số Dư Hiện Tại
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowBalance((prev) => {
+                        const next = !prev;
+                        localStorage.setItem('smartspend_show_balance', String(next));
+                        return next;
+                      })}
+                      className="p-1 rounded-md text-teal-200 hover:text-white hover:bg-white/15 transition-colors cursor-pointer"
+                      title={showBalance ? "Ẩn số tiền (số dư, tổng thu, tổng chi)" : "Hiện số tiền (số dư, tổng thu, tổng chi)"}
+                      aria-label={showBalance ? "Ẩn số tiền (số dư, tổng thu, tổng chi)" : "Hiện số tiền (số dư, tổng thu, tổng chi)"}
+                    >
+                      {showBalance ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
                   <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/15 backdrop-blur-xs text-teal-100 flex items-center justify-center border border-white/20 shadow-xs">
                     <Wallet className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
                 </div>
                 <div className="mt-2 sm:mt-3 text-xl sm:text-2xl font-bold tracking-tight text-white drop-shadow-xs">
-                  {formatVND(balance)}
+                  {showBalance ? formatVND(balance) : '•••••••• đ'}
                 </div>
                 <p className="text-[10px] sm:text-xs text-teal-200 mt-1 truncate">
                   {balance >= 0 ? 'Tài chính ổn định' : 'Cần tối ưu ngân sách'}
@@ -2801,16 +2918,16 @@ export default function App() {
               );
             })()}
 
-            {/* Smart Meal Insight Tip (Hộp Mẹo Cách Điệu Với Icon Bóng Đèn) */}
-            <div className="bg-gradient-to-r from-amber-50/80 via-emerald-50/40 to-teal-50/60 dark:from-gray-800/90 dark:via-emerald-950/20 dark:to-gray-800/90 border border-amber-200/60 dark:border-gray-700/80 p-4 sm:p-5 rounded-3xl flex items-start sm:items-center gap-3.5 sm:gap-4 shadow-xs">
-              <div className="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-xs border border-amber-200/60 dark:border-amber-800/60">
-                <Lightbulb className="w-5 h-5 stroke-[2.25]" />
+            {/* Smart Meal Insight Tip (Hộp Mẹo Gọn Gàng) */}
+            <div className="bg-gradient-to-r from-amber-50/80 via-emerald-50/40 to-teal-50/60 dark:from-gray-800/90 dark:via-emerald-950/20 dark:to-gray-800/90 border border-amber-200/60 dark:border-gray-700/80 p-3 sm:p-3.5 rounded-2xl flex items-center gap-3 shadow-xs">
+              <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-xs border border-amber-200/60 dark:border-amber-800/60">
+                <Lightbulb className="w-4 h-4 stroke-[2.25]" />
               </div>
-              <div className="text-xs sm:text-sm text-gray-700 dark:text-gray-200 leading-relaxed flex-1">
-                <strong className="text-amber-800 dark:text-amber-300 font-bold uppercase tracking-wider text-[11px] sm:text-xs block sm:inline mr-2">
-                  Mẹo thông minh:
+              <div className="text-xs text-gray-700 dark:text-gray-200 leading-relaxed flex-1">
+                <strong className="text-amber-800 dark:text-amber-300 font-bold uppercase tracking-wider text-[11px] mr-1.5">
+                  Mẹo:
                 </strong>
-                Bạn có thể nhấp trực tiếp vào biểu tượng trước mỗi nguyên liệu để chuyển đổi giữa trạng thái <strong>Cần mua</strong> (icon giỏ hàng) và <strong>Đã mua</strong> (icon tick xanh). Khi bấm nút dưới thẻ, hệ thống sẽ chỉ nhặt những món chưa mua để giỏ hàng không bị trùng lặp.
+                Nhấp vào icon trước nguyên liệu để đổi trạng thái <strong>Cần mua ⇄ Đã mua</strong>. Hệ thống sẽ chỉ nhặt món chưa mua vào giỏ hàng.
               </div>
             </div>
           </div>
@@ -2867,15 +2984,6 @@ export default function App() {
                       {checkedShoppingCount} / {activeShoppingList.length} đã mua
                     </span>
                   </div>
-
-                  {checkedShoppingCount > 0 && (
-                    <button
-                      onClick={handleClearCompletedGroceries}
-                      className="text-xs text-rose-500 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 font-medium cursor-pointer"
-                    >
-                      Xóa món đã mua
-                    </button>
-                  )}
                 </div>
 
                 <div className="divide-y divide-gray-100 dark:divide-gray-700/60">
@@ -2968,10 +3076,6 @@ export default function App() {
                   <h4>Chốt Sổ Hóa Đơn</h4>
                 </div>
 
-                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-                  Sau khi hoàn thành chuyến đi chợ, nhập tổng số tiền trên hóa đơn để tự động đồng bộ vào mục <strong>Chi Tiêu</strong>.
-                </p>
-
                 {/* Total Bill Input */}
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">
@@ -2993,16 +3097,12 @@ export default function App() {
                 </div>
 
                 {/* Summary Info */}
-                <div className="p-3.5 bg-gray-50/90 dark:bg-gray-700/50 rounded-2xl space-y-2 text-xs text-gray-600 dark:text-gray-300 border border-gray-100 dark:border-gray-600/40">
+                <div className="p-3.5 bg-gray-50/90 dark:bg-gray-700/50 rounded-2xl text-xs text-gray-600 dark:text-gray-300 border border-gray-100 dark:border-gray-600/40">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-500 dark:text-gray-400 font-medium">Đã hoàn thành:</span>
                     <strong className="text-emerald-700 dark:text-emerald-400 font-bold text-xs sm:text-sm">
                       {checkedShoppingCount} món
                     </strong>
-                  </div>
-                  <div className="flex justify-between items-center pt-2 border-t border-gray-200/60 dark:border-gray-600/50">
-                    <span className="text-gray-500 dark:text-gray-400">Danh mục ghi sổ:</span>
-                    <strong className="text-gray-800 dark:text-white font-semibold">Chi Tiêu ➔ Đi chợ</strong>
                   </div>
                 </div>
 
@@ -3015,19 +3115,6 @@ export default function App() {
                   <span className="tracking-wide">Chốt hóa đơn & Ghi sổ</span>
                 </button>
               </div>
-
-              {/* Harmonized Info Box (Light Emerald Tint, Brand Icon Badge, Soft Rounded 3xl Border) */}
-              <div className="bg-gradient-to-r from-emerald-50/80 via-teal-50/40 to-emerald-50/70 dark:from-gray-800/90 dark:via-emerald-950/20 dark:to-gray-800/90 p-4 sm:p-4.5 rounded-3xl border border-emerald-200/60 dark:border-gray-700/80 flex items-start gap-3 shadow-xs">
-                <div className="w-9 h-9 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 shadow-xs border border-emerald-200/60 dark:border-emerald-800/60 mt-0.5">
-                  <AlertCircle className="w-5 h-5 stroke-[2.25]" />
-                </div>
-                <div className="text-xs sm:text-[13px] text-gray-700 dark:text-gray-200 leading-relaxed flex-1">
-                  <strong className="text-emerald-800 dark:text-emerald-300 font-bold block sm:inline mr-1.5 uppercase text-[11px] tracking-wider">
-                    Lưu ý chốt sổ:
-                  </strong>
-                  Khi bấm chốt, toàn bộ các món đã đánh dấu "đã mua" sẽ tự động được dọn dẹp để bạn chuẩn bị cho chuyến đi chợ tiếp theo.
-                </div>
-              </div>
             </div>
           </div>
         )}
@@ -3038,47 +3125,40 @@ export default function App() {
         {activeTab === 'settings' && (
           <div className="space-y-6 animate-in fade-in duration-300">
             {/* Thẻ Tài khoản & Bảo mật (Google OAuth 2.0 & Access Control) */}
-            <div className="bg-white dark:bg-gray-800 rounded-3xl p-5 sm:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.25)] border border-gray-100 dark:border-gray-700/80">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3.5 min-w-0">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.25)] border border-gray-100 dark:border-gray-700/80">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 pr-2">
                   {currentUser?.picture ? (
                     <img
                       src={currentUser.picture}
                       alt={currentUser.name}
-                      className="w-12 h-12 rounded-2xl border-2 border-emerald-500/40 object-cover shadow-sm shrink-0"
+                      className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl border-2 border-emerald-500/40 object-cover shadow-sm shrink-0"
                     />
                   ) : (
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
+                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center font-bold text-base sm:text-lg shadow-sm shrink-0">
                       {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
                     </div>
                   )}
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">
-                        {currentUser?.name || 'Tài khoản Google'}
-                      </h2>
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 px-2.5 py-0.5 rounded-full shrink-0">
-                        <ShieldCheck className="w-3.5 h-3.5" />
-                        <span>Đã đăng nhập</span>
-                      </span>
-                    </div>
+                    <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">
+                      {currentUser?.name || 'Tài khoản Google'}
+                    </h2>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
                       {currentUser?.email}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
-                    title="Đăng xuất khỏi ứng dụng"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    <span>Đăng xuất</span>
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="p-2 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200/80 dark:border-rose-900/60 transition-all flex items-center gap-1.5 shadow-2xs hover:shadow-xs cursor-pointer shrink-0"
+                  title="Đăng xuất khỏi ứng dụng"
+                  aria-label="Đăng xuất"
+                >
+                  <LogOut className="w-4 h-4 stroke-[2.25]" />
+                  <span className="hidden sm:inline">Đăng xuất</span>
+                </button>
               </div>
             </div>
 
@@ -3100,7 +3180,7 @@ export default function App() {
                       </span>
                     </h3>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                      Thiết lập món kèm định lượng chuẩn. Khi lên thực đơn sẽ tự động điền và cộng dồn nguyên liệu.
+                      Thiết lập món kèm định lượng chuẩn khi lên thực đơn.
                     </p>
                   </div>
                 </div>
@@ -3200,16 +3280,7 @@ export default function App() {
                               </span>
                               {dish.calories && (
                                 <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-orange-100 dark:bg-orange-950/70 text-orange-800 dark:text-orange-300">
-                                  {dish.calories}
-                                </span>
-                              )}
-                              {dish.user_email ? (
-                                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300">
-                                  Tùy chỉnh
-                                </span>
-                              ) : (
-                                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300">
-                                  Mẫu có sẵn
+                                   {dish.calories}
                                 </span>
                               )}
                             </div>
@@ -3238,7 +3309,7 @@ export default function App() {
 
                         {/* Ingredients Tag Chips */}
                         <div className="mt-2.5 pt-2 border-t border-gray-200/50 dark:border-gray-600/50">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-400 block mb-1">
+                          <span className="text-[11px] font-medium text-gray-400 dark:text-gray-400 block mb-1">
                             Nguyên liệu định lượng:
                           </span>
                           <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto custom-scrollbar pr-0.5">
@@ -3285,82 +3356,77 @@ export default function App() {
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Cột trái: Khối Dữ liệu & Hệ thống gộp 2 chức năng gọn gàng */}
-              <div className="bg-white dark:bg-gray-800 rounded-3xl p-5 sm:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.25)] border border-gray-100 dark:border-gray-700/80 flex flex-col justify-between">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+              {/* Cột trái: Khối Dữ liệu & Hệ thống làm gọn gàng */}
+              <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-5 shadow-[0_4px_20px_rgb(0,0,0,0.04)] dark:shadow-[0_4px_20px_rgb(0,0,0,0.2)] border border-gray-100 dark:border-gray-700/80 flex flex-col justify-between">
                 <div>
-                  <div className="flex items-center gap-2.5 mb-5 pb-3 border-b border-gray-100 dark:border-gray-700/60">
-                    <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                      <Database className="w-4 h-4 stroke-[2.25]" />
+                  <div className="flex items-center gap-2 mb-3 pb-2.5 border-b border-gray-100 dark:border-gray-700/60">
+                    <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                      <Database className="w-3.5 h-3.5 stroke-[2.25]" />
                     </div>
-                    <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
+                    <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
                       Dữ liệu & Hệ thống
                     </h2>
                   </div>
 
-                  <div className="space-y-3.5">
-                    {/* Hàng 1: Xuất lịch sử giao dịch (CSV) - Outlined Button với tone xanh ngọc */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-gray-50/80 dark:bg-gray-700/40 border border-gray-100 dark:border-gray-700/60 transition-all hover:border-emerald-200 dark:hover:border-emerald-800/60">
-                      <div className="space-y-1 min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                          <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">
+                  <div className="space-y-2">
+                    {/* Hàng 1: Xuất lịch sử giao dịch (CSV) */}
+                    <div className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-gray-50/80 dark:bg-gray-700/40 border border-gray-100 dark:border-gray-700/60 hover:border-emerald-200 dark:hover:border-emerald-800/60 transition-colors">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        <div className="min-w-0">
+                          <h3 className="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">
                             Xuất Lịch Sử Giao Dịch
                           </h3>
+                          <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                            File CSV thu chi (Excel / Google Sheets)
+                          </p>
                         </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed pr-2">
-                          Tải về file CSV toàn bộ thu chi để mở trên Excel hoặc Google Sheets.
-                        </p>
                       </div>
                       <button
                         onClick={handleExportCSV}
-                        className="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-emerald-700 dark:text-emerald-300 bg-white dark:bg-gray-800 border border-emerald-600/70 dark:border-emerald-500/70 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:border-emerald-600 dark:hover:border-emerald-400 shadow-2xs hover:shadow-xs active:scale-98 transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-white dark:bg-gray-800 border border-emerald-600/70 dark:border-emerald-500/70 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 shadow-2xs hover:shadow-xs active:scale-98 transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
                         title="Tải về file CSV lịch sử thu chi"
                       >
-                        <Download className="w-4 h-4 stroke-[2.25]" />
+                        <Download className="w-3.5 h-3.5 stroke-[2.25]" />
                         <span>Tải CSV</span>
                       </button>
                     </div>
 
-                    {/* Hàng 2: Nhật ký hệ thống (Logs) - Outlined Button */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-gray-50/80 dark:bg-gray-700/40 border border-gray-100 dark:border-gray-700/60 transition-all hover:border-emerald-200 dark:hover:border-emerald-800/60">
-                      <div className="space-y-1 min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                          <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">
-                            Nhật Ký Hệ Thống (Logs)
+                    {/* Hàng 2: Nhật ký hệ thống (Logs) */}
+                    <div className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-gray-50/80 dark:bg-gray-700/40 border border-gray-100 dark:border-gray-700/60 hover:border-emerald-200 dark:hover:border-emerald-800/60 transition-colors">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        <div className="min-w-0">
+                          <h3 className="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">
+                            Nhật Ký Thao Tác (Audit Logs)
                           </h3>
+                          <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                            Lịch sử thêm, sửa, xóa để đối soát
+                          </p>
                         </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed pr-2">
-                          Tải về nhật ký ghi lại các thao tác thêm, sửa, xóa để theo dõi và đối soát.
-                        </p>
                       </div>
                       <button
                         onClick={handleExportLogsCSV}
-                        className="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-emerald-700 dark:text-emerald-300 bg-white dark:bg-gray-800 border border-emerald-600/70 dark:border-emerald-500/70 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:border-emerald-600 dark:hover:border-emerald-400 shadow-2xs hover:shadow-xs active:scale-98 transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-white dark:bg-gray-800 border border-emerald-600/70 dark:border-emerald-500/70 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 shadow-2xs hover:shadow-xs active:scale-98 transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
                         title="Tải về file CSV nhật ký hệ thống"
                       >
-                        <Download className="w-4 h-4 stroke-[2.25]" />
+                        <Download className="w-3.5 h-3.5 stroke-[2.25]" />
                         <span>Tải CSV</span>
                       </button>
                     </div>
                   </div>
                 </div>
-
-                <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700/60 text-[11px] text-gray-400 dark:text-gray-500 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                  <span>Dữ liệu CSV được định dạng UTF-8 tương thích tiếng Việt có dấu.</span>
-                </div>
               </div>
 
-              {/* Cột phải: Quản lý danh mục (Phân cấp nút bấm & Phân loại màu sắc) */}
-              <div className="bg-white dark:bg-gray-800 rounded-3xl p-5 sm:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.25)] border border-gray-100 dark:border-gray-700/80 flex flex-col justify-between">
+              {/* Cột phải: Quản lý danh mục làm gọn gàng */}
+              <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-5 shadow-[0_4px_20px_rgb(0,0,0,0.04)] dark:shadow-[0_4px_20px_rgb(0,0,0,0.2)] border border-gray-100 dark:border-gray-700/80 flex flex-col justify-between">
                 <div>
-                  <div className="flex items-center gap-2.5 mb-5 pb-3 border-b border-gray-100 dark:border-gray-700/60">
-                    <div className="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
-                      <Tag className="w-4 h-4 stroke-[2.25]" />
+                  <div className="flex items-center gap-2 mb-3 pb-2.5 border-b border-gray-100 dark:border-gray-700/60">
+                    <div className="w-7 h-7 rounded-lg bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                      <Tag className="w-3.5 h-3.5 stroke-[2.25]" />
                     </div>
-                    <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
+                    <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
                       Quản lý danh mục
                     </h2>
                   </div>
@@ -3372,62 +3438,59 @@ export default function App() {
                       handleAddCategory(form.type.value, form.name.value);
                       form.reset();
                     }}
-                    className="flex flex-col sm:flex-row gap-2.5 mb-4"
+                    className="flex items-center gap-2 mb-3"
                   >
                     <select
                       name="type"
-                      className="px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs sm:text-sm font-medium text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                      className="px-2.5 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-xs font-medium text-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500 shrink-0 cursor-pointer"
                       required
                     >
-                      <option value="expense" className="dark:bg-gray-800">Khoản Chi (Expense)</option>
-                      <option value="income" className="dark:bg-gray-800">Khoản Thu (Income)</option>
+                      <option value="expense" className="dark:bg-gray-800">Khoản Chi</option>
+                      <option value="income" className="dark:bg-gray-800">Khoản Thu</option>
                     </select>
                     <input
                       name="name"
                       placeholder="Tên danh mục mới..."
-                      className="flex-1 px-3.5 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-xs sm:text-sm text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                      className="flex-1 min-w-0 px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-xs text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                       required
                     />
-                    {/* Nút chính: Solid Button nổi bật */}
                     <button
                       type="submit"
-                      className="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl font-bold text-xs sm:text-sm shadow-md shadow-emerald-600/25 active:scale-98 transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+                      className="px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-lg font-bold text-xs shadow-xs active:scale-98 transition-all flex items-center gap-1 cursor-pointer shrink-0"
                     >
-                      <Plus className="w-4 h-4 stroke-[2.5]" />
+                      <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                       <span>Thêm</span>
                     </button>
                   </form>
                 </div>
 
-                {/* Danh sách danh mục với Color Coding (vạch đỏ cho Expense, vạch xanh lá cho Income) */}
-                <div className="max-h-72 overflow-y-auto pr-1 space-y-2.5 custom-scrollbar flex-1">
+                {/* Danh sách danh mục gọn gàng */}
+                <div className="max-h-48 overflow-y-auto pr-1 space-y-1.5 custom-scrollbar flex-1">
                   {categories.filter(c => c.type === 'expense' || c.type === 'income').map(c => (
                     <div
                       key={c.id}
-                      className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${c.type === 'expense'
-                          ? 'border-l-4 border-l-rose-500 border-gray-100 dark:border-gray-700/80 bg-rose-50/25 dark:bg-rose-950/10'
-                          : 'border-l-4 border-l-emerald-500 border-gray-100 dark:border-gray-700/80 bg-emerald-50/25 dark:bg-emerald-950/10'
+                      className={`flex items-center justify-between px-2.5 py-1.5 rounded-xl border transition-all ${c.type === 'expense'
+                          ? 'border-l-3 border-l-rose-500 border-gray-100 dark:border-gray-700/80 bg-rose-50/20 dark:bg-rose-950/10'
+                          : 'border-l-3 border-l-emerald-500 border-gray-100 dark:border-gray-700/80 bg-emerald-50/20 dark:bg-emerald-950/10'
                         }`}
                     >
-                      <div className="flex flex-col min-w-0 pr-2">
-                        <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                      <div className="flex items-center gap-2 min-w-0 pr-1">
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md shrink-0 ${c.type === 'expense'
+                            ? 'bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-300'
+                            : 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300'
+                          }`}>
+                          {c.type === 'expense' ? 'Chi' : 'Thu'}
+                        </span>
+                        <span className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
                           {c.name}
                         </span>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${c.type === 'expense' ? 'bg-rose-500' : 'bg-emerald-500'
-                            }`} />
-                          <span className={`text-[10px] font-bold uppercase tracking-wider ${c.type === 'expense' ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
-                            }`}>
-                            {c.type === 'expense' ? 'Khoản Chi (Expense)' : 'Khoản Thu (Income)'}
-                          </span>
-                        </div>
                       </div>
                       <button
                         onClick={() => handleDeleteCategory(c.id, c.name)}
-                        className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors cursor-pointer shrink-0"
+                        className="p-1 text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer shrink-0"
                         title="Xóa danh mục này"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   ))}
@@ -3669,7 +3732,6 @@ export default function App() {
                   <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                     Món chính
                   </label>
-                  <span className="text-[11px] font-normal text-emerald-600 dark:text-emerald-400 lowercase">(mỗi dòng 1 món)</span>
                 </div>
 
                 {/* Quick Select from Preset Dishes (Chỉ hiển thị Món chính) */}
@@ -3686,7 +3748,7 @@ export default function App() {
                       defaultValue=""
                       className="w-full text-xs py-1.5 px-2.5 rounded-lg bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-medium focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
                     >
-                      <option value="" disabled>✨ Chọn nhanh Món Chính Mẫu (tự điền nguyên liệu)...</option>
+                      <option value="" disabled>✨ Chọn nhanh Món Chính Mẫu...</option>
                       {presetDishes
                         .filter((p) => (p.category || '').toLowerCase() === 'món chính')
                         .map((p) => {
@@ -3706,12 +3768,34 @@ export default function App() {
                   </div>
                 )}
 
+                {/* Danh sách món chính đã chọn dạng chip để xóa nhanh 1 chạm */}
+                {mealForm.main.split('\n').map((s) => s.trim()).filter(Boolean).length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-1.5">
+                    {mealForm.main.split('\n').map((s) => s.trim()).filter(Boolean).map((dishName, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 text-xs font-medium"
+                      >
+                        <span>{dishName}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveMainDish(dishName)}
+                          className="p-0.5 hover:bg-emerald-200 dark:hover:bg-emerald-800 rounded text-emerald-700 dark:text-emerald-300 cursor-pointer"
+                          title={`Xóa món "${dishName}" và tự động trừ nguyên liệu`}
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
                 <textarea
                   rows={2}
                   required
                   placeholder="VD: Cơm chiên hải sản&#10;Thịt kho trứng cút..."
                   value={mealForm.main}
-                  onChange={(e) => setMealForm({ ...mealForm, main: e.target.value })}
+                  onChange={(e) => handleMainChange(e.target.value)}
                   className="w-full px-3.5 py-2 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 custom-scrollbar"
                 />
               </div>
@@ -3722,7 +3806,6 @@ export default function App() {
                   <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                     Món phụ / Canh ăn kèm
                   </label>
-                  <span className="text-[11px] font-normal text-emerald-600 dark:text-emerald-400 lowercase">(mỗi dòng 1 món)</span>
                 </div>
 
                 {/* Quick Select from Preset Dishes (Lọc bỏ Món chính, chỉ hiển thị Món canh, Món xào, Món phụ...) */}
@@ -3739,7 +3822,7 @@ export default function App() {
                       defaultValue=""
                       className="w-full text-xs py-1.5 px-2.5 rounded-lg bg-teal-50/80 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 text-teal-800 dark:text-teal-300 font-medium focus:outline-none focus:ring-1 focus:ring-teal-500 cursor-pointer"
                     >
-                      <option value="" disabled>✨ Chọn nhanh Món Phụ / Canh Mẫu (tự điền & cộng dồn)...</option>
+                      <option value="" disabled>✨ Chọn nhanh Món Phụ / Canh Mẫu...</option>
                       {presetDishes
                         .filter((p) => (p.category || '').toLowerCase() !== 'món chính')
                         .map((p) => {
@@ -3759,30 +3842,43 @@ export default function App() {
                   </div>
                 )}
 
+                {/* Danh sách món phụ đã chọn dạng chip để xóa nhanh 1 chạm */}
+                {mealForm.side.split('\n').map((s) => s.trim()).filter(Boolean).length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-1.5">
+                    {mealForm.side.split('\n').map((s) => s.trim()).filter(Boolean).map((dishName, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-teal-100 dark:bg-teal-950/70 text-teal-800 dark:text-teal-300 text-xs font-medium"
+                      >
+                        <span>{dishName}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveSideDish(dishName)}
+                          className="p-0.5 hover:bg-teal-200 dark:hover:bg-teal-800 rounded text-teal-700 dark:text-teal-300 cursor-pointer"
+                          title={`Xóa món "${dishName}" và tự động trừ nguyên liệu`}
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
                 <textarea
                   rows={2}
                   placeholder="VD: Canh rau ngót thịt băm&#10;Dưa leo, cà chua..."
                   value={mealForm.side}
-                  onChange={(e) => setMealForm({ ...mealForm, side: e.target.value })}
+                  onChange={(e) => handleSideChange(e.target.value)}
                   className="w-full px-3.5 py-2 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 custom-scrollbar"
                 />
               </div>
 
-              {/* Ingredients Textarea with Smart Merge Button */}
+              {/* Ingredients Textarea */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                     Nguyên liệu chuẩn bị
                   </label>
-                  <button
-                    type="button"
-                    onClick={handleSmartDeduplicateIngredients}
-                    className="text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 flex items-center gap-1 cursor-pointer bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800/60 transition-colors"
-                    title="Tự động tìm các nguyên liệu trùng tên và cộng dồn định lượng (ví dụ: Trứng 4 quả + 2 quả = 6 quả; 400g + 0.5kg = 900g)"
-                  >
-                    <Sparkles className="w-3 h-3" />
-                    <span>Gộp định lượng trùng</span>
-                  </button>
                 </div>
                 <textarea
                   rows={3}
@@ -3792,7 +3888,7 @@ export default function App() {
                   className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 custom-scrollbar"
                 />
                 <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1 flex items-center gap-1">
-                  <span>💡 Khi chọn món mẫu, nguyên liệu trùng nhau sẽ được tự động cộng dồn số lượng.</span>
+                  <span>💡 Khi chọn hoặc xóa món mẫu, định lượng nguyên liệu sẽ tự động được đồng bộ và cộng trừ tương ứng.</span>
                 </p>
               </div>
 
@@ -4042,66 +4138,66 @@ export default function App() {
       )}
 
       {/* ========================================================================= */}
-      {/* MOBILE BOTTOM NAVIGATION BAR                                              */}
+      {/* MOBILE BOTTOM NAVIGATION BAR (Compact & Scroll to top on re-tap)         */}
       {/* ========================================================================= */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-200/80 dark:border-gray-800 px-6 py-2 flex items-center justify-around shadow-lg transition-colors">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-200/80 dark:border-gray-800 px-4 py-1.5 flex items-center justify-around shadow-lg transition-colors">
         <button
-          onClick={() => setActiveTab('spend')}
-          className={`relative flex flex-col items-center py-1 gap-1 text-xs transition-colors ${activeTab === 'spend'
+          onClick={() => handleTabClick('spend')}
+          className={`relative flex flex-col items-center py-0.5 gap-0.5 text-[10px] transition-colors cursor-pointer ${activeTab === 'spend'
               ? 'font-bold text-emerald-700 dark:text-emerald-400'
               : 'font-medium text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
             }`}
         >
-          <Wallet className={`w-5 h-5 ${activeTab === 'spend' ? 'stroke-[2.25]' : ''}`} />
+          <Wallet className={`w-4 h-4 ${activeTab === 'spend' ? 'stroke-[2.25]' : ''}`} />
           <span>Thu Chi</span>
           {activeTab === 'spend' && (
-            <span className="w-5 h-[2.5px] bg-emerald-600 dark:bg-emerald-400 rounded-full mt-0.5 shadow-[0_1px_3px_rgba(16,185,129,0.5)]" />
+            <span className="w-4 h-[2px] bg-emerald-600 dark:bg-emerald-400 rounded-full mt-0.5 shadow-[0_1px_3px_rgba(16,185,129,0.5)]" />
           )}
         </button>
         <button
-          onClick={() => setActiveTab('meal')}
-          className={`relative flex flex-col items-center py-1 gap-1 text-xs transition-colors ${activeTab === 'meal'
+          onClick={() => handleTabClick('meal')}
+          className={`relative flex flex-col items-center py-0.5 gap-0.5 text-[10px] transition-colors cursor-pointer ${activeTab === 'meal'
               ? 'font-bold text-emerald-700 dark:text-emerald-400'
               : 'font-medium text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
             }`}
         >
-          <Utensils className={`w-5 h-5 ${activeTab === 'meal' ? 'stroke-[2.25]' : ''}`} />
+          <Utensils className={`w-4 h-4 ${activeTab === 'meal' ? 'stroke-[2.25]' : ''}`} />
           <span>Thực Đơn</span>
           {activeTab === 'meal' && (
-            <span className="w-5 h-[2.5px] bg-emerald-600 dark:bg-emerald-400 rounded-full mt-0.5 shadow-[0_1px_3px_rgba(16,185,129,0.5)]" />
+            <span className="w-4 h-[2px] bg-emerald-600 dark:bg-emerald-400 rounded-full mt-0.5 shadow-[0_1px_3px_rgba(16,185,129,0.5)]" />
           )}
         </button>
         <button
-          onClick={() => setActiveTab('shop')}
-          className={`relative flex flex-col items-center py-1 gap-1 text-xs transition-colors ${activeTab === 'shop'
+          onClick={() => handleTabClick('shop')}
+          className={`relative flex flex-col items-center py-0.5 gap-0.5 text-[10px] transition-colors cursor-pointer ${activeTab === 'shop'
               ? 'font-bold text-emerald-700 dark:text-emerald-400'
               : 'font-medium text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
             }`}
         >
           <div className="relative">
-            <ShoppingCart className={`w-5 h-5 ${activeTab === 'shop' ? 'stroke-[2.25]' : ''}`} />
+            <ShoppingCart className={`w-4 h-4 ${activeTab === 'shop' ? 'stroke-[2.25]' : ''}`} />
             {activeShoppingList.length > 0 && (
-              <span className="absolute -top-1.5 -right-2 bg-emerald-600 text-white text-[9px] px-1 py-0.2 rounded-full font-bold">
+              <span className="absolute -top-1 -right-2 bg-emerald-600 text-white text-[8px] px-1 py-0.2 rounded-full font-bold">
                 {activeShoppingList.length}
               </span>
             )}
           </div>
           <span>Đi Chợ</span>
           {activeTab === 'shop' && (
-            <span className="w-5 h-[2.5px] bg-emerald-600 dark:bg-emerald-400 rounded-full mt-0.5 shadow-[0_1px_3px_rgba(16,185,129,0.5)]" />
+            <span className="w-4 h-[2px] bg-emerald-600 dark:bg-emerald-400 rounded-full mt-0.5 shadow-[0_1px_3px_rgba(16,185,129,0.5)]" />
           )}
         </button>
         <button
-          onClick={() => setActiveTab('settings')}
-          className={`relative flex flex-col items-center py-1 gap-1 text-xs transition-colors ${activeTab === 'settings'
+          onClick={() => handleTabClick('settings')}
+          className={`relative flex flex-col items-center py-0.5 gap-0.5 text-[10px] transition-colors cursor-pointer ${activeTab === 'settings'
               ? 'font-bold text-emerald-700 dark:text-emerald-400'
               : 'font-medium text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
             }`}
         >
-          <Settings className={`w-5 h-5 ${activeTab === 'settings' ? 'stroke-[2.25]' : ''}`} />
+          <Settings className={`w-4 h-4 ${activeTab === 'settings' ? 'stroke-[2.25]' : ''}`} />
           <span>Cài Đặt</span>
           {activeTab === 'settings' && (
-            <span className="w-5 h-[2.5px] bg-emerald-600 dark:bg-emerald-400 rounded-full mt-0.5 shadow-[0_1px_3px_rgba(16,185,129,0.5)]" />
+            <span className="w-4 h-[2px] bg-emerald-600 dark:bg-emerald-400 rounded-full mt-0.5 shadow-[0_1px_3px_rgba(16,185,129,0.5)]" />
           )}
         </button>
       </nav>

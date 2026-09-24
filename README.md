@@ -39,6 +39,10 @@
   - `Tổng Thu`: Tự động cộng dồn các khoản lương, thưởng, thu nhập phụ kèm tỷ lệ & biểu đồ tăng trưởng (Sparkline).
   - `Tổng Chi Tiêu`: Tổng hợp toàn bộ các khoản chi sinh hoạt, ăn uống, hóa đơn và đi chợ kèm đồ thị biến thiên.
   - `Số Dư Hiện Tại`: Thể hiện tình trạng tài chính an toàn trong thẻ dải chuyển màu xanh ngọc (Teal - Emerald) sang trọng.
+* **Chế Độ Ẩn / Hiện Số Tiền Riêng Tư (Mask/Unmask Balance, Income & Expense)**:
+  - Tích hợp biểu tượng con mắt (`Eye` / `EyeOff`) ngay bên cạnh tiêu đề **"Số Dư Hiện Tại"**.
+  - Cho phép người dùng linh hoạt ẩn hoặc hiện số tiền chỉ với 1 cú click: Khi kích hoạt, đồng loạt **Số Dư Hiện Tại**, **Tổng Thu** và **Tổng Chi** được bảo mật hiển thị dạng `•••••••• đ`, tránh để lộ thông tin tài chính cá nhân ở nơi công cộng hoặc chốn văn phòng.
+  - Tự động ghi nhớ trạng thái ẩn/hiện qua `localStorage`, duy trì liên tục và mượt mà giữa các phiên truy cập.
 * **Ghi Chép & Quản Lý Giao Dịch Nhanh Chóng & Chi Tiết**:
   - Thêm mới, chỉnh sửa và xóa khoản thu/chi linh hoạt với đầy đủ thông tin: Số tiền (VNĐ), Danh mục (Ăn uống, Tiền nhà, Hóa đơn, Lương...), Ngày ghi, Tiêu đề giao dịch.
   - **Hiển thị mốc thời gian thực tế (`· HH:mm`)**: Lịch sử giao dịch hiển thị rõ ràng ngày tháng kèm giờ phút ghi nhận giao dịch, bố cục co giãn tự động linh hoạt (`flex-wrap`) không bị che khuất ngay cả khi tiêu đề dài hoặc trên màn hình hẹp.
@@ -72,10 +76,10 @@
   - **Dropdown Món chính**: Chỉ hiển thị các món ăn thuộc danh mục **"Món chính"** từ kho món mẫu, giúp người dùng chọn đúng trọng tâm bữa ăn.
   - **Dropdown Món phụ**: Tự động lọc bỏ các món chính, chỉ hiển thị các món thuộc **"Món canh"**, **"Món xào"**, **"Món phụ"**, **"Tráng miệng"**...
   - **Ràng buộc chống trùng lặp món ăn**: Không cho phép chọn cùng một món ăn 2 lần trong một bữa (kể cả giữa món chính và món phụ). Các món đã được chọn sẽ tự động bị vô hiệu hóa trong dropdown kèm nhãn `— (Đã chọn trong thực đơn)`.
-* **Thuật Toán Gộp Định Lượng Nguyên Liệu Thông Minh (Smart Ingredient Aggregation)**:
-  - Khi người dùng chọn món từ danh sách món mẫu, toàn bộ nguyên liệu định lượng sẽ được tự động điền vào danh sách.
+* **Thuật Toán Gộp & Khấu Trừ Định Lượng Nguyên Liệu 2 Chiều (Two-Way Ingredient Sync)**:
+  - Khi người dùng chọn món từ danh sách món mẫu, toàn bộ nguyên liệu định lượng sẽ được tự động điền vào danh sách bên dưới.
   - **Cộng dồn tự động**: Khi nhiều món (hoặc món chính và món phụ) dùng chung nguyên liệu (ví dụ: cùng dùng *Trứng gà*, *Hành lá*, *Thịt heo*...), hệ thống tự động nhận diện tên và đơn vị để gộp thành 1 dòng duy nhất và cộng dồn định lượng (ví dụ: `4 quả` + `3 quả` ➔ `Trứng gà (7 quả)`; `400g` + `0.5kg` ➔ `900g`).
-  - Hỗ trợ nút **"Gộp định lượng trùng"** để người dùng kích hoạt gộp thủ công bất kỳ lúc nào.
+  - **Khấu trừ tự động khi xóa món (`subtractIngredients`)**: Khi xóa bớt một món ăn khỏi thực đơn (xóa dòng chữ hoặc nhấn nút chip xóa nhanh `[Tên món ✕]`), hệ thống tự động nhận diện món bị loại bỏ và trừ đúng lượng nguyên liệu tương ứng khỏi danh sách bên dưới, giữ nguyên định lượng của các món còn lại.
 * **Kéo Thả Sắp Xếp Thứ Tự Bữa Ăn (Drag & Drop Reordering)**:
   - Nhấp chuột giữ và kéo thả trực tiếp thẻ bữa ăn để đổi thứ tự linh hoạt (ví dụ: đưa Bữa Trưa lên trước Bữa Tối).
   - Tự động lưu thứ tự vào PostgreSQL qua API `PUT /api/meals/reorder` và cột `order_index`.
@@ -88,13 +92,16 @@
 * **Checklist Đi Chợ & Chốt Sổ Hóa Đơn 1-Click (Finalize & Sync to Wallet)**:
   - Sắp xếp thông minh từ bữa gần nhất tới xa nhất (Sáng ➔ Trưa ➔ Tối), ưu tiên món chưa mua lên đầu.
   - Nhập tổng số tiền hóa đơn thực tế có tự động ngắt dấu chấm hàng nghìn (VD: `350.000`).
-  - Nhấn nút **"Chốt hóa đơn & Ghi sổ"** (kèm hiệu ứng Glow Shadow sang trọng) ➔ Tự động sinh ra 1 khoản chi tiêu `Đi chợ` bên Tab 1, cập nhật lại số dư ví và dọn dẹp các món đã mua trong giỏ hàng.
+  - Nhấn nút **"Chốt hóa đơn & Ghi sổ"** (kèm hiệu ứng Glow Shadow sang trọng) ➔ Tự động sinh ra 1 khoản chi tiêu `Đi chợ` bên Tab 1, cập nhật lại số dư ví và dọn dẹp các món đã mua trong giỏ hàng. Giao diện được tinh gọn tối đa, lược bỏ các ghi chú và thông báo dư thừa.
 
 ---
 
 ### 🍳 Phần C: Quản Lý Món Ăn Mẫu & Công Thức Nguyên Liệu (Preset Dishes & Recipes)
 * **Kho Món Ăn Gia Đình Mẫu Đa Dạng**:
   - Tích hợp sẵn 10 món ăn gia đình quen thuộc của người Việt: *Thịt kho tàu*, *Canh chua cá lóc*, *Trứng chiên hành*, *Rau muống xào tỏi*, *Sườn xào chua ngọt*, *Bò xào bông cải*... với đầy đủ lượng calo ước tính và định lượng nguyên liệu chuẩn.
+* **Tối Ưu Typography & Thẻ Món Gọn Gàng**:
+  - Dòng tiêu đề danh sách nguyên liệu trong thẻ món mẫu được chuẩn hóa thành *"Nguyên liệu định lượng:"* (chữ thường chỉ viết hoa chữ cái đầu, phông màu xám nhạt nhẹ nhàng `text-gray-400 font-medium`), loại bỏ kiểu chữ in hoa toàn bộ thô ráp, giúp thẻ nhìn thanh thoát và tập trung vào tên món cùng các chip nguyên liệu.
+  - Lược bỏ các nhãn trạng thái dư thừa ("Mẫu có sẵn", "Tùy chỉnh"), hiển thị trực quan nhóm danh mục và calo.
 * **Tự Do Sáng Tạo, Chỉnh Sửa & Xóa Công Thức Linh Hoạt**:
   - Đặt tại vị trí ưu tiên hàng đầu trong Tab Cài Đặt (ngay dưới thẻ tài khoản).
   - Cho phép người dùng Thêm mới, Chỉnh sửa và Xóa bất kỳ món ăn mẫu nào trong danh sách.
@@ -112,6 +119,7 @@
 * **Google Identity Services (GSI) Single Sign-On**:
   - Tích hợp nút *"Sign in with Google"* chính thức chuẩn mực từ máy chủ Google.
   - Hỗ trợ Google One-Tap tự động gợi ý đăng nhập một chạm tức thì ở góc màn hình.
+  - **Tự động vào thẳng ứng dụng (`auto_select: true`)**: Nếu người dùng đã từng đăng nhập trước đó và duy trì phiên hoạt động của Google trên trình duyệt, hệ thống tự động xác thực một chạm mà không yêu cầu chọn lại tài khoản.
   - Không cần ghi nhớ mật khẩu, bảo mật tuyệt đối qua hạ tầng xác thực của Google Cloud Console.
 * **Quản Lý Phiên Làm Việc JSON Web Token (JWT)**:
   - Cấp phát Token JWT an toàn với thời hạn lên đến 30 ngày, tự động lưu trữ tại `localStorage` và gửi kèm trong tiêu đề yêu cầu `Authorization: Bearer <token>`.
@@ -134,10 +142,16 @@
 ---
 
 ### ⚙️ Phần E: Cài Đặt & Trải Nghiệm Giao Diện (Settings & UI Experience)
-* **Khối "Dữ Liệu & Hệ Thống" Hợp Nhất**:
-  - Tích hợp tính năng *Xuất Lịch Sử Giao Dịch (CSV)* và *Nhật Ký Hệ Thống (CSV)* vào 1 thẻ lớn với phân cấp nút bấm rõ ràng.
-* **Quản Lý Danh Mục Trực Quan Với Color Coding**:
-  - Vạch đỏ (`border-l-rose-500`) cho Khoản Chi và vạch xanh lá (`border-l-emerald-500`) cho Khoản Thu.
+* **Tinh Gọn Thẻ Tài Khoản Profile & Nút Đăng Xuất Mobile**:
+  - Gỡ bỏ huy hiệu trạng thái thừa `[✓] Đã đăng nhập`, hiển thị trực tiếp Avatar, Họ tên và Email người dùng.
+  - Trên màn hình nhỏ (Mobile), nút Đăng xuất được tối ưu thành icon rời cửa nhỏ gọn (`LogOut`) đặt tại góc trên cùng bên phải thẻ, giải phóng hoàn toàn một hàng ngang riêng biệt, giúp thẻ Profile cực kỳ nhỏ gọn và hiện đại.
+* **Tinh Gọn Khối Dữ Liệu & Quản Lý Danh Mục**:
+  - Khối xuất CSV lịch sử và Audit Log được chuyển thành các hàng ngang gọn nhẹ với nút tải nhanh thanh lịch.
+  - Form thêm danh mục inline 1 hàng kết hợp danh sách phân loại cuộn mượt tối đa `max-h-48` có color coding trực quan (Đỏ cho Chi, Xanh cho Thu), tiết kiệm hơn 50% diện tích trang Cài Đặt.
+* **Chạm Tab Đang Mở Để Cuộn Lên Đầu Trang (Tap Active Tab to Scroll To Top)**:
+  - Khi người dùng đang ở bất kỳ tab nào và cuộn xuống dưới, chạm lại vào tab đó (cả trên thanh điều hướng Desktop lẫn Mobile) sẽ tự động cuộn mượt lên đầu trang (`window.scrollTo({ top: 0, behavior: 'smooth' })`).
+* **Tối Ưu Bottom Navigation Bar Trên Mobile**:
+  - Kích thước icon thanh điều hướng dưới chân màn hình thu gọn xuống `w-4 h-4`, tối ưu hóa padding dọc và kích cỡ chữ (text-[10px]), mở rộng tối đa không gian hiển thị nội dung trên các smartphone màn hình nhỏ.
 * **Đồng Bộ Giao Diện Dark / Light Mode Toàn Diện**:
   - Chuyển đổi linh hoạt giữa 3 chế độ: **Sáng (Light)**, **Tối (Dark)** và **Tự động (System default)**.
   - Nút chuyển nhanh Dark/Light Mode với icon Mặt Trời / Mặt Trăng đặt ngay trên thanh Header.
