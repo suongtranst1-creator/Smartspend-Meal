@@ -335,10 +335,9 @@ Mục đích: Theo dõi tiến độ, ghi chép lại các tính năng đã phá
     - Thanh điều hướng Mobile (Bottom Navigation):
       + Thu nhỏ kích thước icon từ w-5 sang w-4, tinh gọn padding dọc (py-1.5) và cỡ chữ (text-[10px]).
       + Tiết kiệm đáng kể không gian hiển thị dọc trên màn hình smartphone nhỏ.
-    - Cơ chế Đăng nhập Google One-Tap & Bỏ qua bước chọn tài khoản (Skip Account Chooser):
-      + Kích hoạt cấu hình `auto_select: true` kết hợp tham số `login_hint` trong Google Identity Services (`AuthScreen.jsx`).
-      + Lưu trữ an toàn email đăng nhập gần nhất (`smartspend_last_email`). Khi người dùng mở lại trang đăng nhập, `login_hint` hướng dẫn Google nhận diện đích danh tài khoản và bỏ qua hoàn toàn popup "Choose an account", giúp người dùng nhấn vào nút hoặc One-Tap là vào thẳng hệ thống ngay cả khi trình duyệt có nhiều tài khoản Google cùng hoạt động.
-      + Bổ sung nút tùy chọn "Chọn tài khoản Google khác" cho phép chuyển đổi linh hoạt khi có nhu cầu.
+    - Cơ chế Đăng nhập Google One-Tap:
+      + Kích hoạt cấu hình `auto_select: true` trong thư viện Google Identity Services (`AuthScreen.jsx`).
+      + Cho phép người dùng đã từng đăng nhập trước đó tự động vào thẳng hệ thống một chạm mà không bị Google bắt xác nhận/chọn lại tài khoản.
     - Tinh gọn Dữ liệu & Hệ thống và Quản lý Danh mục (Tab Cài Đặt):
       + Chuyển đổi khối xuất CSV lịch sử giao dịch và Audit Logs sang các hàng ngang gọn nhẹ với nút bấm thanh lịch.
       + Thu gọn form thêm danh mục thành 1 hàng ngang inline và danh sách danh mục cuộn mượt tối đa max-h-48 với thẻ badge Chi/Thu súc tích, giảm hơn 50% diện tích chiếm dụng.

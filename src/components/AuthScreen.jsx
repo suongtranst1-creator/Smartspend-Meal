@@ -71,10 +71,6 @@ export default function AuthScreen({ onLoginSuccess, initialError = '' }) {
 
       localStorage.setItem('smartspend_token', data.token);
       localStorage.setItem('smartspend_user', JSON.stringify(data.user));
-      if (data.user?.email) {
-        localStorage.setItem('smartspend_last_email', data.user.email);
-        setLastEmail(data.user.email);
-      }
       if (onLoginSuccess) {
         onLoginSuccess(data.user, data.token);
       }
@@ -84,18 +80,6 @@ export default function AuthScreen({ onLoginSuccess, initialError = '' }) {
       setIsSubmitting(false);
     }
   };
-
-  // State lưu email đăng nhập gần nhất để chỉ định login_hint cho Google
-  const [lastEmail, setLastEmail] = useState(() => {
-    let email = localStorage.getItem('smartspend_last_email') || '';
-    if (!email) {
-      try {
-        const u = JSON.parse(localStorage.getItem('smartspend_user') || '{}');
-        if (u?.email) email = u.email;
-      } catch {}
-    }
-    return email;
-  });
 
   // 3. Khởi tạo Google Identity Services (GSI) khi có Google Client ID
   useEffect(() => {
@@ -109,7 +93,7 @@ export default function AuthScreen({ onLoginSuccess, initialError = '' }) {
         try {
           const isDark = document.documentElement.classList.contains('dark');
 
-          const gsiConfig = {
+          window.google.accounts.id.initialize({
             client_id: googleClientId,
             callback: (response) => {
               if (response?.credential) {
@@ -118,14 +102,7 @@ export default function AuthScreen({ onLoginSuccess, initialError = '' }) {
             },
             auto_select: true,
             cancel_on_tap_outside: true,
-          };
-
-          // Khi có login_hint, Google tự động bỏ qua (skip) bước popup chọn tài khoản
-          if (lastEmail) {
-            gsiConfig.login_hint = lastEmail;
-          }
-
-          window.google.accounts.id.initialize(gsiConfig);
+          });
 
           // Render nút Đăng nhập bằng Google chính thức của Google GSI
           if (googleBtnRef.current) {
@@ -137,7 +114,7 @@ export default function AuthScreen({ onLoginSuccess, initialError = '' }) {
               size: 'large',
               type: 'standard',
               shape: 'pill',
-              text: 'continue_with',
+              text: 'signin_with',
               width: btnWidth,
               logo_alignment: 'left',
             });
@@ -155,13 +132,7 @@ export default function AuthScreen({ onLoginSuccess, initialError = '' }) {
     };
 
     initGoogleGsi();
-  }, [googleClientId, lastEmail]);
-
-  // Cho phép người dùng chuyển sang chọn tài khoản khác nếu muốn
-  const handleSwitchAccount = () => {
-    localStorage.removeItem('smartspend_last_email');
-    setLastEmail('');
-  };
+  }, [googleClientId]);
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-gradient-to-br from-emerald-50 via-slate-50 to-teal-50 dark:from-gray-950 dark:via-gray-900 dark:to-emerald-950/40">
@@ -242,15 +213,6 @@ export default function AuthScreen({ onLoginSuccess, initialError = '' }) {
                   id="googleSignInDiv"
                   className="flex justify-center w-full min-h-[44px]"
                 />
-                {lastEmail && (
-                  <button
-                    type="button"
-                    onClick={handleSwitchAccount}
-                    className="mt-3 text-[11px] text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:underline transition-all cursor-pointer"
-                  >
-                    Chọn tài khoản Google khác
-                  </button>
-                )}
               </div>
             ) : (
               /* CHƯA CÓ GOOGLE CLIENT ID: CHỈ HIỂN THỊ THÔNG BÁO */

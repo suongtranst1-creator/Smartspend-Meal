@@ -730,9 +730,6 @@ export default function App() {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
     } catch {}
-    if (currentUser?.email) {
-      localStorage.setItem('smartspend_last_email', currentUser.email);
-    }
     localStorage.removeItem('smartspend_token');
     localStorage.removeItem('smartspend_user');
     setCurrentUser(null);
@@ -773,9 +770,6 @@ export default function App() {
           const data = await res.json();
           setCurrentUser(data.user);
           localStorage.setItem('smartspend_user', JSON.stringify(data.user));
-          if (data.user?.email) {
-            localStorage.setItem('smartspend_last_email', data.user.email);
-          }
         } else {
           localStorage.removeItem('smartspend_token');
           localStorage.removeItem('smartspend_user');
