@@ -365,6 +365,8 @@ Mục đích: Theo dõi tiến độ, ghi chép lại các tính năng đã phá
       + Bỏ nhãn/badge trạng thái "Đã đăng nhập" (dư thừa về mặt UX).
       + Chuyển nút Đăng xuất trên màn hình nhỏ từ chiếm hẳn một hàng riêng biệt thành icon nhỏ gọn (hình mũi tên rời khỏi cửa) đặt ở góc trên bên phải của thẻ Profile.
       + Tối ưu Typography: Chuyển dòng tiêu đề "NGUYÊN LIỆU ĐỊNH LƯỢNG:" trong thẻ món mẫu từ viết hoa toàn bộ sang chữ thường chỉ viết hoa chữ cái đầu ("Nguyên liệu định lượng:") với màu xám nhạt (`text-gray-400 font-medium`), giảm bớt độ nặng nề và tăng tính tinh tế cho giao diện.
+    - Tinh gọn Logo Màn Hình Đăng Nhập (`AuthScreen.jsx`):
+      + Loại bỏ icon lấp lánh (Sparkles) màu xanh tròn ở góc dưới bên phải logo thương hiệu, giữ logo nguyên bản, tối giản và chuyên nghiệp.
 
 [x] 5. Cấu Hình Hoàn Chỉnh Ảnh Bìa Mạng Xã Hội (Open Graph & Twitter Card) & Cập Nhật Tài Liệu:
     - Tích hợp ảnh Open Graph `og-image.jpg` độ phân giải cao (1200x630) vào `public/og-image.jpg` và `dist/og-image.jpg`.

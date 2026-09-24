@@ -2,8 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   AlertCircle,
   Loader2,
-  Lock,
-  Sparkles
+  Lock
 } from 'lucide-react';
 
 export default function AuthScreen({ onLoginSuccess, initialError = '' }) {
@@ -146,8 +145,8 @@ export default function AuthScreen({ onLoginSuccess, initialError = '' }) {
           
           {/* Header & Logo */}
           <div className="flex flex-col items-center text-center mb-8">
-            <div className="relative mb-4 group">
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 p-0.5 shadow-lg shadow-emerald-500/25 transition-transform group-hover:scale-105 duration-300">
+            <div className="mb-4">
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 p-0.5 shadow-lg shadow-emerald-500/25 transition-transform hover:scale-105 duration-300">
                 <img
                   src="/Logo.png"
                   alt="SmartSpend & Meal Logo"
@@ -156,9 +155,6 @@ export default function AuthScreen({ onLoginSuccess, initialError = '' }) {
                     e.currentTarget.style.display = 'none';
                   }}
                 />
-              </div>
-              <div className="absolute -bottom-1 -right-1 bg-emerald-600 text-white p-1 rounded-full shadow-md">
-                <Sparkles className="w-3.5 h-3.5" />
               </div>
             </div>
 
