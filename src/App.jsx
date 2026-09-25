@@ -3880,7 +3880,7 @@ export default function App() {
                       defaultValue=""
                       className="w-full text-xs py-2 px-2.5 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-medium focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
                     >
-                      <option value="" disabled>✨ Chọn nhanh Món Chính Mẫu...</option>
+                      <option value="" disabled>✨ Chọn nhanh Món Chính...</option>
                       {presetDishes
                         .filter((p) => (p.category || '').toLowerCase() === 'món chính')
                         .map((p) => {
@@ -3962,7 +3962,7 @@ export default function App() {
                   {showMainSuggestions && mainSuggestions.length > 0 && (
                     <div className="absolute top-full left-0 right-0 mt-1 z-30 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in duration-150">
                       <div className="p-1.5 text-[11px] font-semibold text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-700 px-2.5 flex items-center justify-between">
-                        <span>Gợi ý từ Món mẫu</span>
+                        <span>Gợi ý món chính</span>
                         <span className="text-[10px]">Nhấn để chọn</span>
                       </div>
                       {mainSuggestions.map((p) => (
@@ -4009,7 +4009,7 @@ export default function App() {
                       defaultValue=""
                       className="w-full text-xs py-2 px-2.5 rounded-xl bg-teal-50/80 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 text-teal-800 dark:text-teal-300 font-medium focus:outline-none focus:ring-1 focus:ring-teal-500 cursor-pointer"
                     >
-                      <option value="" disabled>✨ Chọn nhanh Món Phụ / Canh Mẫu...</option>
+                      <option value="" disabled>✨ Chọn nhanh Món Phụ / Canh...</option>
                       {presetDishes
                         .filter((p) => (p.category || '').toLowerCase() !== 'món chính')
                         .map((p) => {
@@ -4091,7 +4091,7 @@ export default function App() {
                   {showSideSuggestions && sideSuggestions.length > 0 && (
                     <div className="absolute top-full left-0 right-0 mt-1 z-30 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in duration-150">
                       <div className="p-1.5 text-[11px] font-semibold text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-700 px-2.5 flex items-center justify-between">
-                        <span>Gợi ý từ Món mẫu</span>
+                        <span>Gợi ý món phụ</span>
                         <span className="text-[10px]">Nhấn để chọn</span>
                       </div>
                       {sideSuggestions.map((p) => (
@@ -4131,7 +4131,7 @@ export default function App() {
                   className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 custom-scrollbar"
                 />
                 <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1 flex items-center gap-1">
-                  <span>💡 Khi chọn hoặc xóa món mẫu, định lượng nguyên liệu sẽ tự động được đồng bộ và cộng trừ tương ứng.</span>
+                  <span>💡 Khi chọn hoặc xóa món, định lượng nguyên liệu sẽ tự động được đồng bộ và cộng trừ tương ứng.</span>
                 </p>
               </div>
 
