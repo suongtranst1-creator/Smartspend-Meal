@@ -382,6 +382,8 @@ Mục đích: Theo dõi tiến độ, ghi chép lại các tính năng đã phá
       + Tự động cộng/trừ calo ước tính hai chiều: Khi thêm hoặc bớt các món mẫu, lượng calo ước tính tự động được cộng dồn hoặc khấu trừ chính xác.
       + Kiểm soát giỏ hàng khi chốt sổ: Chặn hoàn toàn việc chốt sổ khi giỏ hàng chưa có nguyên liệu nào được chọn (hiển thị popup/cảnh báo nhắc nhở người dùng).
       + Popup Xác thực Chốt Hóa Đơn & Ghi Sổ: Khi bấm chốt sổ, mở popup xác thực hiển thị chi tiết số lượng nguyên liệu đã mua, tổng số tiền thanh toán thực tế, danh mục ghi sổ và danh sách món trước khi lưu vào Sổ Thu Chi.
+      + Tinh gọn nhãn chọn nhanh Thực Đơn: Bỏ chữ "mẫu", đổi thành "✨ Chọn nhanh Món Chính...", "✨ Chọn nhanh Món Phụ / Canh...", và các tiêu đề gợi ý "Gợi ý món chính / phụ" giúp giao diện gọn gàng, tự nhiên và chuyên nghiệp.
+
 
 [x] 5. Cấu Hình Hoàn Chỉnh Ảnh Bìa Mạng Xã Hội (Open Graph & Twitter Card) & Cập Nhật Tài Liệu:
     - Tích hợp ảnh Open Graph `og-image.jpg` độ phân giải cao (1200x630) vào `public/og-image.jpg` và `dist/og-image.jpg`.
