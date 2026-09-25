@@ -613,16 +613,14 @@ export default function App() {
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [authError, setAuthError] = useState('');
 
-  // State: Hướng Dẫn Sử Dụng & Welcome Tour
+  // State: Hướng Dẫn Sử Dụng (Tour 4 bước)
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
-  const [onboardingMode, setOnboardingMode] = useState('guide'); // 'tour' | 'guide'
 
   // Tự động mở Tour chào mừng 4 bước cho người dùng mới đăng nhập lần đầu
   useEffect(() => {
     if (currentUser && !isAuthChecking) {
       const hasOnboarded = localStorage.getItem('smartspend_onboarded');
       if (!hasOnboarded) {
-        setOnboardingMode('tour');
         setIsOnboardingOpen(true);
       }
     }
@@ -2301,15 +2299,12 @@ export default function App() {
               )}
             </button>
 
-            {/* Quick Guide / Help Center Button */}
+            {/* Quick Guide / Tour 4 Bước Button */}
             <button
               type="button"
-              onClick={() => {
-                setOnboardingMode('guide');
-                setIsOnboardingOpen(true);
-              }}
+              onClick={() => setIsOnboardingOpen(true)}
               className="p-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors shadow-2xs shrink-0 cursor-pointer"
-              title="Hướng dẫn sử dụng & Cẩm nang ứng dụng"
+              title="Xem hướng dẫn sử dụng (Tour 4 bước)"
             >
               <HelpCircle className="w-4 h-4" />
             </button>
@@ -3325,23 +3320,22 @@ export default function App() {
             </div>
 
             {/* ================================================================= */}
-            {/* THẺ TRỢ GIÚP & HƯỚNG DẪN SỬ DỤNG CHO NGƯỜI DÙNG                   */}
+            {/* THẺ HƯỚNG DẪN SỬ DỤNG (TOUR 4 BƯỚC)                               */}
             {/* ================================================================= */}
             <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 rounded-3xl p-5 sm:p-6 text-white shadow-xl shadow-emerald-900/10 relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="relative z-10 flex items-start sm:items-center gap-3.5">
-                <div className="w-12 h-12 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 flex items-center justify-center shrink-0 shadow-inner">
-                  <BookOpen className="w-6 h-6 text-emerald-100 stroke-[2.25]" />
+                <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md border border-white/25 flex items-center justify-center shrink-0 shadow-inner">
+                  <Sparkles className="w-6 h-6 text-amber-300 stroke-[2.25]" />
                 </div>
                 <div>
-                  <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/20 text-[11px] font-bold tracking-wide uppercase mb-1">
-                    <Sparkles className="w-3 h-3 text-amber-300" />
-                    <span>Cẩm nang toàn diện</span>
+                  <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/20 text-[11px] font-bold tracking-wide uppercase mb-1 text-emerald-50">
+                    <span>Hướng dẫn người mới</span>
                   </div>
-                  <h3 className="text-base sm:text-lg font-extrabold leading-tight">
-                    Hướng Dẫn Sử Dụng & Mẹo Hay
+                  <h3 className="text-base sm:text-lg font-extrabold text-white leading-tight">
+                    Khám Phá SmartSpend & Meal
                   </h3>
-                  <p className="text-xs sm:text-sm text-emerald-100/90 mt-0.5 max-w-xl leading-relaxed">
-                    Khám phá quy trình khép kín: Lên thực đơn tuần ➔ Tự sinh đồ đi chợ ➔ Chốt hóa đơn ghi vào Sổ thu chi.
+                  <p className="text-xs sm:text-sm text-emerald-100 mt-0.5 max-w-xl leading-relaxed">
+                    Quy trình khép kín: Lên thực đơn tuần ➔ Sinh đồ đi chợ ➔ Chốt hóa đơn vào Sổ thu chi.
                   </p>
                 </div>
               </div>
@@ -3349,26 +3343,11 @@ export default function App() {
               <div className="relative z-10 flex items-center gap-2 shrink-0 self-start sm:self-auto">
                 <button
                   type="button"
-                  onClick={() => {
-                    setOnboardingMode('guide');
-                    setIsOnboardingOpen(true);
-                  }}
-                  className="px-4 py-2.5 rounded-xl bg-white text-emerald-800 hover:bg-emerald-50 text-xs sm:text-sm font-bold shadow-md transition-all active:scale-98 flex items-center gap-1.5 cursor-pointer"
+                  onClick={() => setIsOnboardingOpen(true)}
+                  className="px-5 py-2.5 rounded-xl bg-white text-emerald-900 hover:bg-emerald-50 text-xs sm:text-sm font-extrabold shadow-md transition-all active:scale-98 flex items-center gap-1.5 cursor-pointer"
                 >
-                  <BookOpen className="w-4 h-4 stroke-[2.25]" />
-                  <span>Mở Cẩm Nang</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOnboardingMode('tour');
-                    setIsOnboardingOpen(true);
-                  }}
-                  className="px-3.5 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-white text-xs sm:text-sm font-semibold transition-all active:scale-98 flex items-center gap-1.5 cursor-pointer"
-                  title="Chạy lại Tour chào mừng 4 bước"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Xem Tour</span>
+                  <Sparkles className="w-4 h-4 text-emerald-700 stroke-[2.5]" />
+                  <span>Xem Tour 4 Bước</span>
                 </button>
               </div>
 
@@ -4569,12 +4548,11 @@ export default function App() {
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL HƯỚNG DẪN SỬ DỤNG (WELCOME TOUR & COMPREHENSIVE GUIDE CENTER)       */}
+      {/* MODAL HƯỚNG DẪN SỬ DỤNG (TOUR 4 BƯỚC)                                     */}
       {/* ========================================================================= */}
       <OnboardingModal
         isOpen={isOnboardingOpen}
         onClose={() => setIsOnboardingOpen(false)}
-        initialMode={onboardingMode}
       />
 
       {/* ========================================================================= */}
