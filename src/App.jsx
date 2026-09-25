@@ -666,44 +666,6 @@ export default function App() {
   // State: Popup xác thực chốt hóa đơn đi chợ
   const [isConfirmFinalizeOpen, setIsConfirmFinalizeOpen] = useState(false);
 
-  // Gợi ý món chính từ Món Mẫu (Autocomplete)
-  const mainSuggestions = useMemo(() => {
-    const q = mainInputText.trim().toLowerCase();
-    if (!q) return [];
-    return presetDishes
-      .filter((p) => p.name.toLowerCase().includes(q))
-      .slice(0, 8);
-  }, [mainInputText, presetDishes]);
-
-  // Gợi ý món phụ từ Món Mẫu (Autocomplete)
-  const sideSuggestions = useMemo(() => {
-    const q = sideInputText.trim().toLowerCase();
-    if (!q) return [];
-    return presetDishes
-      .filter((p) => p.name.toLowerCase().includes(q))
-      .slice(0, 8);
-  }, [sideInputText, presetDishes]);
-
-  // Bản đồ số lượng món chính & món phụ hiện tại để hiển thị số phần
-  const mainDishesMap = useMemo(() => {
-    const lines = (mealForm.main || '').split('\n').map((s) => s.trim()).filter(Boolean);
-    const map = new Map();
-    for (const l of lines) {
-      const item = parseDishItem(l);
-      map.set(item.name.toLowerCase(), item.count);
-    }
-    return map;
-  }, [mealForm.main]);
-
-  const sideDishesMap = useMemo(() => {
-    const lines = (mealForm.side || '').split('\n').map((s) => s.trim()).filter(Boolean);
-    const map = new Map();
-    for (const l of lines) {
-      const item = parseDishItem(l);
-      map.set(item.name.toLowerCase(), item.count);
-    }
-    return map;
-  }, [mealForm.side]);
 
   // State: Kéo thả sắp xếp bữa ăn
   const [draggedMealIdx, setDraggedMealIdx] = useState(null);
@@ -757,6 +719,46 @@ export default function App() {
   });
   const [presetCategoryFilter, setPresetCategoryFilter] = useState('all');
   const [presetSearch, setPresetSearch] = useState('');
+
+  // Gợi ý món chính từ Món Mẫu (Autocomplete)
+  const mainSuggestions = useMemo(() => {
+    const q = mainInputText.trim().toLowerCase();
+    if (!q) return [];
+    return presetDishes
+      .filter((p) => p.name.toLowerCase().includes(q))
+      .slice(0, 8);
+  }, [mainInputText, presetDishes]);
+
+  // Gợi ý món phụ từ Món Mẫu (Autocomplete)
+  const sideSuggestions = useMemo(() => {
+    const q = sideInputText.trim().toLowerCase();
+    if (!q) return [];
+    return presetDishes
+      .filter((p) => p.name.toLowerCase().includes(q))
+      .slice(0, 8);
+  }, [sideInputText, presetDishes]);
+
+  // Bản đồ số lượng món chính & món phụ hiện tại để hiển thị số phần
+  const mainDishesMap = useMemo(() => {
+    const lines = (mealForm.main || '').split('\n').map((s) => s.trim()).filter(Boolean);
+    const map = new Map();
+    for (const l of lines) {
+      const item = parseDishItem(l);
+      map.set(item.name.toLowerCase(), item.count);
+    }
+    return map;
+  }, [mealForm.main]);
+
+  const sideDishesMap = useMemo(() => {
+    const lines = (mealForm.side || '').split('\n').map((s) => s.trim()).filter(Boolean);
+    const map = new Map();
+    for (const l of lines) {
+      const item = parseDishItem(l);
+      map.set(item.name.toLowerCase(), item.count);
+    }
+    return map;
+  }, [mealForm.side]);
+
 
   // Database Connection Status
   const [dbStatus, setDbStatus] = useState({ checked: false, connected: false, database: null, error: null });
