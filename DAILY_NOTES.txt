@@ -368,6 +368,11 @@ Mục đích: Theo dõi tiến độ, ghi chép lại các tính năng đã phá
     - Tinh gọn Logo Màn Hình Đăng Nhập (`AuthScreen.jsx`):
       + Loại bỏ icon lấp lánh (Sparkles) màu xanh tròn ở góc dưới bên phải logo thương hiệu, giữ logo nguyên bản, tối giản và chuyên nghiệp.
 
+  - Khắc phục triệt để lỗi ảnh Avatar Google bị vỡ (Broken Image Icon):
+      + Nguyên nhân: Máy chủ CDN ảnh đại diện của Google (`lh3.googleusercontent.com`) chặn tải ảnh (lỗi HTTP 403 Forbidden) khi trình duyệt gửi kèm tiêu đề `Referer` từ ứng dụng web; đồng thời thẻ `<img>` thiếu cơ chế bắt lỗi `onError` dẫn đến việc trình duyệt hiển thị icon ảnh vỡ cùng chữ `alt` ("Duc") bị méo mó, co cụm bên trong khung avatar.
+      + Giải pháp: Xây dựng component chuyên dụng [UserAvatar.jsx](file:///c:/Users/leduc/Downloads/SmartSpend%20&%20Meal/src/components/UserAvatar.jsx) trang bị thuộc tính `referrerPolicy="no-referrer"` giúp tải trực tiếp ảnh từ Google mà không bị chặn 403; kết hợp bộ lắng nghe sự kiện `onError` tự động chuyển đổi sang Avatar chữ cái đầu (Initials Avatar) trên nền dải màu gradient ngọc bích chuẩn phong cách giao diện sang trọng, đảm bảo không bao giờ xuất hiện icon vỡ.
+      + Đồng bộ hiển thị mượt mà trên cả thanh điều hướng (Navbar) lẫn Thẻ thông tin cá nhân trong Tab Cài Đặt.
+
 [x] 5. Cấu Hình Hoàn Chỉnh Ảnh Bìa Mạng Xã Hội (Open Graph & Twitter Card) & Cập Nhật Tài Liệu:
     - Tích hợp ảnh Open Graph `og-image.jpg` độ phân giải cao (1200x630) vào `public/og-image.jpg` và `dist/og-image.jpg`.
     - Bổ sung toàn diện thẻ meta SEO, Open Graph (Facebook, Zalo, Messenger, Telegram) và Twitter Card vào `index.html` với đầy đủ URL tuyệt đối:

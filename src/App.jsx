@@ -42,6 +42,7 @@ import {
   EyeOff
 } from 'lucide-react';
 import AuthScreen from './components/AuthScreen.jsx';
+import UserAvatar from './components/UserAvatar.jsx';
 import {
   mergeIngredients,
   subtractIngredients,
@@ -2209,17 +2210,11 @@ export default function App() {
                   onClick={() => handleTabClick('settings')}
                   title={`Đang đăng nhập: ${currentUser.email}`}
                 >
-                  {currentUser.picture ? (
-                    <img
-                      src={currentUser.picture}
-                      alt={currentUser.name}
-                      className="w-8 h-8 rounded-xl border border-emerald-500/40 object-cover shadow-2xs group-hover:ring-2 group-hover:ring-emerald-500/30 transition-all"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center font-bold text-xs shadow-2xs group-hover:ring-2 group-hover:ring-emerald-500/30 transition-all">
-                      {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
-                    </div>
-                  )}
+                  <UserAvatar
+                    user={currentUser}
+                    size="sm"
+                    className="group-hover:ring-2 group-hover:ring-emerald-500/30"
+                  />
                   <div className="hidden xl:flex flex-col text-left leading-tight max-w-[120px]">
                     <span className="text-xs font-bold text-gray-800 dark:text-gray-200 truncate">
                       {currentUser.name || 'Người dùng'}
@@ -3128,17 +3123,11 @@ export default function App() {
             <div className="bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.25)] border border-gray-100 dark:border-gray-700/80">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 sm:gap-3.5 min-w-0 pr-2">
-                  {currentUser?.picture ? (
-                    <img
-                      src={currentUser.picture}
-                      alt={currentUser.name}
-                      className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl border-2 border-emerald-500/40 object-cover shadow-sm shrink-0"
-                    />
-                  ) : (
-                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center font-bold text-base sm:text-lg shadow-sm shrink-0">
-                      {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
-                    </div>
-                  )}
+                  <UserAvatar
+                    user={currentUser}
+                    size="lg"
+                    className="shadow-sm"
+                  />
                   <div className="min-w-0">
                     <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">
                       {currentUser?.name || 'Tài khoản Google'}
