@@ -93,10 +93,19 @@
 * **Tự Động Bỏ Qua Món Thực Đơn Quá Hạn Chưa Mua (Auto-Skip Expired Items)**:
   - Khi một ngày thực đơn đã trôi qua (`plan_date < hôm nay`), bất kỳ nguyên liệu nào thuộc ngày đó mà **chưa mua** (`is_bought = false`) sẽ **tự động được bỏ qua khỏi Danh sách đi chợ**, tránh tồn đọng nguyên liệu cũ.
   - Trên thẻ thực đơn quá khứ, các nguyên liệu chưa mua được gắn nhãn `Đã bỏ qua` màu vàng cam rõ ràng.
-* **Checklist Đi Chợ & Chốt Sổ Hóa Đơn 1-Click (Finalize & Sync to Wallet)**:
+* **Gợi Ý Món Thông Minh (Autocomplete) & Ô Nhập 1 Dòng Enter-to-Chip**:
+  - **Autocomplete tức thì**: Khi gõ phím ở ô món chính hoặc món phụ, hệ thống hiển thị danh sách gợi ý các món khớp từ kho món ăn mẫu kèm lượng calo ước tính và phân loại món.
+  - **Ô nhập 1 dòng thanh lịch**: Khi gõ tên món và nhấn **Enter** (hoặc bấm nút "Thêm"), món ăn sẽ tự động được hiển thị dưới dạng thẻ tag gọn gàng bên trên và xóa trắng ô nhập để tiếp tục nhập món khác.
+  - **Tự động nhận diện nguyên liệu & calo**: Kể cả khi gõ tay đúng tên món có trong mẫu, hệ thống vẫn tự động nạp đầy đủ nguyên liệu định lượng và cộng dồn calo vào ô "Calo ước tính".
+* **Hỗ Trợ Món Nhiều Phần (Tag x2, x3...) & Tự Động Đồng Bộ Calo Hai Chiều**:
+  - Khi chọn hoặc nhập 1 món nhiều lần (gia đình ăn nhiều phần), hệ thống tự động gộp thành thẻ tag định dạng `Tên món x2`, `Tên món x3`, đồng thời tự động nhân bội số định lượng nguyên liệu và lượng calo tương ứng.
+  - Khi bấm nút `✕` trên thẻ tag, hệ thống giảm 1 phần (x2 ➔ x1) và tự động khấu trừ calo cùng nguyên liệu tương ứng khỏi thực đơn.
+* **Dropdown Chọn Nhanh Món Ăn Tinh Gọn (Quick Select Dropdown)**:
+  - Dropdown món chính hiển thị `✨ Chọn nhanh Món Chính...`, dropdown món phụ hiển thị `✨ Chọn nhanh Món Phụ / Canh...`, loại bỏ các chữ "mẫu" dư thừa, giao diện gọn gàng và trực quan.
+* **Checklist Đi Chợ, Kiểm Soát Giỏ Hàng & Popup Xác Thực Hóa Đơn (Finalize & Sync to Wallet)**:
   - Sắp xếp thông minh từ bữa gần nhất tới xa nhất (Sáng ➔ Trưa ➔ Tối), ưu tiên món chưa mua lên đầu.
-  - Nhập tổng số tiền hóa đơn thực tế có tự động ngắt dấu chấm hàng nghìn (VD: `350.000`).
-  - Nhấn nút **"Chốt hóa đơn & Ghi sổ"** (kèm hiệu ứng Glow Shadow sang trọng) ➔ Tự động sinh ra 1 khoản chi tiêu `Đi chợ` bên Tab 1, cập nhật lại số dư ví và dọn dẹp các món đã mua trong giỏ hàng. Giao diện được tinh gọn tối đa, lược bỏ các ghi chú và thông báo dư thừa.
+  - **Kiểm soát giỏ hàng rỗng**: Chặn hoàn toàn việc bấm chốt sổ khi giỏ hàng chưa có nguyên liệu nào được chọn mua (hiển thị thông báo nhắc nhở), ngăn ngừa ghi nhầm dữ liệu trống.
+  - **Popup Xác thực Chốt Hóa Đơn & Ghi Sổ**: Khi bấm chốt sổ, mở hộp thoại tóm tắt chi tiết số lượng nguyên liệu đã mua, tổng tiền thực tế trên hóa đơn và danh mục ghi sổ để người dùng kiểm tra xác nhận trước khi lưu vào Sổ Thu Chi.
 
 ---
 
@@ -162,6 +171,16 @@
   - Tích hợp script inline chống hiện tượng nhấp nháy sáng (FOUC).
 * **Định Vị Thông Báo Toast Không Che Menu**:
   - Hộp thông báo nổi (Toast Notification) được định vị tại góc dưới bên phải màn hình (`bottom-right` trên máy tính / `bottom-20` trên điện thoại), giải phóng 100% không gian thanh điều hướng các tab bên trên.
+* **Khắc Phục Lỗi Ảnh Avatar Google Bị Vỡ (`UserAvatar.jsx`)**:
+  - Trang bị thuộc tính `referrerPolicy="no-referrer"` giúp tải trực tiếp ảnh đại diện từ CDN Google mà không bị chặn lỗi HTTP 403 Forbidden.
+  - Tích hợp bộ lắng nghe sự kiện `onError` tự động chuyển đổi sang Avatar chữ cái đầu (Initials Avatar) trên nền dải màu gradient ngọc bích sang trọng, đồng bộ mượt mà trên cả Header lẫn Tab Cài Đặt, đảm bảo không bao giờ xuất hiện icon ảnh vỡ.
+* **Hướng Dẫn Sử Dụng Nhanh (Tour 4 Bước Súc Tích - `OnboardingModal.jsx`)**:
+  - Tự động hiển thị chào mừng người dùng mới trong lần đầu đăng nhập, giới thiệu nhanh luồng khép kín cốt lõi của ứng dụng chỉ trong 30 giây.
+  - Tinh gọn tối đa: Mỗi bước chỉ có 3 gạch đầu dòng ngắn gọn, đi thẳng vào trọng tâm, bảng màu tương phản cao tường minh cho cả Dark Mode và Light Mode.
+  - Nút Trợ giúp `?` (`HelpCircle`) trên Header và Thẻ "Khám Phá SmartSpend & Meal" trong Tab Cài Đặt giúp người dùng có thể mở lại xem bất cứ lúc nào.
+* **Ngăn Chặn Tự Động Phóng To (Auto-zoom) Khi Nhập Liệu Trên Mobile**:
+  - Cập nhật thẻ `<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">` và thiết lập CSS chuẩn `font-size: 16px` cho các thẻ `input, select, textarea` trên di động.
+  - Loại bỏ hoàn toàn hiện tượng màn hình điện thoại tự động phóng to (auto-zoom) bất ngờ khi chạm vào ô nhập liệu, mang lại trải nghiệm nhập liệu tự nhiên và mượt mà.
 * **Khóa Cuộn Nền Khi Mở Modal (Scroll-lock)**:
   - Tự động khóa cuộn trang (`document.body.style.overflow = 'hidden'`) khi có bất kỳ cửa sổ popup/modal nào đang mở, chống trượt màn hình xuyên thấu (`overscrollBehavior: 'contain'`).
 
@@ -282,7 +301,9 @@ SmartSpend & Meal/
 │   ├── main.jsx                # Điểm khởi chạy React DOM
 │   ├── App.jsx                 # Toàn bộ giao diện 3 Tab chính + Cài đặt & đồng bộ CSDL
 │   ├── components/
-│   │   └── AuthScreen.jsx      # Giao diện màn hình Đăng nhập Google OAuth 2.0 cao cấp
+│   │   ├── AuthScreen.jsx      # Giao diện màn hình Đăng nhập Google OAuth 2.0 cao cấp
+│   │   ├── UserAvatar.jsx      # Hiển thị avatar Google chống lỗi 403 & fallback Initials Avatar
+│   │   └── OnboardingModal.jsx # Hướng dẫn sử dụng nhanh Tour 4 bước súc tích cho người mới
 │   └── utils/
 │       └── ingredientHelper.js # Thuật toán thông minh tự động gộp và cộng dồn định lượng nguyên liệu
 └── dist/                       # Bản build tối ưu sẵn sàng deploy lên môi trường Production
