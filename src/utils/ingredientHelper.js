@@ -346,3 +346,35 @@ export function subtractIngredients(baseList = [], deductList = []) {
 
   return result;
 }
+
+/**
+ * Phân tích chuỗi món ăn thành tên gốc và số lượng (VD: "Cá basa kho tộ x2" -> { name: "Cá basa kho tộ", count: 2 })
+ */
+export function parseDishItem(str = '') {
+  if (!str) return { name: '', count: 1 };
+  const trimmed = String(str).trim();
+  const match = trimmed.match(/^(.*?)(?:\s+[xX](\d+))?$/);
+  if (match && match[2]) {
+    const count = parseInt(match[2], 10);
+    return { name: match[1].trim(), count: isNaN(count) || count < 1 ? 1 : count };
+  }
+  return { name: trimmed, count: 1 };
+}
+
+/**
+ * Định dạng lại món ăn với số lượng (VD: { name: "Cá basa kho tộ", count: 2 } -> "Cá basa kho tộ x2")
+ */
+export function formatDishItem(item) {
+  if (!item || !item.name) return '';
+  return item.count > 1 ? `${item.name} x${item.count}` : item.name;
+}
+
+/**
+ * Trích xuất số calo từ chuỗi (VD: "550 kcal" -> 550)
+ */
+export function parseCaloriesNumber(calStr = '') {
+  if (!calStr) return 0;
+  const match = String(calStr).match(/(\d+(?:[.,]\d+)?)/);
+  if (!match) return 0;
+  return parseFloat(match[1].replace(',', '.'));
+}

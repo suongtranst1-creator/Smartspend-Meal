@@ -373,6 +373,16 @@ Mục đích: Theo dõi tiến độ, ghi chép lại các tính năng đã phá
       + Giải pháp: Xây dựng component chuyên dụng [UserAvatar.jsx](file:///c:/Users/leduc/Downloads/SmartSpend%20&%20Meal/src/components/UserAvatar.jsx) trang bị thuộc tính `referrerPolicy="no-referrer"` giúp tải trực tiếp ảnh từ Google mà không bị chặn 403; kết hợp bộ lắng nghe sự kiện `onError` tự động chuyển đổi sang Avatar chữ cái đầu (Initials Avatar) trên nền dải màu gradient ngọc bích chuẩn phong cách giao diện sang trọng, đảm bảo không bao giờ xuất hiện icon vỡ.
       + Đồng bộ hiển thị mượt mà trên cả thanh điều hướng (Navbar) lẫn Thẻ thông tin cá nhân trong Tab Cài Đặt.
 
+  - Tối ưu hóa Toàn Diện UX/UI Thực Đơn & Chốt Hóa Đơn Đi Chợ:
+      + Ngăn chặn tuyệt đối hiện tượng tự động phóng to (auto-zoom) khi chạm/gõ phím trên điện thoại: Cập nhật thẻ `<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">` và thiết lập CSS `@media screen and (max-width: 768px) { input, select, textarea { font-size: 16px !important; } }` trong `index.html`.
+      + Gợi ý món thông minh (Autocomplete): Khi gõ phím ở ô nhập món chính hoặc món phụ, hệ thống hiển thị menu gợi ý tức thì các món khớp từ danh sách Món mẫu kèm calo và phân loại món.
+      + Tự động nạp nguyên liệu & calo khi nhập tay: Bất kể người dùng chọn từ gợi ý, chọn dropdown hay gõ tay đúng tên món mẫu và bấm Enter, hệ thống đều tự động nhận diện và gộp đầy đủ nguyên liệu và cộng dồn calo vào ô "Calo ước tính".
+      + Hỗ trợ thêm 1 món nhiều lần với tag x2, x3: Khi chọn hoặc nhập 1 món nhiều lần, hệ thống tự động gộp thành thẻ tag định dạng "Tên món x2", "Tên món x3", đồng thời nhân định lượng nguyên liệu và calo tương ứng. Khi nhấn xóa tag sẽ giảm 1 phần (x2 -> x1) và tự động trừ bớt nguyên liệu/calo tương ứng.
+      + Ô nhập món 1 dòng thanh lịch: Ô nhập liệu giữ nguyên kích thước chuẩn, chuyển thành input 1 dòng, khi gõ tên món nhấn Enter (hoặc bấm nút "Thêm") sẽ tự động tạo thẻ tag bên trên và xóa trắng ô nhập để tiếp tục nhập món kế tiếp.
+      + Tự động cộng/trừ calo ước tính hai chiều: Khi thêm hoặc bớt các món mẫu, lượng calo ước tính tự động được cộng dồn hoặc khấu trừ chính xác.
+      + Kiểm soát giỏ hàng khi chốt sổ: Chặn hoàn toàn việc chốt sổ khi giỏ hàng chưa có nguyên liệu nào được chọn (hiển thị popup/cảnh báo nhắc nhở người dùng).
+      + Popup Xác thực Chốt Hóa Đơn & Ghi Sổ: Khi bấm chốt sổ, mở popup xác thực hiển thị chi tiết số lượng nguyên liệu đã mua, tổng số tiền thanh toán thực tế, danh mục ghi sổ và danh sách món trước khi lưu vào Sổ Thu Chi.
+
 [x] 5. Cấu Hình Hoàn Chỉnh Ảnh Bìa Mạng Xã Hội (Open Graph & Twitter Card) & Cập Nhật Tài Liệu:
     - Tích hợp ảnh Open Graph `og-image.jpg` độ phân giải cao (1200x630) vào `public/og-image.jpg` và `dist/og-image.jpg`.
     - Bổ sung toàn diện thẻ meta SEO, Open Graph (Facebook, Zalo, Messenger, Telegram) và Twitter Card vào `index.html` với đầy đủ URL tuyệt đối:

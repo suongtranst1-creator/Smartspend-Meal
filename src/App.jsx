@@ -49,6 +49,9 @@ import {
   textToIngredientsArray,
   ingredientsArrayToText,
   parseIngredientLine,
+  parseDishItem,
+  formatDishItem,
+  parseCaloriesNumber,
 } from './utils/ingredientHelper.js';
 
 // Fetch Interceptor: Tự động đính kèm Bearer token vào các request /api
@@ -654,12 +657,53 @@ export default function App() {
     ingredientsStr: '',
   });
 
-  // Tập hợp tên các món đã chọn trong thực đơn hiện tại (cả món chính và món phụ) để chống chọn 2 lần
-  const currentSelectedDishNames = useMemo(() => {
-    const mains = mealForm.main.split('\n').map((s) => s.trim().toLowerCase()).filter(Boolean);
-    const sides = mealForm.side.split('\n').map((s) => s.trim().toLowerCase()).filter(Boolean);
-    return new Set([...mains, ...sides]);
-  }, [mealForm.main, mealForm.side]);
+  // State: Ô nhập liệu & Gợi ý (Autocomplete) trong modal Thực Đơn
+  const [mainInputText, setMainInputText] = useState('');
+  const [sideInputText, setSideInputText] = useState('');
+  const [showMainSuggestions, setShowMainSuggestions] = useState(false);
+  const [showSideSuggestions, setShowSideSuggestions] = useState(false);
+
+  // State: Popup xác thực chốt hóa đơn đi chợ
+  const [isConfirmFinalizeOpen, setIsConfirmFinalizeOpen] = useState(false);
+
+  // Gợi ý món chính từ Món Mẫu (Autocomplete)
+  const mainSuggestions = useMemo(() => {
+    const q = mainInputText.trim().toLowerCase();
+    if (!q) return [];
+    return presetDishes
+      .filter((p) => p.name.toLowerCase().includes(q))
+      .slice(0, 8);
+  }, [mainInputText, presetDishes]);
+
+  // Gợi ý món phụ từ Món Mẫu (Autocomplete)
+  const sideSuggestions = useMemo(() => {
+    const q = sideInputText.trim().toLowerCase();
+    if (!q) return [];
+    return presetDishes
+      .filter((p) => p.name.toLowerCase().includes(q))
+      .slice(0, 8);
+  }, [sideInputText, presetDishes]);
+
+  // Bản đồ số lượng món chính & món phụ hiện tại để hiển thị số phần
+  const mainDishesMap = useMemo(() => {
+    const lines = (mealForm.main || '').split('\n').map((s) => s.trim()).filter(Boolean);
+    const map = new Map();
+    for (const l of lines) {
+      const item = parseDishItem(l);
+      map.set(item.name.toLowerCase(), item.count);
+    }
+    return map;
+  }, [mealForm.main]);
+
+  const sideDishesMap = useMemo(() => {
+    const lines = (mealForm.side || '').split('\n').map((s) => s.trim()).filter(Boolean);
+    const map = new Map();
+    for (const l of lines) {
+      const item = parseDishItem(l);
+      map.set(item.name.toLowerCase(), item.count);
+    }
+    return map;
+  }, [mealForm.side]);
 
   // State: Kéo thả sắp xếp bữa ăn
   const [draggedMealIdx, setDraggedMealIdx] = useState(null);
@@ -817,7 +861,7 @@ export default function App() {
   }, [theme]);
 
   // Lock body scroll when any modal is open
-  const anyModalOpen = isModalOpen || isMealModalOpen || isShoppingModalOpen || isPresetModalOpen;
+  const anyModalOpen = isModalOpen || isMealModalOpen || isShoppingModalOpen || isPresetModalOpen || isConfirmFinalizeOpen;
   useEffect(() => {
     if (anyModalOpen) {
       document.body.style.overflow = 'hidden';
@@ -1134,148 +1178,177 @@ export default function App() {
       ingredientsStr: meal && meal.ingredients ? meal.ingredients.map((i) => i.name).join('\n') : '',
     });
 
+    setMainInputText('');
+    setSideInputText('');
+    setShowMainSuggestions(false);
+    setShowSideSuggestions(false);
+
     setIsMealModalOpen(true);
   };
 
-  // Chọn món chính từ Món ăn mẫu (Tự động nạp & cộng dồn nguyên liệu)
+  /**
+   * Thêm món (Món chính hoặc Món phụ):
+   * - Hỗ trợ nhập 1 món nhiều lần: Tự động cộng dồn tag x2, x3... (VD: "Cá basa kho tộ x2")
+   * - Tự động đối chiếu món mẫu (kể cả khi gõ tay đúng tên món mẫu):
+   *   + Tự động cộng dồn/merge nguyên liệu tương ứng vào danh sách nguyên liệu.
+   *   + Tự động cộng dồn lượng calo vào ô "Calo ước tính".
+   * - Xóa trắng ô nhập liệu sau khi thêm.
+   */
+  const handleAddDish = (type, dishName) => {
+    const cleanName = (dishName || '').trim();
+    if (!cleanName) return;
+
+    // Parse tên nếu người dùng gõ sẵn đuôi x2, x3... hoặc lấy tên gốc
+    const parsedInput = parseDishItem(cleanName);
+    const baseName = parsedInput.name;
+    const addCount = parsedInput.count || 1;
+
+    const currentLines = (mealForm[type] || '')
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const parsedItems = currentLines.map(parseDishItem);
+
+    const existingIdx = parsedItems.findIndex(
+      (item) => item.name.toLowerCase() === baseName.toLowerCase()
+    );
+
+    let finalCount = addCount;
+    if (existingIdx !== -1) {
+      parsedItems[existingIdx].count += addCount;
+      finalCount = parsedItems[existingIdx].count;
+    } else {
+      parsedItems.push({ name: baseName, count: addCount });
+    }
+
+    const updatedDishString = parsedItems.map(formatDishItem).join('\n');
+
+    // Kiểm tra xem món có trong Món mẫu không (kể cả chọn gợi ý hoặc gõ tay đúng tên)
+    const matchedPreset = presetDishes.find(
+      (p) => p.name.trim().toLowerCase() === baseName.toLowerCase()
+    );
+
+    let updatedIngredientsStr = mealForm.ingredientsStr;
+    let updatedCalories = mealForm.calories;
+
+    if (matchedPreset) {
+      // 1. Tự động cộng dồn nguyên liệu
+      const currentIngrs = textToIngredientsArray(updatedIngredientsStr);
+      const presetIngrs = Array.isArray(matchedPreset.ingredients) ? matchedPreset.ingredients : [];
+      let merged = currentIngrs;
+      for (let c = 0; c < addCount; c++) {
+        merged = mergeIngredients(merged, presetIngrs);
+      }
+      updatedIngredientsStr = ingredientsArrayToText(merged);
+
+      // 2. Tự động cộng dồn calo
+      const presetCal = parseCaloriesNumber(matchedPreset.calories);
+      if (presetCal > 0) {
+        const currentCal = parseCaloriesNumber(mealForm.calories);
+        const totalCal = currentCal + presetCal * addCount;
+        updatedCalories = `${Math.round(totalCal)} kcal`;
+      }
+
+      showToast(
+        `Đã thêm "${baseName}" ${finalCount > 1 ? `(x${finalCount})` : ''} và tự động nạp nguyên liệu, calo!`
+      );
+    } else {
+      showToast(`Đã thêm món "${baseName}" ${finalCount > 1 ? `(x${finalCount})` : ''}!`);
+    }
+
+    setMealForm((prev) => ({
+      ...prev,
+      [type]: updatedDishString,
+      calories: updatedCalories,
+      ingredientsStr: updatedIngredientsStr,
+    }));
+
+    if (type === 'main') {
+      setMainInputText('');
+      setShowMainSuggestions(false);
+    } else {
+      setSideInputText('');
+      setShowSideSuggestions(false);
+    }
+  };
+
+  /**
+   * Giảm bớt hoặc xóa món:
+   * - Nếu tag có x2, x3...: Giảm 1 phần (x2 -> x1, hoặc x1 -> xóa)
+   * - Tự động trừ nguyên liệu và lượng calo tương ứng khỏi thực đơn nếu món đó có trong món mẫu.
+   */
+  const handleRemoveDish = (type, dishLine) => {
+    const target = parseDishItem(dishLine);
+    const baseName = target.name;
+
+    const currentLines = (mealForm[type] || '')
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const parsedItems = currentLines.map(parseDishItem);
+
+    const existingIdx = parsedItems.findIndex(
+      (item) => item.name.toLowerCase() === baseName.toLowerCase()
+    );
+
+    if (existingIdx === -1) return;
+
+    // Đối chiếu món mẫu để trừ nguyên liệu & calo
+    const matchedPreset = presetDishes.find(
+      (p) => p.name.trim().toLowerCase() === baseName.toLowerCase()
+    );
+
+    let updatedIngredientsStr = mealForm.ingredientsStr;
+    let updatedCalories = mealForm.calories;
+
+    if (matchedPreset) {
+      // 1. Trừ nguyên liệu
+      if (Array.isArray(matchedPreset.ingredients) && matchedPreset.ingredients.length > 0) {
+        const currentIngs = textToIngredientsArray(updatedIngredientsStr);
+        const remaining = subtractIngredients(currentIngs, matchedPreset.ingredients);
+        updatedIngredientsStr = ingredientsArrayToText(remaining);
+      }
+
+      // 2. Trừ calo
+      const presetCal = parseCaloriesNumber(matchedPreset.calories);
+      if (presetCal > 0) {
+        const currentCal = parseCaloriesNumber(mealForm.calories);
+        const remCal = Math.max(0, currentCal - presetCal);
+        updatedCalories = remCal > 0 ? `${Math.round(remCal)} kcal` : '';
+      }
+    }
+
+    if (parsedItems[existingIdx].count > 1) {
+      parsedItems[existingIdx].count -= 1;
+      const newCount = parsedItems[existingIdx].count;
+      showToast(
+        `Đã giảm 1 phần "${baseName}" ${newCount > 1 ? `(còn x${newCount})` : ''} và trừ nguyên liệu, calo!`
+      );
+    } else {
+      parsedItems.splice(existingIdx, 1);
+      showToast(`Đã xóa món "${baseName}" và tự động trừ nguyên liệu, calo!`);
+    }
+
+    const updatedDishString = parsedItems.map(formatDishItem).join('\n');
+
+    setMealForm((prev) => ({
+      ...prev,
+      [type]: updatedDishString,
+      calories: updatedCalories,
+      ingredientsStr: updatedIngredientsStr,
+    }));
+  };
+
+  // Chọn món chính từ dropdown Món ăn mẫu
   const handleSelectPresetForMain = (preset) => {
     if (!preset) return;
-    const existingMains = mealForm.main.split('\n').map((s) => s.trim().toLowerCase()).filter(Boolean);
-    const existingSides = mealForm.side.split('\n').map((s) => s.trim().toLowerCase()).filter(Boolean);
-    const targetName = preset.name.trim().toLowerCase();
-
-    if (existingMains.includes(targetName) || existingSides.includes(targetName)) {
-      alert(`Món "${preset.name}" đã có trong thực đơn (món chính hoặc món phụ)! Không thể chọn 2 lần.`);
-      return;
-    }
-
-    const currentIngrs = textToIngredientsArray(mealForm.ingredientsStr);
-    const presetIngrs = Array.isArray(preset.ingredients) ? preset.ingredients : [];
-    const merged = mergeIngredients(currentIngrs, presetIngrs);
-
-    setMealForm((prev) => {
-      const updatedMain = prev.main.trim() ? `${prev.main.trim()}\n${preset.name}` : preset.name;
-      return {
-        ...prev,
-        main: updatedMain,
-        calories: prev.calories || preset.calories || '',
-        ingredientsStr: ingredientsArrayToText(merged),
-      };
-    });
-
-    showToast(`Đã thêm món "${preset.name}" và tự động gộp định lượng nguyên liệu!`);
+    handleAddDish('main', preset.name);
   };
 
-  // Chọn món phụ từ Món ăn mẫu (Tự động nạp & cộng dồn nguyên liệu)
+  // Chọn món phụ từ dropdown Món ăn mẫu
   const handleSelectPresetForSide = (preset) => {
     if (!preset) return;
-    const existingMains = mealForm.main.split('\n').map((s) => s.trim().toLowerCase()).filter(Boolean);
-    const existingSides = mealForm.side.split('\n').map((s) => s.trim().toLowerCase()).filter(Boolean);
-    const targetName = preset.name.trim().toLowerCase();
-
-    if (existingMains.includes(targetName) || existingSides.includes(targetName)) {
-      alert(`Món "${preset.name}" đã có trong thực đơn (món chính hoặc món phụ)! Không thể chọn 2 lần.`);
-      return;
-    }
-
-    const currentIngrs = textToIngredientsArray(mealForm.ingredientsStr);
-    const presetIngrs = Array.isArray(preset.ingredients) ? preset.ingredients : [];
-    const merged = mergeIngredients(currentIngrs, presetIngrs);
-
-    setMealForm((prev) => {
-      const updatedSide = prev.side.trim() ? `${prev.side.trim()}\n${preset.name}` : preset.name;
-      return {
-        ...prev,
-        side: updatedSide,
-        ingredientsStr: ingredientsArrayToText(merged),
-      };
-    });
-
-    showToast(`Đã thêm món phụ "${preset.name}" và tự động gộp định lượng nguyên liệu!`);
-  };
-
-  // Đồng bộ hai chiều khi sửa / xóa dòng món chính:
-  // Tự động tìm món bị xóa và trừ nguyên liệu tương ứng khỏi danh sách bên dưới
-  const handleMainChange = (newMain) => {
-    const oldLines = mealForm.main.split('\n').map((s) => s.trim()).filter(Boolean);
-    const newLines = newMain.split('\n').map((s) => s.trim()).filter(Boolean);
-
-    const removedDishes = oldLines.filter(
-      (oldDish) => !newLines.some((newDish) => newDish.toLowerCase() === oldDish.toLowerCase())
-    );
-
-    let updatedIngredients = mealForm.ingredientsStr;
-    const deductedDishNames = [];
-
-    for (const removedName of removedDishes) {
-      const preset = presetDishes.find(
-        (p) => p.name.trim().toLowerCase() === removedName.toLowerCase()
-      );
-      if (preset && Array.isArray(preset.ingredients) && preset.ingredients.length > 0) {
-        const currentIngs = textToIngredientsArray(updatedIngredients);
-        const remainingIngs = subtractIngredients(currentIngs, preset.ingredients);
-        updatedIngredients = ingredientsArrayToText(remainingIngs);
-        deductedDishNames.push(preset.name);
-      }
-    }
-
-    setMealForm((prev) => ({
-      ...prev,
-      main: newMain,
-      ingredientsStr: updatedIngredients,
-    }));
-
-    if (deductedDishNames.length > 0) {
-      showToast(`Đã tự động trừ nguyên liệu của món: ${deductedDishNames.join(', ')}`);
-    }
-  };
-
-  // Đồng bộ hai chiều khi sửa / xóa dòng món phụ:
-  // Tự động tìm món bị xóa và trừ nguyên liệu tương ứng khỏi danh sách bên dưới
-  const handleSideChange = (newSide) => {
-    const oldLines = mealForm.side.split('\n').map((s) => s.trim()).filter(Boolean);
-    const newLines = newSide.split('\n').map((s) => s.trim()).filter(Boolean);
-
-    const removedDishes = oldLines.filter(
-      (oldDish) => !newLines.some((newDish) => newDish.toLowerCase() === oldDish.toLowerCase())
-    );
-
-    let updatedIngredients = mealForm.ingredientsStr;
-    const deductedDishNames = [];
-
-    for (const removedName of removedDishes) {
-      const preset = presetDishes.find(
-        (p) => p.name.trim().toLowerCase() === removedName.toLowerCase()
-      );
-      if (preset && Array.isArray(preset.ingredients) && preset.ingredients.length > 0) {
-        const currentIngs = textToIngredientsArray(updatedIngredients);
-        const remainingIngs = subtractIngredients(currentIngs, preset.ingredients);
-        updatedIngredients = ingredientsArrayToText(remainingIngs);
-        deductedDishNames.push(preset.name);
-      }
-    }
-
-    setMealForm((prev) => ({
-      ...prev,
-      side: newSide,
-      ingredientsStr: updatedIngredients,
-    }));
-
-    if (deductedDishNames.length > 0) {
-      showToast(`Đã tự động trừ nguyên liệu của món: ${deductedDishNames.join(', ')}`);
-    }
-  };
-
-  // Nút xóa nhanh từng món chính đã chọn kèm trừ nguyên liệu
-  const handleRemoveMainDish = (dishName) => {
-    const lines = mealForm.main.split('\n').filter((l) => l.trim().toLowerCase() !== dishName.trim().toLowerCase());
-    handleMainChange(lines.join('\n'));
-  };
-
-  // Nút xóa nhanh từng món phụ đã chọn kèm trừ nguyên liệu
-  const handleRemoveSideDish = (dishName) => {
-    const lines = mealForm.side.split('\n').filter((l) => l.trim().toLowerCase() !== dishName.trim().toLowerCase());
-    handleSideChange(lines.join('\n'));
+    handleAddDish('side', preset.name);
   };
 
   // Tự động quét và cộng dồn định lượng nguyên liệu trùng lặp trong form
@@ -1292,24 +1365,70 @@ export default function App() {
 
   const handleSaveMeal = async (e) => {
     e.preventDefault();
-    if (!editingMealTarget || !mealForm.main.trim() || !mealForm.mealName.trim()) return;
-
-    // Kiểm tra không được chọn món 2 lần (kể cả món chính và món phụ)
-    const mains = mealForm.main.split('\n').map((s) => s.trim()).filter(Boolean);
-    const sides = mealForm.side.split('\n').map((s) => s.trim()).filter(Boolean);
-    const allDishes = [...mains, ...sides];
-    const seenDishes = new Set();
-    let duplicateDishName = null;
-    for (const d of allDishes) {
-      const key = d.toLowerCase();
-      if (seenDishes.has(key)) {
-        duplicateDishName = d;
-        break;
-      }
-      seenDishes.add(key);
+    if (!editingMealTarget || !mealForm.mealName.trim()) {
+      alert('Vui lòng nhập tên bữa ăn!');
+      return;
     }
-    if (duplicateDishName) {
-      alert(`Không được chọn món trùng lặp: Món "${duplicateDishName}" đã có trong thực đơn (món chính hoặc món phụ)!`);
+
+    // Nếu người dùng còn đang gõ ở ô món chính hoặc món phụ mà chưa bấm Thêm/Enter, tự động bổ sung
+    let finalMain = mealForm.main;
+    let finalSide = mealForm.side;
+    let finalIngredients = mealForm.ingredientsStr;
+    let finalCalories = mealForm.calories;
+
+    if (mainInputText.trim()) {
+      const parsedInput = parseDishItem(mainInputText.trim());
+      const baseName = parsedInput.name;
+      const addCount = parsedInput.count || 1;
+      const currentLines = finalMain.split('\n').map((s) => s.trim()).filter(Boolean);
+      const parsedItems = currentLines.map(parseDishItem);
+      const exIdx = parsedItems.findIndex((i) => i.name.toLowerCase() === baseName.toLowerCase());
+      if (exIdx !== -1) parsedItems[exIdx].count += addCount;
+      else parsedItems.push({ name: baseName, count: addCount });
+      finalMain = parsedItems.map(formatDishItem).join('\n');
+
+      const matched = presetDishes.find((p) => p.name.trim().toLowerCase() === baseName.toLowerCase());
+      if (matched) {
+        const curIngrs = textToIngredientsArray(finalIngredients);
+        const pIngrs = Array.isArray(matched.ingredients) ? matched.ingredients : [];
+        let merged = curIngrs;
+        for (let c = 0; c < addCount; c++) {
+          merged = mergeIngredients(merged, pIngrs);
+        }
+        finalIngredients = ingredientsArrayToText(merged);
+        const pCal = parseCaloriesNumber(matched.calories);
+        if (pCal > 0) {
+          const curCal = parseCaloriesNumber(finalCalories);
+          finalCalories = `${Math.round(curCal + pCal * addCount)} kcal`;
+        }
+      }
+    }
+
+    if (sideInputText.trim()) {
+      const parsedInput = parseDishItem(sideInputText.trim());
+      const baseName = parsedInput.name;
+      const addCount = parsedInput.count || 1;
+      const currentLines = finalSide.split('\n').map((s) => s.trim()).filter(Boolean);
+      const parsedItems = currentLines.map(parseDishItem);
+      const exIdx = parsedItems.findIndex((i) => i.name.toLowerCase() === baseName.toLowerCase());
+      if (exIdx !== -1) parsedItems[exIdx].count += addCount;
+      else parsedItems.push({ name: baseName, count: addCount });
+      finalSide = parsedItems.map(formatDishItem).join('\n');
+
+      const matched = presetDishes.find((p) => p.name.trim().toLowerCase() === baseName.toLowerCase());
+      if (matched) {
+        const curIngrs = textToIngredientsArray(finalIngredients);
+        const pIngrs = Array.isArray(matched.ingredients) ? matched.ingredients : [];
+        let merged = curIngrs;
+        for (let c = 0; c < addCount; c++) {
+          merged = mergeIngredients(merged, pIngrs);
+        }
+        finalIngredients = ingredientsArrayToText(merged);
+      }
+    }
+
+    if (!finalMain.trim()) {
+      alert('Vui lòng thêm ít nhất 1 món chính vào thực đơn!');
       return;
     }
 
@@ -1842,16 +1961,37 @@ export default function App() {
     }
   };
 
-  // Finalize Grocery Shopping -> Sync into Tab 1 (Thu Chi)
-  const handleFinalizeShopping = async () => {
-    const billAmount = parseNumberInput(actualTotalBill);
-    if (billAmount <= 0) {
-      alert('Vui lòng nhập số tiền hóa đơn hợp lệ!');
+  // Bắt đầu quy trình chốt sổ: Kiểm tra điều kiện và mở popup xác thực
+  const handleInitiateFinalizeShopping = () => {
+    const completedItems = activeShoppingList.filter((i) => i.checked);
+    const completedCount = completedItems.length;
+
+    // Yêu cầu 7: Chốt sổ hoá đơn mà ko có nguyên liệu nào đc mua là ko đc, hiển thị popup cảnh báo
+    if (completedCount === 0) {
+      alert('⚠️ Bạn chưa chọn nguyên liệu nào đã mua! Vui lòng tích chọn ít nhất 1 món đã mua trong danh sách trước khi chốt hóa đơn.');
       return;
     }
 
+    const billAmount = parseNumberInput(actualTotalBill);
+    if (billAmount <= 0) {
+      alert('⚠️ Vui lòng nhập số tiền hóa đơn thực tế hợp lệ lớn hơn 0đ!');
+      return;
+    }
+
+    // Yêu cầu 8: Mở popup xác thực số lượng món & số tiền trước khi ghi sổ
+    setIsConfirmFinalizeOpen(true);
+  };
+
+  // Xác nhận chốt hóa đơn & ghi sổ từ Popup Verify
+  const handleConfirmFinalizeShopping = async () => {
+    const billAmount = parseNumberInput(actualTotalBill);
     const completedItems = activeShoppingList.filter((i) => i.checked);
     const completedCount = completedItems.length;
+
+    if (completedCount === 0 || billAmount <= 0) {
+      setIsConfirmFinalizeOpen(false);
+      return;
+    }
 
     const newExpense = {
       id: Date.now().toString(),
@@ -1865,7 +2005,8 @@ export default function App() {
     setTransactions([newExpense, ...transactions]);
     setShoppingList((prev) => prev.filter((i) => !i.checked));
     setActualTotalBill('');
-    showToast(`Đã chốt hóa đơn ${formatVND(billAmount)} và ghi vào Sổ Thu Chi!`);
+    setIsConfirmFinalizeOpen(false);
+    showToast(`Đã chốt hóa đơn ${formatVND(billAmount)} (${completedCount} món) và ghi vào Sổ Thu Chi!`);
 
     try {
       await fetch('/api/groceries/finalize', {
@@ -3101,9 +3242,9 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Big Action Button (Glow Shadow & Shortened Text: "Chốt hóa đơn & Ghi sổ") */}
                 <button
-                  onClick={handleFinalizeShopping}
+                  type="button"
+                  onClick={handleInitiateFinalizeShopping}
                   className="w-full bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white font-bold py-3.5 px-4 rounded-2xl shadow-lg shadow-emerald-600/35 hover:shadow-xl hover:shadow-emerald-600/50 hover:-translate-y-0.5 active:scale-98 transition-all flex items-center justify-center gap-2.5 text-sm cursor-pointer border border-emerald-400/30"
                 >
                   <CheckCircle2 className="w-5 h-5 stroke-[2.25] shrink-0" />
@@ -3735,21 +3876,19 @@ export default function App() {
                         }
                       }}
                       defaultValue=""
-                      className="w-full text-xs py-1.5 px-2.5 rounded-lg bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-medium focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+                      className="w-full text-xs py-2 px-2.5 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-medium focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
                     >
                       <option value="" disabled>✨ Chọn nhanh Món Chính Mẫu...</option>
                       {presetDishes
                         .filter((p) => (p.category || '').toLowerCase() === 'món chính')
                         .map((p) => {
-                          const isChosen = currentSelectedDishNames.has(p.name.trim().toLowerCase());
+                          const count = mainDishesMap.get(p.name.trim().toLowerCase()) || 0;
                           return (
                             <option
                               key={p.id}
                               value={p.id}
-                              disabled={isChosen}
-                              className={isChosen ? 'text-gray-400 bg-gray-100 dark:bg-gray-800' : ''}
                             >
-                              {p.name} {isChosen ? '— (Đã chọn trong thực đơn)' : (p.calories ? `• ${p.calories}` : '')}
+                              {p.name} {count > 0 ? `(Đang có x${count} - chọn để thêm)` : (p.calories ? `• ${p.calories}` : '')}
                             </option>
                           );
                         })}
@@ -3757,36 +3896,93 @@ export default function App() {
                   </div>
                 )}
 
-                {/* Danh sách món chính đã chọn dạng chip để xóa nhanh 1 chạm */}
+                {/* Danh sách món chính đã chọn dạng chip (hỗ trợ tag x2, x3...) */}
                 {mealForm.main.split('\n').map((s) => s.trim()).filter(Boolean).length > 0 && (
-                  <div className="flex flex-wrap gap-1 mb-1.5">
-                    {mealForm.main.split('\n').map((s) => s.trim()).filter(Boolean).map((dishName, idx) => (
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {mealForm.main.split('\n').map((s) => s.trim()).filter(Boolean).map((dishLine, idx) => (
                       <span
                         key={idx}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 text-xs font-medium"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 text-xs font-semibold border border-emerald-300/60 dark:border-emerald-700/60 shadow-2xs"
                       >
-                        <span>{dishName}</span>
+                        <span>{dishLine}</span>
                         <button
                           type="button"
-                          onClick={() => handleRemoveMainDish(dishName)}
+                          onClick={() => handleRemoveDish('main', dishLine)}
                           className="p-0.5 hover:bg-emerald-200 dark:hover:bg-emerald-800 rounded text-emerald-700 dark:text-emerald-300 cursor-pointer"
-                          title={`Xóa món "${dishName}" và tự động trừ nguyên liệu`}
+                          title={`Bớt 1 phần hoặc xóa món "${dishLine}"`}
                         >
-                          <X className="w-3 h-3" />
+                          <X className="w-3.5 h-3.5 stroke-[2.5]" />
                         </button>
                       </span>
                     ))}
                   </div>
                 )}
 
-                <textarea
-                  rows={2}
-                  required
-                  placeholder="VD: Cơm chiên hải sản&#10;Thịt kho trứng cút..."
-                  value={mealForm.main}
-                  onChange={(e) => handleMainChange(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 custom-scrollbar"
-                />
+                {/* Ô nhập 1 dòng kèm Autocomplete Gợi Ý Món Mẫu */}
+                <div className="relative">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      placeholder="Gõ tên món chính rồi nhấn Enter (hoặc chọn gợi ý)..."
+                      value={mainInputText}
+                      onChange={(e) => {
+                        setMainInputText(e.target.value);
+                        setShowMainSuggestions(true);
+                      }}
+                      onFocus={() => setShowMainSuggestions(true)}
+                      onBlur={() => setTimeout(() => setShowMainSuggestions(false), 200)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (mainInputText.trim()) {
+                            handleAddDish('main', mainInputText.trim());
+                          }
+                        }
+                      }}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (mainInputText.trim()) {
+                          handleAddDish('main', mainInputText.trim());
+                        }
+                      }}
+                      className="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shrink-0 transition-colors shadow-2xs flex items-center gap-1 cursor-pointer"
+                      title="Thêm món chính"
+                    >
+                      <Plus className="w-4 h-4 stroke-[2.5]" />
+                      <span className="hidden sm:inline">Thêm</span>
+                    </button>
+                  </div>
+
+                  {/* Dropdown Gợi ý Autocomplete */}
+                  {showMainSuggestions && mainSuggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 z-30 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in duration-150">
+                      <div className="p-1.5 text-[11px] font-semibold text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-700 px-2.5 flex items-center justify-between">
+                        <span>Gợi ý từ Món mẫu</span>
+                        <span className="text-[10px]">Nhấn để chọn</span>
+                      </div>
+                      {mainSuggestions.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleAddDish('main', p.name);
+                          }}
+                          className="w-full text-left px-3 py-2 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 flex items-center justify-between text-xs text-gray-800 dark:text-gray-200 transition-colors border-b last:border-b-0 border-gray-50 dark:border-gray-700/40 cursor-pointer"
+                        >
+                          <span className="font-semibold text-emerald-800 dark:text-emerald-300">{p.name}</span>
+                          <div className="flex items-center gap-1.5 text-[11px] text-gray-400">
+                            {p.calories && <span className="text-amber-600 dark:text-amber-400 font-medium">🔥 {p.calories}</span>}
+                            <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-[10px]">{p.category || 'Món chính'}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Side Dish with Preset Selector */}
@@ -3809,21 +4005,19 @@ export default function App() {
                         }
                       }}
                       defaultValue=""
-                      className="w-full text-xs py-1.5 px-2.5 rounded-lg bg-teal-50/80 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 text-teal-800 dark:text-teal-300 font-medium focus:outline-none focus:ring-1 focus:ring-teal-500 cursor-pointer"
+                      className="w-full text-xs py-2 px-2.5 rounded-xl bg-teal-50/80 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 text-teal-800 dark:text-teal-300 font-medium focus:outline-none focus:ring-1 focus:ring-teal-500 cursor-pointer"
                     >
                       <option value="" disabled>✨ Chọn nhanh Món Phụ / Canh Mẫu...</option>
                       {presetDishes
                         .filter((p) => (p.category || '').toLowerCase() !== 'món chính')
                         .map((p) => {
-                          const isChosen = currentSelectedDishNames.has(p.name.trim().toLowerCase());
+                          const count = sideDishesMap.get(p.name.trim().toLowerCase()) || 0;
                           return (
                             <option
                               key={p.id}
                               value={p.id}
-                              disabled={isChosen}
-                              className={isChosen ? 'text-gray-400 bg-gray-100 dark:bg-gray-800' : ''}
                             >
-                              {p.name} {isChosen ? '— (Đã chọn trong thực đơn)' : `(${p.category || 'Món phụ'})`}
+                              {p.name} {count > 0 ? `(Đang có x${count} - chọn để thêm)` : `(${p.category || 'Món phụ'})`}
                             </option>
                           );
                         })}
@@ -3831,35 +4025,93 @@ export default function App() {
                   </div>
                 )}
 
-                {/* Danh sách món phụ đã chọn dạng chip để xóa nhanh 1 chạm */}
+                {/* Danh sách món phụ đã chọn dạng chip (hỗ trợ tag x2, x3...) */}
                 {mealForm.side.split('\n').map((s) => s.trim()).filter(Boolean).length > 0 && (
-                  <div className="flex flex-wrap gap-1 mb-1.5">
-                    {mealForm.side.split('\n').map((s) => s.trim()).filter(Boolean).map((dishName, idx) => (
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {mealForm.side.split('\n').map((s) => s.trim()).filter(Boolean).map((dishLine, idx) => (
                       <span
                         key={idx}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-teal-100 dark:bg-teal-950/70 text-teal-800 dark:text-teal-300 text-xs font-medium"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-teal-100 dark:bg-teal-950/70 text-teal-800 dark:text-teal-300 text-xs font-semibold border border-teal-300/60 dark:border-teal-700/60 shadow-2xs"
                       >
-                        <span>{dishName}</span>
+                        <span>{dishLine}</span>
                         <button
                           type="button"
-                          onClick={() => handleRemoveSideDish(dishName)}
+                          onClick={() => handleRemoveDish('side', dishLine)}
                           className="p-0.5 hover:bg-teal-200 dark:hover:bg-teal-800 rounded text-teal-700 dark:text-teal-300 cursor-pointer"
-                          title={`Xóa món "${dishName}" và tự động trừ nguyên liệu`}
+                          title={`Bớt 1 phần hoặc xóa món "${dishLine}"`}
                         >
-                          <X className="w-3 h-3" />
+                          <X className="w-3.5 h-3.5 stroke-[2.5]" />
                         </button>
                       </span>
                     ))}
                   </div>
                 )}
 
-                <textarea
-                  rows={2}
-                  placeholder="VD: Canh rau ngót thịt băm&#10;Dưa leo, cà chua..."
-                  value={mealForm.side}
-                  onChange={(e) => handleSideChange(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 custom-scrollbar"
-                />
+                {/* Ô nhập 1 dòng kèm Autocomplete Gợi Ý Món Phụ */}
+                <div className="relative">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      placeholder="Nhập món phụ / canh rồi nhấn Enter..."
+                      value={sideInputText}
+                      onChange={(e) => {
+                        setSideInputText(e.target.value);
+                        setShowSideSuggestions(true);
+                      }}
+                      onFocus={() => setShowSideSuggestions(true)}
+                      onBlur={() => setTimeout(() => setShowSideSuggestions(false), 200)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (sideInputText.trim()) {
+                            handleAddDish('side', sideInputText.trim());
+                          }
+                        }
+                      }}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (sideInputText.trim()) {
+                          handleAddDish('side', sideInputText.trim());
+                        }
+                      }}
+                      className="px-3.5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shrink-0 transition-colors shadow-2xs flex items-center gap-1 cursor-pointer"
+                      title="Thêm món phụ"
+                    >
+                      <Plus className="w-4 h-4 stroke-[2.5]" />
+                      <span className="hidden sm:inline">Thêm</span>
+                    </button>
+                  </div>
+
+                  {/* Dropdown Gợi ý Autocomplete Món Phụ */}
+                  {showSideSuggestions && sideSuggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 z-30 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in duration-150">
+                      <div className="p-1.5 text-[11px] font-semibold text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-700 px-2.5 flex items-center justify-between">
+                        <span>Gợi ý từ Món mẫu</span>
+                        <span className="text-[10px]">Nhấn để chọn</span>
+                      </div>
+                      {sideSuggestions.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleAddDish('side', p.name);
+                          }}
+                          className="w-full text-left px-3 py-2 hover:bg-teal-50 dark:hover:bg-teal-950/50 flex items-center justify-between text-xs text-gray-800 dark:text-gray-200 transition-colors border-b last:border-b-0 border-gray-50 dark:border-gray-700/40 cursor-pointer"
+                        >
+                          <span className="font-semibold text-teal-800 dark:text-teal-300">{p.name}</span>
+                          <div className="flex items-center gap-1.5 text-[11px] text-gray-400">
+                            {p.calories && <span className="text-amber-600 dark:text-amber-400 font-medium">🔥 {p.calories}</span>}
+                            <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-[10px]">{p.category || 'Món phụ'}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Ingredients Textarea */}
@@ -4125,6 +4377,113 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 5: XÁC THỰC CHỐT HÓA ĐƠN & GHI SỔ (VERIFICATION POPUP)               */}
+      {/* ========================================================================= */}
+      {isConfirmFinalizeOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fade-in"
+          style={{ overscrollBehavior: 'contain' }}
+          onWheel={(e) => e.stopPropagation()}
+        >
+          <div className="bg-white dark:bg-gray-800 w-full max-w-sm sm:max-w-md rounded-2xl sm:rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-5 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                  <Receipt className="w-5 h-5 stroke-[2.25]" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900 dark:text-white text-base">
+                    Xác Nhận Chốt Hóa Đơn
+                  </h3>
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                    Kiểm tra số lượng món & số tiền trước khi ghi sổ
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsConfirmFinalizeOpen(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              {/* Card Tổng quan thông tin */}
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50/60 dark:from-emerald-950/40 dark:to-teal-950/30 border border-emerald-200/80 dark:border-emerald-800/60 space-y-3">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-gray-600 dark:text-gray-400 font-medium">Số lượng mặt hàng đã mua:</span>
+                  <span className="font-bold text-sm text-emerald-700 dark:text-emerald-300">
+                    {activeShoppingList.filter((i) => i.checked).length} nguyên liệu
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-xs pt-1.5 border-t border-emerald-200/60 dark:border-emerald-800/40">
+                  <span className="text-gray-600 dark:text-gray-400 font-medium">Tổng tiền thanh toán thực tế:</span>
+                  <span className="font-extrabold text-lg text-emerald-800 dark:text-emerald-300">
+                    {formatVND(parseNumberInput(actualTotalBill))}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-xs pt-1.5 border-t border-emerald-200/60 dark:border-emerald-800/40">
+                  <span className="text-gray-600 dark:text-gray-400 font-medium">Hạng mục vào Sổ Thu Chi:</span>
+                  <span className="font-semibold text-xs text-emerald-700 dark:text-emerald-400 bg-white/70 dark:bg-gray-800/80 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-700/60">
+                    Chi Tiêu ➔ Đi chợ
+                  </span>
+                </div>
+              </div>
+
+              {/* Danh sách các nguyên liệu sẽ được chốt & dọn dẹp */}
+              <div>
+                <p className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 flex items-center justify-between">
+                  <span>Chi tiết các món đã mua:</span>
+                  <span className="text-[10px] text-gray-400 font-normal">(Sẽ tự động xóa khỏi giỏ hàng)</span>
+                </p>
+                <div className="max-h-36 overflow-y-auto rounded-xl bg-gray-50 dark:bg-gray-700/50 p-2.5 space-y-1.5 custom-scrollbar border border-gray-100 dark:border-gray-700/60">
+                  {activeShoppingList
+                    .filter((i) => i.checked)
+                    .map((item, idx) => (
+                      <div
+                        key={item.id || idx}
+                        className="flex items-center justify-between text-xs text-gray-800 dark:text-gray-200 py-1 px-1.5 rounded-lg bg-white/80 dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700/40"
+                      >
+                        <span className="font-medium truncate pr-2 flex items-center gap-1.5">
+                          <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          <span>{item.name}</span>
+                        </span>
+                        {item.quantity && (
+                          <span className="text-[11px] text-gray-500 dark:text-gray-400 shrink-0 font-medium bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">
+                            {item.quantity}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 bg-gray-50 dark:bg-gray-750 border-t border-gray-100 dark:border-gray-700 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setIsConfirmFinalizeOpen(false)}
+                className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-xs font-semibold hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmFinalizeShopping}
+                className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md shadow-emerald-600/30 flex items-center gap-1.5 cursor-pointer"
+              >
+                <CheckCircle2 className="w-4 h-4 stroke-[2.25]" />
+                <span>Xác nhận chốt sổ</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* ========================================================================= */}
       {/* MOBILE BOTTOM NAVIGATION BAR (Compact & Scroll to top on re-tap)         */}

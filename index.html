@@ -2,7 +2,7 @@
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>SmartSpend & Meal - Sổ Thu Chi & Thực Đơn Đi Chợ Tuần</title>
     <link rel="icon" type="image/png" href="/Logo.png?v=2" />
 
@@ -104,6 +104,12 @@
       }
       .dark ::-webkit-scrollbar-thumb:hover {
         background: #64748b;
+      }
+      /* Ngăn chặn tuyệt đối trình duyệt tự động zoom màn hình khi gõ phím trên điện thoại */
+      @media screen and (max-width: 768px) {
+        input, select, textarea {
+          font-size: 16px !important;
+        }
       }
     </style>
   </head>
