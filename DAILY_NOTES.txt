@@ -387,10 +387,12 @@ Mục đích: Theo dõi tiến độ, ghi chép lại các tính năng đã phá
     - Popup Xác thực Chốt Hóa Đơn & Ghi Sổ: Khi bấm chốt sổ, mở popup xác thực hiển thị chi tiết số lượng nguyên liệu đã mua, tổng số tiền thanh toán thực tế, danh mục ghi sổ và danh sách món trước khi lưu vào Sổ Thu Chi.
     - Tinh gọn nhãn chọn nhanh Thực Đơn: Bỏ chữ "mẫu", đổi thành "✨ Chọn nhanh Món Chính...", "✨ Chọn nhanh Món Phụ / Canh...", và các tiêu đề gợi ý "Gợi ý món chính / phụ" giúp giao diện gọn gàng, tự nhiên và chuyên nghiệp.
 
-[x] 3. Xây Dựng & Tinh Gọn Hướng Dẫn Sử Dụng (Tour 4 Bước Súc Tích):
-    - Tối ưu hóa OnboardingModal.jsx: Giữ lại Tour 4 bước ngắn gọn, mỗi bước chỉ có 3 gạch đầu dòng súc tích, trực quan, dễ nhớ; lược bỏ các nội dung dài dòng.
-    - Khắc phục triệt để lỗi màu chữ trùng màu nền: Thiết lập bảng màu tương phản cao tường minh cho cả Dark Mode (`dark:bg-gray-900`, `dark:text-gray-100`) và Light Mode (`bg-white`, `text-gray-900`), đảm bảo 100% chữ đọc rõ ràng, sắc nét.
-    - Tinh giản nút mở: Nút Trợ giúp `?` trên Header và Thẻ "Khám Phá SmartSpend & Meal" trong Tab Cài Đặt mở trực tiếp Tour 4 bước.
+[x] 3. Xây Dựng & Tinh Gọn Hướng Dẫn Sử Dụng (Tour 4 Bước Trực Quan Bằng Hình Ảnh):
+    - Tối ưu hóa OnboardingModal.jsx theo phong cách Visual-First:
+      + Tích hợp 4 ảnh minh họa 3D hiện đại tỷ lệ chuẩn 16:9 cho từng bước (`tour-step1.jpg` đến `tour-step4.jpg`), mô tả sống động: Quy trình khép kín, Thực đơn tuần & calo, Giỏ đi chợ & hóa đơn chốt sổ, Quản lý tài chính & bảo mật số dư.
+      + Cắt giảm tối đa chữ viết: Mỗi bước chỉ gồm tiêu đề và đúng 2 gạch đầu dòng siêu ngắn gọn, giúp người dùng nắm bắt tính năng chỉ trong 5 giây.
+      + Khắc phục triệt để lỗi màu chữ trùng màu nền: Thiết lập bảng màu tương phản cao tường minh cho cả Dark Mode (`dark:bg-gray-900`, `dark:text-gray-100`) và Light Mode (`bg-white`, `text-gray-900`), đảm bảo 100% chữ đọc rõ ràng, sắc nét.
+      + Nút Trợ giúp `?` trên Header và Thẻ "Khám Phá SmartSpend & Meal" trong Tab Cài Đặt mở trực tiếp Tour 4 bước hình ảnh.
 
 [x] 4. Khắc Phục Lỗi TDZ (ReferenceError) Tránh Màn Hình Đen Khi Refresh:
     - Sắp xếp lại thứ tự khởi tạo state `presetDishes` trước các hàm tính toán `useMemo` (`mainSuggestions`, `sideSuggestions`, `mainDishesMap`, `sideDishesMap`), giải quyết triệt để lỗi `ReferenceError: Cannot access 'presetDishes' before initialization`.

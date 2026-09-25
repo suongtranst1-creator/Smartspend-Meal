@@ -174,9 +174,9 @@
 * **Khắc Phục Lỗi Ảnh Avatar Google Bị Vỡ (`UserAvatar.jsx`)**:
   - Trang bị thuộc tính `referrerPolicy="no-referrer"` giúp tải trực tiếp ảnh đại diện từ CDN Google mà không bị chặn lỗi HTTP 403 Forbidden.
   - Tích hợp bộ lắng nghe sự kiện `onError` tự động chuyển đổi sang Avatar chữ cái đầu (Initials Avatar) trên nền dải màu gradient ngọc bích sang trọng, đồng bộ mượt mà trên cả Header lẫn Tab Cài Đặt, đảm bảo không bao giờ xuất hiện icon ảnh vỡ.
-* **Hướng Dẫn Sử Dụng Nhanh (Tour 4 Bước Súc Tích - `OnboardingModal.jsx`)**:
+* **Hướng Dẫn Sử Dụng Nhanh (Tour 4 Bước Trực Quan Bằng Hình Ảnh - `OnboardingModal.jsx`)**:
   - Tự động hiển thị chào mừng người dùng mới trong lần đầu đăng nhập, giới thiệu nhanh luồng khép kín cốt lõi của ứng dụng chỉ trong 30 giây.
-  - Tinh gọn tối đa: Mỗi bước chỉ có 3 gạch đầu dòng ngắn gọn, đi thẳng vào trọng tâm, bảng màu tương phản cao tường minh cho cả Dark Mode và Light Mode.
+  - **Thiết kế Visual-First đỉnh cao**: Tích hợp 4 ảnh minh họa 3D sắc nét (`tour-step1.jpg` đến `tour-step4.jpg`) cho từng bước, cắt giảm tối đa chữ viết (chỉ gồm 2 gạch đầu dòng siêu ngắn gọn), bảng màu tương phản cao tường minh cho cả Dark Mode và Light Mode.
   - Nút Trợ giúp `?` (`HelpCircle`) trên Header và Thẻ "Khám Phá SmartSpend & Meal" trong Tab Cài Đặt giúp người dùng có thể mở lại xem bất cứ lúc nào.
 * **Ngăn Chặn Tự Động Phóng To (Auto-zoom) Khi Nhập Liệu Trên Mobile**:
   - Cập nhật thẻ `<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">` và thiết lập CSS chuẩn `font-size: 16px` cho các thẻ `input, select, textarea` trên di động.
